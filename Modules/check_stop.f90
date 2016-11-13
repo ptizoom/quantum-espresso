@@ -38,7 +38,7 @@ MODULE check_stop
        !
        USE input_parameters, ONLY : max_seconds_ => max_seconds
        USE io_global,        ONLY : stdout
-       USE io_files,         ONLY : prefix, exit_file, stopunit
+       USE io_files,         ONLY : prefix, exit_file
 #if defined __TRAP_SIGUSR1
        USE set_signal,       ONLY : signal_trap_init
 #endif
@@ -46,7 +46,6 @@ MODULE check_stop
        !
        IMPLICIT NONE
        !
-       LOGICAL            :: tex
        REAL(DP), EXTERNAL :: cclock
        !
        IF ( tinit ) &
@@ -77,19 +76,17 @@ MODULE check_stop
        USE mp,         ONLY : mp_bcast
        USE mp_global,  ONLY : intra_image_comm
        USE io_global,  ONLY : ionode, ionode_id, meta_ionode, stdout
-       USE io_files,   ONLY : exit_file, stopunit, iunexit
+       USE io_files,   ONLY : tmp_dir, exit_file, iunexit
 #if defined __TRAP_SIGUSR1
        USE set_signal, ONLY : signal_detected
 #endif
-       ! KNK_image
-       ! USE mp_global, ONLY : mpime, root, world_comm
        !
        IMPLICIT NONE
        !
        INTEGER, OPTIONAL, INTENT(IN) :: inunit
        !
        INTEGER            :: unit
-       LOGICAL            :: check_stop_now, tex
+       LOGICAL            :: check_stop_now, tex, tex2
        LOGICAL            :: signaled
        REAL(DP)           :: seconds
        REAL(DP), EXTERNAL :: cclock
@@ -108,24 +105,34 @@ MODULE check_stop
        !
        signaled = .FALSE.
        !
-       ! KNK_image
-       ! IF ( mpime == root ) THEN
        IF ( ionode ) THEN
+          !
+          ! ... Check first if exit file exists in current directory
           !
           INQUIRE( FILE = TRIM( exit_file ), EXIST = tex )
           !
           IF ( tex ) THEN
              !
              check_stop_now = .TRUE.
-             !
              OPEN( UNIT = iunexit, FILE = TRIM( exit_file ) )
              CLOSE( UNIT = iunexit, STATUS = 'DELETE' )
              !
           ELSE
              !
-             seconds = cclock() - init_second
+             ! ... Check if exit file exists in scratch directory
              !
-             check_stop_now = ( seconds  >  max_seconds )
+             INQUIRE( FILE = TRIM(tmp_dir) // TRIM( exit_file ), EXIST = tex2 )
+             !
+             IF ( tex2 ) THEN
+                !
+                check_stop_now = .TRUE.
+                OPEN( UNIT = iunexit, FILE = TRIM(tmp_dir) // TRIM(exit_file) )
+                CLOSE( UNIT = iunexit, STATUS = 'DELETE' )
+                !
+             ELSE
+                seconds = cclock() - init_second
+                check_stop_now = ( seconds  >  max_seconds )
+             END IF
              !
           END IF
           !
@@ -137,8 +144,6 @@ MODULE check_stop
        tex = tex .OR. signaled
 #endif
        !
-       ! KNK_image
-       ! CALL mp_bcast( check_stop_now, root, world_comm )
        CALL mp_bcast( check_stop_now, ionode_id, intra_image_comm )
        !
        IF ( check_stop_now .AND. meta_ionode ) THEN

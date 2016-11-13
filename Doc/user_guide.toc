@@ -1,0 +1,52 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}
+\contentsline {subsection}{\numberline {1.1}People}{3}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}Contacts}{4}{subsection.1.2}
+\contentsline {subsection}{\numberline {1.3}Guidelines for posting to the mailing list}{4}{subsection.1.3}
+\contentsline {subsection}{\numberline {1.4}Terms of use}{5}{subsection.1.4}
+\contentsline {section}{\numberline {2}Installation}{5}{section.2}
+\contentsline {subsection}{\numberline {2.1}Download}{5}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Prerequisites}{6}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}\texttt {configure}}{7}{subsection.2.3}
+\contentsline {subsubsection}{\numberline {2.3.1}Manual configuration}{9}{subsubsection.2.3.1}
+\contentsline {subsection}{\numberline {2.4}Libraries}{9}{subsection.2.4}
+\contentsline {paragraph}{BLAS and LAPACK}{9}{section*.2}
+\contentsline {paragraph}{FFT}{10}{section*.3}
+\contentsline {paragraph}{MPI libraries}{10}{section*.4}
+\contentsline {paragraph}{Other libraries}{10}{section*.5}
+\contentsline {paragraph}{If optimized libraries are not found}{10}{section*.6}
+\contentsline {subsection}{\numberline {2.5}Compilation}{11}{subsection.2.5}
+\contentsline {subsection}{\numberline {2.6}Running tests and examples}{12}{subsection.2.6}
+\contentsline {subsection}{\numberline {2.7}Installation tricks and problems}{13}{subsection.2.7}
+\contentsline {subsubsection}{\numberline {2.7.1}All architectures}{13}{subsubsection.2.7.1}
+\contentsline {subsubsection}{\numberline {2.7.2}Cray XE and XT machines}{14}{subsubsection.2.7.2}
+\contentsline {subsubsection}{\numberline {2.7.3}IBM AIX}{14}{subsubsection.2.7.3}
+\contentsline {subsubsection}{\numberline {2.7.4}IBM BlueGene}{15}{subsubsection.2.7.4}
+\contentsline {subsubsection}{\numberline {2.7.5}Linux PC}{15}{subsubsection.2.7.5}
+\contentsline {paragraph}{Linux PCs with Portland compiler (pgf90)}{15}{section*.7}
+\contentsline {paragraph}{Linux PCs with Pathscale compiler}{15}{section*.8}
+\contentsline {paragraph}{Linux PCs with gfortran}{16}{section*.9}
+\contentsline {paragraph}{Linux PCs with g95}{16}{section*.10}
+\contentsline {paragraph}{Linux PCs with Sun Studio compiler}{16}{section*.11}
+\contentsline {paragraph}{Linux PCs with AMD Open64 suite}{16}{section*.12}
+\contentsline {paragraph}{Linux PCs with Intel compiler (ifort)}{16}{section*.13}
+\contentsline {paragraph}{Linux PCs with MKL libraries}{17}{section*.14}
+\contentsline {paragraph}{Linux PCs with ACML libraries}{17}{section*.15}
+\contentsline {subsubsection}{\numberline {2.7.6}Linux PC clusters with MPI}{18}{subsubsection.2.7.6}
+\contentsline {subsubsection}{\numberline {2.7.7}Intel Mac OS X}{18}{subsubsection.2.7.7}
+\contentsline {paragraph}{Intel Mac OS X with ifort}{18}{section*.16}
+\contentsline {paragraph}{Intel Mac OS X 10.4 with g95 and gfortran}{18}{section*.17}
+\contentsline {paragraph}{Detailed installation instructions for Mac OS X 10.6}{19}{section*.18}
+\contentsline {paragraph}{Compilation with GNU compilers}{19}{section*.19}
+\contentsline {paragraph}{Compilation with Intel compilers}{20}{section*.20}
+\contentsline {section}{\numberline {3}Parallelism}{21}{section.3}
+\contentsline {subsection}{\numberline {3.1}Understanding Parallelism}{21}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Running on parallel machines}{21}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Parallelization levels}{22}{subsection.3.3}
+\contentsline {paragraph}{About communications}{23}{section*.21}
+\contentsline {paragraph}{Choosing parameters}{23}{section*.22}
+\contentsline {paragraph}{Massively parallel calculations}{23}{section*.23}
+\contentsline {subsubsection}{\numberline {3.3.1}Understanding parallel I/O}{24}{subsubsection.3.3.1}
+\contentsline {subsection}{\numberline {3.4}Tricks and problems}{24}{subsection.3.4}
+\contentsline {paragraph}{Trouble with input files}{24}{section*.24}
+\contentsline {paragraph}{Trouble with MKL and MPI parallelization}{25}{section*.25}
+\contentsline {paragraph}{Trouble with compilers and MPI libraries}{25}{section*.26}

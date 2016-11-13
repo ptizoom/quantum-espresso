@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2008 Quantum ESPRESSO group
+! Copyright (C) 2001-2012 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -7,17 +7,17 @@
 !
 !--------------------------------------------------------------------------!
 ! FFT scalar drivers Module - contains machine-dependent routines for:     !
-! FFTW, FFTW3, ESSL, LINUX_ESSL, SCSL, SUNPERF, NEC ASL and ACML libraries !
+! FFTW, FFTW3, ESSL, LINUX_ESSL, SCSL, SUNPERF, NEC ASL libraries          !
 ! (both 3d for serial execution and 1d+2d FFTs for parallel execution,     !
 ! excepted NEC ASL, 3d only, no parallel execution)                        !
 ! Written by Carlo Cavazzoni, modified by P. Giannozzi, contributions      !
 ! by Martin Hilgemans, Guido Roma, Pascal Thibaudeau, Stephane Lefranc,    !
-! Nicolas Lacorne, Filippo Spiga - Last update Aug 2008                    !
+! Nicolas Lacorne, Filippo Spiga - Last update Aug 2012                    !
 !--------------------------------------------------------------------------!
 
 #include "fft_defs.h"
 !=----------------------------------------------------------------------=!
-       MODULE fft_scalar
+   MODULE fft_scalar
 !=----------------------------------------------------------------------=!
        USE kinds
 
@@ -27,6 +27,7 @@
         PRIVATE
         PUBLIC :: cft_1z, cft_2xy, cft_b, cfft3d, cfft3ds
         PUBLIC :: good_fft_dimension, allowed, good_fft_order
+        PUBLIC :: cft_b_omp_init, cft_b_omp
 
 ! ...   Local Parameter
 
@@ -40,7 +41,7 @@
         !   in order to avoid multiple copies of the same workspace
         !   lwork:   Dimension of the work space array (if any)
 
-#if ( defined __ESSL || defined __LINUX_ESSL ) && !defined __FFTW
+#if ( defined __ESSL || defined __LINUX_ESSL ) && ! ( defined __FFTW || defined __FFTW3 )
 
         !   ESSL IBM library: see the ESSL manual for DCFT
 
@@ -60,6 +61,15 @@
 
 #define  FFTW_MEASURE  0
 #define  FFTW_ESTIMATE 64
+
+#endif
+
+#if defined __FFTW 
+
+        INTEGER   :: cft_b_dims( 4 )
+        C_POINTER :: cft_b_bw_planz = 0
+        C_POINTER :: cft_b_bw_planx = 0
+        C_POINTER :: cft_b_bw_plany = 0
 
 #endif
 
@@ -113,6 +123,8 @@
 
 #if defined __OPENMP
      INTEGER :: offset, ldz_t
+     INTEGER :: omp_get_max_threads
+     EXTERNAL :: omp_get_max_threads
 #endif
 
 
@@ -125,14 +137,6 @@
 
      C_POINTER, SAVE :: fw_planz( ndims ) = 0
      C_POINTER, SAVE :: bw_planz( ndims ) = 0
-
-#elif defined __ACML
-
-     INTEGER, PARAMETER :: ltabl = 3 * nfftx + 100
-     INTEGER :: INFO
-
-     COMPLEX (DP), SAVE :: fw_tablez( ltabl, ndims )
-     COMPLEX (DP), SAVE :: bw_tablez( ltabl, ndims )
 
 #elif defined __ESSL || defined __LINUX_ESSL
 
@@ -206,14 +210,6 @@
        IF( bw_planz( icurrent) /= 0 ) CALL DESTROY_PLAN_1D( bw_planz( icurrent) )
        idir = -1; CALL CREATE_PLAN_1D( fw_planz( icurrent), nz, idir)
        idir =  1; CALL CREATE_PLAN_1D( bw_planz( icurrent), nz, idir)
-
-#elif defined __ACML
-
-      tscale = 1.0_DP / nz
-      CALL ZFFT1MX(0, tscale, .FALSE., nsl, nz, c(1), 1, ldz, &
-            cout(1), 1, ldz, fw_tablez(1, icurrent), INFO)
-      CALL ZFFT1MX(0, 1.0_DP, .FALSE., nsl, nz, c(1), 1, ldz, &
-            cout(1), 1, ldz, bw_tablez(1, icurrent), INFO)
 
 #elif defined __FFTW3
 
@@ -319,17 +315,6 @@
      END IF
 
 #endif
-
-#elif defined __ACML
-
-     IF( isign < 0 ) THEN
-        tscale = 1.0_DP / nz
-        CALL ZFFT1MX(-1, tscale, .FALSE., nsl, ldz, c(1), 1, ldz, cout(1), 1, ldz, &
-                fw_tablez(1, ip),INFO)
-     ELSE IF( isign > 0 ) THEN
-        CALL ZFFT1MX(1, 1.0_DP, .FALSE., nsl, ldz, c(1), 1, ldz, cout(1), 1, ldz, &
-                bw_tablez(1, ip),INFO)
-     END IF
 
 #elif defined __FFTW3
 
@@ -451,24 +436,18 @@
 #if defined __HPM
      INTEGER :: OMP_GET_THREAD_NUM
 #endif
-     INTEGER :: tid
 #if defined __OPENMP
      INTEGER :: offset
      INTEGER :: nx_t, ny_t, nzl_t, ldx_t, ldy_t
+     INTEGER  :: itid, mytid, ntids
+     INTEGER  :: omp_get_thread_num, omp_get_num_threads
+     EXTERNAL :: omp_get_thread_num, omp_get_num_threads
 #endif
 
 #if defined __FFTW || defined __FFTW3
 
      C_POINTER, SAVE :: fw_plan( 2, ndims ) = 0
      C_POINTER, SAVE :: bw_plan( 2, ndims ) = 0
-
-#elif defined __ACML
-
-     INTEGER, PARAMETER :: ltabl = 3 * nfftx + 100
-     INTEGER :: INFO
-
-     COMPLEX (DP), SAVE :: fw_tablex( ltabl, ndims ), bw_tablex( ltabl, ndims )
-     COMPLEX (DP), SAVE :: fw_tabley( ltabl, ndims ), bw_tabley( ltabl, ndims )
 
 #elif defined __ESSL || defined __LINUX_ESSL
 
@@ -552,22 +531,6 @@
        IF( bw_plan( 1,icurrent) /= 0 ) CALL DESTROY_PLAN_1D( bw_plan( 1,icurrent) )
        idir = -1; CALL CREATE_PLAN_1D( fw_plan( 1,icurrent), nx, idir)
        idir =  1; CALL CREATE_PLAN_1D( bw_plan( 1,icurrent), nx, idir)
-
-#elif  defined __ACML
-
-      tscale = 1.0_DP / ( nx * ny )
-
-#if defined __OPENMP
-      CALL ZFFT1MX(0, 1.0_DP, .TRUE., nx, ny, r(1), ldx, 1, r(1), ldx, 1,fw_tabley(1, icurrent), INFO)
-      CALL ZFFT1MX(0, 1.0_DP, .TRUE., nx, ny, r(1), ldx, 1, r(1), ldx, 1, bw_tabley(1, icurrent), INFO)
-      CALL ZFFT1MX(0, tscale, .TRUE., ny, nx, r(1), 1, ldx, r(1), 1, ldx, fw_tablex(1, icurrent), INFO)
-      CALL ZFFT1MX(0, 1.0_DP, .TRUE., ny, nx, r(1), 1, ldx, r(1), 1, ldx, bw_tablex(1, icurrent), INFO)
-#else
-      CALL ZFFT1MX(0, 1.0_DP, .TRUE., 1, ny, r(1), ldx, 1, r(1), ldx, 1,fw_tabley(1, icurrent), INFO)
-      CALL ZFFT1MX(0, 1.0_DP, .TRUE., 1, ny, r(1), ldx, 1, r(1), ldx, 1, bw_tabley(1, icurrent), INFO)
-      CALL ZFFT1MX(0, tscale, .TRUE., ny, nx, r(1), 1, ldx, r(1), 1, ldx, fw_tablex(1, icurrent), INFO)
-      CALL ZFFT1MX(0, 1.0_DP, .TRUE., ny, nx, r(1), 1, ldx, r(1), 1, ldx, bw_tablex(1, icurrent), INFO)
-#endif
 
 #elif defined __FFTW3
 
@@ -690,42 +653,67 @@
      !
      IF( isign < 0 ) THEN
         !
-!$omp parallel default(none) private(offset,tid,k,j,i)  shared(r,dofft,ip,fw_plan,nzl,nx)  &
+        tscale = 1.0_DP / ( nx * ny )
+        !
+!$omp parallel default(none) private(offset,itid,mytid,ntids,k,j,i)  shared(r,dofft,ip,fw_plan,nzl,nx,ny,ldx,ldy,tscale)  &
 !$omp & firstprivate(nx_t, ny_t, nzl_t, ldx_t, ldy_t)
+
 !$omp do
         DO i=1,nzl
            offset = 1+ ((i-1)*(ldx_t*ldy_t))
            CALL FFT_X_STICK_SINGLE( fw_plan(1,ip), r(offset), nx_t, ny_t, nzl_t, ldx_t, ldy_t )
         END DO
 !$omp end do
-!$omp do
+
+        mytid = omp_get_thread_num()  ! take the thread ID
+        ntids = omp_get_num_threads() ! take the number of threads
+        itid  = 0
+
         do i = 1, nx
           do k = 1, nzl
             IF( dofft( i ) ) THEN
-              j = i + ldx_t*ldy_t * ( k - 1 )
-              call FFT_Y_STICK(fw_plan(2,ip), r(j), ny_t, ldx_t)
+              IF( itid == mytid ) THEN
+                j = i + ldx_t*ldy_t * ( k - 1 )
+                call FFT_Y_STICK(fw_plan(2,ip), r(j), ny_t, ldx_t)
+              END IF
+              itid = MOD( itid + 1, ntids )
             END IF
           end do
         end do
-!$omp end do
+
+!$omp barrier
+ 
+!$omp workshare
+        r = r * tscale
+!$omp end workshare
+
 !$omp end parallel
-        tscale = 1.0_DP / ( nx * ny )
-        CALL ZDSCAL( ldx * ldy * nzl, tscale, r(1), 1)
+
+        ! CALL ZDSCAL( ldx * ldy * nzl, tscale, r(1), 1)
         !
      ELSE IF( isign > 0 ) THEN
         !
-!$omp parallel default(none) private(offset,tid,k,j,i) shared(r,nx,nzl,dofft,ip,bw_plan) &
+!$omp parallel default(none) private(offset,itid,mytid,ntids,k,j,i) shared(r,nx,nzl,dofft,ip,bw_plan) &
 !$omp & firstprivate(nx_t, ny_t, nzl_t, ldx_t, ldy_t)
-!$omp do
+
+        mytid = omp_get_thread_num()  ! take the thread ID
+        ntids = omp_get_num_threads() ! take the number of threads
+        itid  = 0
+
         do i = 1, nx
           do k = 1, nzl
             IF( dofft( i ) ) THEN
-              j = i + ldx_t*ldy_t * ( k - 1 )
-              call FFT_Y_STICK( bw_plan(2,ip), r(j), ny_t, ldx_t)
+              IF( itid == mytid ) THEN
+                j = i + ldx_t*ldy_t * ( k - 1 )
+                call FFT_Y_STICK( bw_plan(2,ip), r(j), ny_t, ldx_t)
+              END IF
+              itid = MOD( itid + 1, ntids )
             END IF
           end do
         end do
-!$omp end do
+
+!$omp barrier
+
 !$omp do
         DO i=1,nzl
            offset = 1+ ((i-1)*(ldx_t*ldy_t))
@@ -739,6 +727,7 @@
 #else
 
      IF( isign < 0 ) THEN
+
        CALL FFT_X_STICK( fw_plan(1,ip), r(1), nx, ny, nzl, ldx, ldy )
 
        do i = 1, nx
@@ -765,57 +754,7 @@
 
        CALL FFT_X_STICK( bw_plan(1,ip), r(1), nx, ny, nzl, ldx, ldy )
 
-END IF
-
-#endif
-
-#elif defined __ACML
-
-#if defined __OPENMP
-
-   IF( isign < 0 ) THEN
-      tscale = 1.0_DP / ( nx*ny )
-      do k = 1, nzl
-         kk = 1 + ( k - 1 ) * ldx * ldy
-         CALL ZFFT1MX(-1, tscale, .TRUE., ny, nx, r(kk), 1, ldx, r(kk), 1, ldx, fw_tablex(1, ip), INFO)
-         CALL ZFFT1MX(-1, 1.0_DP, .TRUE., nx, ny, r(kk), ldx, 1, r(kk), ldx, 1, fw_tabley(1, ip), INFO)
-      end do
-   ELSE IF( isign > 0 ) THEN
-      DO k = 1, nzl
-         kk = 1 + ( k - 1 ) * ldx * ldy
-         CALL ZFFT1MX(1, 1.0_DP, .TRUE., nx, ny, r(kk), ldx, 1, r(kk), ldx, 1, bw_tabley(1, ip), INFO)
-         CALL ZFFT1MX(1, 1.0_DP, .TRUE., ny, nx, r(kk), 1, ldx, r(kk), 1, ldx, bw_tablex(1, ip), INFO)
-      END DO
-   END IF
-
-
-#else
-
-   IF( isign < 0 ) THEN
-      tscale = 1.0_DP / ( nx * ny )
-      do k = 1, nzl
-         kk = 1 + ( k - 1 ) * ldx * ldy
-         CALL ZFFT1MX(-1, tscale, .TRUE., ny, nx, r(kk), 1, ldx, r(kk), 1, ldx, fw_tablex(1, ip), INFO)
-         do i = 1, nx
-            IF( dofft( i ) ) THEN
-               kk = i + ( k - 1 ) * ldx * ldy
-               CALL ZFFT1MX(-1, 1.0_DP, .TRUE., 1, ny, r(kk), ldx, 1, r(kk), ldx, 1,fw_tabley(1, ip), INFO)
-            END IF
-         end do
-      end do
-   ELSE IF( isign > 0 ) THEN
-      DO k = 1, nzl
-         do i = 1, nx
-            IF( dofft( i ) ) THEN
-               kk = i + ( k - 1 ) * ldx * ldy
-               CALL ZFFT1MX(1, 1.0_DP, .TRUE., 1, ny, r(kk), ldx, 1, r(kk), ldx, 1, bw_tabley(1, ip), INFO)
-            END IF
-         end do
-         kk = 1 + ( k - 1 ) * ldx * ldy
-         CALL ZFFT1MX(1, 1.0_DP, .TRUE., ny, nx, r(kk), 1, ldx, r(kk), 1, ldx, bw_tablex(1, ip), INFO)
-      END DO
-
-   END IF
+    END IF
 
 #endif
 
@@ -1125,15 +1064,6 @@ END IF
      C_POINTER, save :: fw_plan(ndims) = 0
      C_POINTER, save :: bw_plan(ndims) = 0
 
-#elif defined __ACML
-
-     INTEGER, PARAMETER :: ltabl = 4 * nfftx + 300
-     INTEGER :: INFO
-
-     COMPLEX (DP), SAVE :: fw_table(ltabl,ndims)
-     COMPLEX (DP), SAVE :: bw_table(ltabl,ndims)
-
-
 #elif defined __SCSL
 
      INTEGER, PARAMETER :: ltabl = (2 * nfftx + 256)*3
@@ -1165,9 +1095,9 @@ END IF
 #endif
 
      IF ( nx < 1 ) &
-         call errore('cfft3',' nx is less than 1 ', 1)
+         call errore('cfft3d',' nx is less than 1 ', 1)
      IF ( ny < 1 ) &
-         call errore('cfft3',' ny is less than 1 ', 1)
+         call errore('cfft3d',' ny is less than 1 ', 1)
      IF ( nz < 1 ) &
          call errore('cfft3',' nz is less than 1 ', 1)
 
@@ -1210,16 +1140,6 @@ END IF
        IF( bw_plan(icurrent) /= 0 ) CALL DESTROY_PLAN_3D( bw_plan(icurrent) )
        idir = -1; CALL CREATE_PLAN_3D( fw_plan(icurrent), nx, ny, nz, idir)
        idir =  1; CALL CREATE_PLAN_3D( bw_plan(icurrent), nx, ny, nz, idir)
-
-#elif defined __ACML
-
-       IF ( nx /= ldx .or. ny /= ldy .or. nz /= ldz ) &
-         call errore('cfft3','not implemented',1)
-
-
-       tscale = 1.0_DP / DBLE( nx * ny * nz )
-       CALL ZFFT3DY (0,tscale,.TRUE., nx,ny,nz,f(1),1,ldx,ldx*ldy,f(1),1,ldx, ldx*ldy, fw_table(1, icurrent),ltabl,INFO)
-       CALL ZFFT3DY (0,1.0_DP,.TRUE.,  nx,ny,nz,f(1),1,ldx,ldx*ldy,f(1),1,ldx, ldx*ldy, bw_table(1, icurrent),ltabl,INFO)
 
 #elif defined __FFTW3
 
@@ -1290,15 +1210,6 @@ END IF
 
      ELSE IF( isign > 0 ) THEN
        call FFTW_INPLACE_DRV_3D( bw_plan(ip), 1, f(1), 1, 1 )
-     END IF
-
-#elif defined __ACML
-
-     IF( isign < 0 ) THEN
-         tscale = 1.0_DP / DBLE( nx * ny * nz )
-         CALL ZFFT3DY (-1,tscale,.TRUE., nx,ny,nz,f(1),1,ldx,ldx*ldy,f(1),1,ldx,ldx*ldy,fw_table(1, ip),ltabl,INFO)
-     ELSE IF( isign > 0 ) THEN
-         CALL ZFFT3DY (1,1.0_DP,.TRUE.,  nx,ny,nz,f(1),1,ldx,ldx*ldy,f(1),1,ldx,ldx*ldy,bw_table(1, ip),ltabl,INFO)
      END IF
 
 #elif defined __FFTW3
@@ -1441,14 +1352,6 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
   C_POINTER, SAVE :: fw_plan ( 3, ndims ) = 0
   C_POINTER, SAVE :: bw_plan ( 3, ndims ) = 0
 
-#elif defined __ACML
-
-  INTEGER, PARAMETER :: ltabl = 3 * nfftx + 100
-  INTEGER :: INFO
-
-  COMPLEX (DP), SAVE :: fw_table( ltabl, 3, ndims )
-  COMPLEX (DP), SAVE :: bw_table( ltabl, 3, ndims )
-
 #elif defined __ESSL || defined __LINUX_ESSL
 
   INTEGER, PARAMETER :: ltabl = 20000 + 3 * nfftx
@@ -1505,26 +1408,6 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
        idir =  1; CALL CREATE_PLAN_1D( bw_plan( 2, icurrent), ny, idir)
        idir = -1; CALL CREATE_PLAN_1D( fw_plan( 3, icurrent), nz, idir)
        idir =  1; CALL CREATE_PLAN_1D( bw_plan( 3, icurrent), nz, idir)
-
-#elif defined __ACML
-
-       !  x - direction
-       incx1 = 1; incx2 = ldx; m = 1
-
-       CALL ZFFT1MX(0, 1.0_DP, .TRUE., m, nx, f(1), incx1, incx2, f(1), incx1, incx2, fw_table(1, 1, icurrent), INFO)
-       CALL ZFFT1MX(0, 1.0_DP, .TRUE., m, nx, f(1), incx1, incx2, f(1), incx1, incx2, bw_table(1, 1, icurrent), INFO)
-
-       !  y - direction
-       incx1 = ldx; incx2 = 1; m = nx;
-
-       CALL ZFFT1MX(0, 1.0_DP, .TRUE., m, ny, f(1), incx1, incx2, f(1), incx1, incx2, fw_table(1, 2, icurrent), INFO)
-       CALL ZFFT1MX(0, 1.0_DP, .TRUE., m, ny, f(1), incx1, incx2, f(1), incx1, incx2, bw_table(1, 2, icurrent), INFO)
-
-       !  z - direction
-       incx1 = ldx * ldy; incx2 = 1; m = ldx * ny
-
-       CALL ZFFT1MX(0, 1.0_DP, .TRUE., m, nz, f(1), incx1, incx2, f(1), incx1, incx2, fw_table(1, 3, icurrent), INFO)
-       CALL ZFFT1MX(0, 1.0_DP, .TRUE., m, nz, f(1), incx1, incx2, f(1), incx1, incx2, bw_table(1, 3, icurrent), INFO)
 
 #elif defined __FFTW3
        IF( fw_plan( 1, icurrent) /= 0 ) &
@@ -1616,15 +1499,13 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
               if ( do_fft_x( jj ) == 1 ) THEN
 #if defined __FFTW
                 call FFTW_INPLACE_DRV_1D( bw_plan( 1, ip), m, f( ii ), incx1, incx2 )
-#elif defined __ACML
-                CALL ZFFT1MX(1, 1.0_DP, .TRUE., m, nx, f(ii), incx1, incx2, f(ii), incx1, incx2, bw_table(1, 1, ip), INFO)
 #elif defined __FFTW3
                 call dfftw_execute_dft( bw_plan( 1, ip), f( ii: ), f( ii: ) )
 #elif defined __ESSL || defined __LINUX_ESSL
-                call dcft (0, f ( ii ), incx1, incx2, f ( ii ), incx1, incx2, nx, m, &
-                  -isign, 1.0_DP, bw_table ( 1, 1,  ip ), ltabl, work( 1 ), lwork)
+                call dcft (0, f (ii), incx1,incx2, f (ii), incx1,incx2, nx, m, &
+                -isign, 1.0_DP, bw_table ( 1, 1,  ip ), ltabl, work( 1 ), lwork)
 #else
-                call errore(' cfft3ds ',' no scalar fft driver specified ', 1)
+                call errore(' cfft3ds ',' no scalar fft driver specified ', 2)
 #endif
               endif
            enddo
@@ -1641,15 +1522,13 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
            if ( do_fft_y( k ) == 1 ) then
 #if defined __FFTW
              call FFTW_INPLACE_DRV_1D( bw_plan( 2, ip), m, f( ii ), incx1, incx2 )
-#elif defined __ACML
-             CALL ZFFT1MX(1, 1.0_DP, .TRUE., m, ny, f(ii), incx1, incx2, f(ii), incx1, incx2, bw_table(1, 2, ip), INFO)
 #elif defined __FFTW3
              call dfftw_execute_dft( bw_plan( 2, ip), f( ii: ), f( ii: ) )
 #elif defined __ESSL || defined __LINUX_ESSL
-             call dcft (0, f ( ii ), incx1, incx2, f ( ii ), incx1, incx2, ny, m, &
+             call dcft (0, f (ii), incx1, incx2, f (ii), incx1, incx2, nx, m, &
                -isign, 1.0_DP, bw_table ( 1, 2,  ip ), ltabl, work( 1 ), lwork)
 #else
-             call errore(' cfft3ds ',' no scalar fft driver specified ', 1)
+             call errore(' cfft3ds ',' no scalar fft driver specified ', 3)
 #endif
            endif
         enddo
@@ -1662,8 +1541,6 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 
 #if defined __FFTW
         call FFTW_INPLACE_DRV_1D( bw_plan( 3, ip), m, f( 1 ), incx1, incx2 )
-#elif defined __ACML
-        CALL ZFFT1MX(1, 1.0_DP, .TRUE., m, nz, f(1), incx1, incx2, f(1), incx1, incx2, bw_table(1, 3, ip), INFO)
 #elif defined __FFTW3
         call dfftw_execute_dft( bw_plan( 3, ip), f(1:), f(1:) )
 #elif defined __ESSL || defined __LINUX_ESSL
@@ -1681,8 +1558,6 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 
 #if defined __FFTW
         call FFTW_INPLACE_DRV_1D( fw_plan( 3, ip), m, f( 1 ), incx1, incx2 )
-#elif defined __ACML
-       CALL ZFFT1MX(-1, 1.0_DP, .TRUE., m, nz, f(1), incx1, incx2, f(1), incx1, incx2, fw_table(1, 3, ip), INFO)
 #elif defined __FFTW3
         call dfftw_execute_dft( fw_plan( 3, ip), f(1:), f(1:) )
 #elif defined __ESSL || defined __LINUX_ESSL
@@ -1702,15 +1577,13 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
            if ( do_fft_y ( k ) == 1 ) then
 #if defined __FFTW
              call FFTW_INPLACE_DRV_1D( fw_plan( 2, ip), m, f( ii ), incx1, incx2 )
-#elif defined __ACML
-             CALL ZFFT1MX(-1, 1.0_DP, .TRUE., m, ny, f(ii), incx1, incx2, f(ii), incx1, incx2, fw_table(1, 2, ip), INFO)
 #elif defined __FFTW3
              call dfftw_execute_dft( fw_plan( 2, ip), f( ii: ), f( ii: ) )
 #elif defined __ESSL || defined __LINUX_ESSL
-             call dcft (0, f ( ii ), incx1, incx2, f ( ii ), incx1, incx2, ny, m, &
+             call dcft (0, f (ii), incx1, incx2, f (ii), incx1, incx2, ny, m, &
                -isign, 1.0_DP, fw_table ( 1, 2, ip ), ltabl, work( 1 ), lwork)
 #else
-             call errore(' cfft3ds ',' no scalar fft driver specified ', 1)
+             call errore(' cfft3ds ',' no scalar fft driver specified ', 4)
 #endif
            endif
         enddo
@@ -1728,15 +1601,13 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
               if ( do_fft_x( jj ) == 1 ) then
 #if defined __FFTW
                 call FFTW_INPLACE_DRV_1D( fw_plan( 1, ip), m, f( ii ), incx1, incx2 )
-#elif defined __ACML
-                CALL ZFFT1MX(-1, 1.0_DP, .TRUE., m, nx, f(ii), incx1, incx2, f(ii), incx1, incx2, fw_table(1, 1, ip), INFO)
 #elif defined __FFTW3
                 call dfftw_execute_dft( fw_plan( 1, ip), f( ii: ), f( ii: ) )
 #elif defined __ESSL || defined __LINUX_ESSL
-                call dcft (0, f ( ii ), incx1, incx2, f ( ii ), incx1, incx2, nx, m, &
-                   -isign, 1.0_DP, fw_table ( 1, 1, ip ), ltabl, work( 1 ), lwork)
+                call dcft (0, f (ii), incx1,incx2, f (ii), incx1,incx2, nx, m, &
+                 -isign, 1.0_DP, fw_table ( 1, 1, ip ), ltabl, work( 1 ), lwork)
 #else
-                call errore(' cfft3ds ',' no scalar fft driver specified ', 1)
+                call errore(' cfft3ds ',' no scalar fft driver specified ', 5)
 #endif
               endif
            enddo
@@ -1759,6 +1630,7 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 !
 !=----------------------------------------------------------------------=!
 !
+
    SUBROUTINE cft_b ( f, nx, ny, nz, ldx, ldy, ldz, imin3, imax3, sgn )
 
 !     driver routine for 3d complex fft's on box grid, parallel case
@@ -1769,7 +1641,7 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 !
       implicit none
       integer nx,ny,nz,ldx,ldy,ldz,imin3,imax3,sgn
-      complex(8) :: f(:)
+      complex(dp) :: f(:)
 
       integer isign, naux, ibid, nplanes, nstart, k
       real(DP) :: tscale
@@ -1781,31 +1653,24 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 #if defined __FFTW || __FFTW3
 
       C_POINTER, save :: bw_planz(  ndims ) = 0
+      C_POINTER, save :: bw_planx(  ndims ) = 0
+      C_POINTER, save :: bw_plany(  ndims ) = 0
       C_POINTER, save :: bw_planxy( ndims ) = 0
-
-#elif defined __ACML
-
-     INTEGER, PARAMETER :: ltabl = 3 * nfftx + 100
-     INTEGER :: INFO
-
-      COMPLEX (DP), save :: aux3( ltabl, ndims )
-      COMPLEX (DP), save :: aux2( ltabl, ndims )
-      COMPLEX (DP), save :: aux1( ltabl, ndims )
 
 #elif defined __ESSL || defined __LINUX_ESSL
 
       INTEGER, PARAMETER :: ltabl = 20000 + 3 * nfftx
-      real(8), save :: aux3( ltabl, ndims )
-      real(8), save :: aux2( ltabl, ndims )
-      real(8), save :: aux1( ltabl, ndims )
+      real(dp), save :: aux3( ltabl, ndims )
+      real(dp), save :: aux2( ltabl, ndims )
+      real(dp), save :: aux1( ltabl, ndims )
 
 #elif defined __SCSL
 
      INTEGER, PARAMETER :: ltabl = 2 * nfftx + 256
-     real(8), save :: bw_coeffz( ltabl,  ndims )
-     real(8), save :: bw_coeffy( ltabl,  ndims )
-     real(8), save :: bw_coeffx( ltabl,  ndims )
-     REAL (DP)    :: DUMMY
+     real(dp), save :: bw_coeffz( ltabl,  ndims )
+     real(dp), save :: bw_coeffy( ltabl,  ndims )
+     real(dp), save :: bw_coeffx( ltabl,  ndims )
+     REAL(DP)    :: DUMMY
      INTEGER, SAVE :: isys(0:1) = (/ 1, 1 /)
 
 #endif
@@ -1852,23 +1717,18 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
              call DESTROY_PLAN_1D( bw_planz(icurrent) )
         call CREATE_PLAN_1D( bw_planz(icurrent), nz, 1 )
 
+        if ( bw_planx(icurrent) /= 0 ) &
+             call DESTROY_PLAN_1D( bw_planx(icurrent) )
+        call CREATE_PLAN_1D( bw_planx(icurrent), nx, 1 )
+
+        if ( bw_plany(icurrent) /= 0 ) &
+             call DESTROY_PLAN_1D( bw_plany(icurrent) )
+        call CREATE_PLAN_1D( bw_plany(icurrent), ny, 1 )
+
         if ( bw_planxy(icurrent) /= 0 ) &
              call DESTROY_PLAN_2D( bw_planxy(icurrent) )
         call CREATE_PLAN_2D( bw_planxy(icurrent), nx, ny, 1 )
 !
-#elif defined __ACML
-
-         if( nz /= dims(3,icurrent) ) then
-            CALL ZFFT1MX(0, 1.0_DP, .TRUE., ldx*ldy, nz, f(1), ldx*ldy, 1, f(1), ldx*ldy, 1,  aux3(1, icurrent), INFO)
-         end if
-
-         CALL ZFFT1MX(0, 1.0_DP, .TRUE., ldy*nplanes, nx, f(1), 1, ldx, f(1), 1, ldx,  aux1(1, icurrent), INFO)
-
-         if( ny /= dims(2,icurrent) ) then
-              CALL ZFFT1MX(0, 1.0_DP, .TRUE., ldx, ny,  f(1), ldx, 1, f(1), ldx, 1,  aux2(1, icurrent), INFO)
-         end if
-
-
 #elif defined __FFTW3
 
         if ( bw_planz(icurrent) /= 0 ) &
@@ -1921,25 +1781,18 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 
 #if defined __FFTW
 
+      !
+      !  fft along Z
+      !
       call FFTW_INPLACE_DRV_1D( bw_planz(ip), ldx*ldy, f(1), ldx*ldy, 1 )
-      call FFTW_INPLACE_DRV_2D( bw_planxy(ip), nplanes, f(nstart), 1, ldx*ldy )
-
-#elif defined __ACML
-
-      !   fft in the z-direction...
-
-      CALL ZFFT1MX(1, 1.0_DP, .TRUE., ldx*ldy, nz, f(1), ldx*ldy, 1, f(1), ldx*ldy, 1, aux3(1, ip), INFO)
-
-      !   x-direction
-
-      CALL ZFFT1MX(1, 1.0_DP, .TRUE., ldy*nplanes, nx, f(nstart), 1, ldx, f(nstart), 1, ldx, aux1(1, ip), INFO)
-
-      !   y-direction
-
-      DO K = imin3, imax3
-        nstart = ( k - 1 ) * ldx * ldy + 1
-        CALL ZFFT1MX(1, 1.0_DP, .TRUE., ldx, ny,  f(nstart), ldx, 1, f(nstart), ldx, 1, aux2(1, ip), INFO)
-      END DO
+      !
+      !  fft along Y
+      !  fft along X
+      !
+      do k = imin3, imax3
+        call FFTW_INPLACE_DRV_1D( bw_plany(ip), nx, f((k-1)*ldx*ldy + 1), ldx, 1 )
+        call FFTW_INPLACE_DRV_1D( bw_planx(ip), ny, f((k-1)*ldx*ldy + 1), 1, ldx )
+      end do   
 
 #elif defined __FFTW3
 
@@ -1982,6 +1835,111 @@ SUBROUTINE cfft3ds (f, nx, ny, nz, ldx, ldy, ldz, isign, &
 #endif
      RETURN
    END SUBROUTINE cft_b
+
+!
+!=----------------------------------------------------------------------=!
+!
+!
+!
+!   3D parallel FFT on sub-grids, to be called inside OpenMP region
+!
+!
+!
+!=----------------------------------------------------------------------=!
+!
+
+   SUBROUTINE cft_b_omp_init ( nx, ny, nz )
+
+!     driver routine for 3d complex fft's on box grid, init subroutine
+!
+      implicit none
+      integer, INTENT(IN) :: nx,ny,nz
+      !
+      !   Here initialize table 
+      !
+#if defined __FFTW
+
+!$omp single
+
+      IF( cft_b_bw_planz  == 0 ) THEN
+         CALL CREATE_PLAN_1D( cft_b_bw_planz, nz, 1 )
+         cft_b_dims(3) = nz
+      END IF
+      IF( cft_b_bw_planx  == 0 ) THEN
+         CALL CREATE_PLAN_1D( cft_b_bw_planx, nx, 1 )
+         cft_b_dims(1) = nx
+      END IF
+      IF( cft_b_bw_plany  == 0 ) THEN
+         CALL CREATE_PLAN_1D( cft_b_bw_plany, ny, 1 )
+         cft_b_dims(2) = ny
+      END IF
+
+!$omp end single
+
+#else
+
+      CALL errore(' cft_b_omp_init ',' no scalar fft driver specified ', 1)
+
+#endif
+
+     RETURN
+   END SUBROUTINE cft_b_omp_init
+
+
+   SUBROUTINE cft_b_omp ( f, nx, ny, nz, ldx, ldy, ldz, imin3, imax3, sgn )
+
+!     driver routine for 3d complex fft's on box grid, parallel (MPI+OpenMP) case
+!     fft along xy is done only on planes that correspond to dense grid
+!     planes on the current processor, i.e. planes with imin3 <= nz <= imax3
+!     implemented ONLY for internal fftw, and only for sgn=1 (f(R) => f(G))
+!     (beware: here the "essl" convention for the sign of the fft is used!)
+!
+!     This driver is meant for calls inside parallel OpenMP sections
+!
+      implicit none
+      integer, INTENT(IN) :: nx,ny,nz,ldx,ldy,ldz,imin3,imax3,sgn
+      complex(dp) :: f(:)
+
+      INTEGER, SAVE :: k
+!$omp threadprivate (k)
+
+      if ( -sgn > 0 ) then
+         CALL errore('cft_b_omp','forward transform not implemented',1)
+      end if
+
+#if defined __FFTW
+
+      IF ( ( cft_b_bw_planz == 0 ) .or. ( cft_b_bw_planx == 0 ) .or. ( cft_b_bw_plany == 0 ) ) THEN
+         CALL errore('cft_b_omp','plan not initialized',1)
+      END IF
+
+      !  consistency check
+
+      IF ( ( nx /= cft_b_dims(1) ) .or. ( ny /= cft_b_dims(2) ) .or. ( nz /= cft_b_dims(3) ) ) THEN
+         CALL errore('cft_b_omp', 'dimensions are inconsistent with the existing plan',1) 
+      END IF
+
+      !  fft along Z
+      !
+      call FFTW_INPLACE_DRV_1D( cft_b_bw_planz, ldx*ldy, f(1), ldx*ldy, 1 )
+      !
+      !  fft along Y
+      !  fft along X
+      !
+      do k = imin3, imax3
+        call FFTW_INPLACE_DRV_1D( cft_b_bw_plany, nx, f((k-1)*ldx*ldy + 1), ldx, 1 )
+        call FFTW_INPLACE_DRV_1D( cft_b_bw_planx, ny, f((k-1)*ldx*ldy + 1), 1, ldx )
+      end do   
+
+#else
+
+      CALL errore(' cft_b_omp ',' no scalar fft driver specified ', 1)
+
+#endif
+
+     RETURN
+   END SUBROUTINE cft_b_omp
+
 
 !
 !=----------------------------------------------------------------------=!
@@ -2097,7 +2055,7 @@ end function allowed
    INTEGER FUNCTION good_fft_order( nr, np )
 
 !
-!    This function find a "good" fft order value grather or equal to "nr"
+!    This function find a "good" fft order value greater or equal to "nr"
 !
 !    nr  (input) tentative order n of a fft
 !

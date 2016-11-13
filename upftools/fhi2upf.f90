@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2006 Quantum ESPRESSO group
+! Copyright (C) 2001-2011 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file 'License'
 ! in the root directory of the present distribution,
@@ -7,338 +7,407 @@
 !
 !
 !---------------------------------------------------------------------
-program fhi2upf  
+PROGRAM fhi2upf
   !---------------------------------------------------------------------
   !
   !     Convert a pseudopotential file in Fritz-Haber numerical format
   !     either ".cpi" (fhi88pp) or ".fhi" (abinit)
-  !     to unified pseudopotential format
-  !     May or may not work: carefully check what you get
-  !     Adapted from the converter written by Andrea Ferretti 
+  !     to unified pseudopotential format (v.2)
+  !     Adapted from the converter written by Andrea Ferretti
   !
-  implicit none
-  character(len=256) filein, fileout
+  USE pseudo_types, ONLY : pseudo_upf, nullify_pseudo_upf, &
+                           deallocate_pseudo_upf
+  USE write_upf_v2_module, ONLY :  write_upf_v2
   !
+  IMPLICIT NONE
+  TYPE(pseudo_upf) :: upf
+  CHARACTER(len=256) filein, fileout
+  INTEGER :: ios
   !
-  call get_file ( filein )
-  open (unit = 1, file = filein, status = 'old', form = 'formatted')
-  call read_fhi(1)
-  close (1)
+  CALL get_file ( filein )
+  IF ( trim(filein) == ' ') &
+       CALL errore ('fhi2upf', 'usage: fhi2upf "file-to-be-converted"', 1)
+  OPEN ( unit=1, file=filein, status = 'old', form='formatted', iostat=ios )
+  IF ( ios /= 0) CALL errore ('fhi2upf', 'file: '//trim(filein)//' not found', 2)
+  !
+  CALL read_fhi(1)
+  !
+  CLOSE (1)
 
   ! convert variables read from FHI format into those needed
   ! by the upf format - add missing quantities
-  call convert_fhi
-
+  !
+  CALL nullify_pseudo_upf ( upf )
+  !
+  CALL convert_fhi (upf)
+  !
+  ! write to file
+  !
   fileout=trim(filein)//'.UPF'
-  print '(''Output PP file in UPF format :  '',a)', fileout
+  PRINT '(''Output PP file in UPF format :  '',a)', fileout
+  OPEN(unit=2,file=fileout,status='unknown',form='formatted')
+  !
+  CALL write_upf_v2 (2, upf )
+  !
+  CLOSE (unit=2)
+  CALL deallocate_pseudo_upf ( upf )
+  !     ----------------------------------------------------------
+  WRITE (6,"('Pseudopotential successfully written')")
+  WRITE (6,"('Please review the content of the PP_INFO fields')")
+  WRITE (6,"('*** Please TEST BEFORE USING !!! ***')")
+  !     ----------------------------------------------------------
+  !
+  STOP
+   
+END PROGRAM fhi2upf
 
-  open(unit=2,file=fileout,status='unknown',form='formatted')
-  call write_upf(2)
-  close (unit=2)
-
-stop
-20 write (6,'("fhi2upf: error reading pseudopotential file name")')
-   stop
-end program fhi2upf
-
-module fhi
+MODULE fhi
   !
   ! All variables read from FHI file format
   !
 
-  type angular_comp
-     real(8), pointer     :: pot(:)
-     real(8), pointer     :: wfc(:)
-     real(8), pointer     :: grid(:)
+  TYPE angular_comp
+     real(8), POINTER     :: pot(:)
+     real(8), POINTER     :: wfc(:)
+     real(8), POINTER     :: grid(:)
      real(8)              :: amesh
-     integer             :: nmesh
-     integer             :: lcomp
-  end type angular_comp
+     INTEGER             :: nmesh
+     INTEGER             :: lcomp
+  END TYPE angular_comp
 
   !------------------------------
 
   real(8) :: Zval           ! valence charge
-  integer      :: lmax_          ! max l-component used
+  INTEGER      :: lmax          ! max l-component used
 
-  logical      :: nlcc_
-  real(8), allocatable :: rho_atc_(:) ! core  charge
+  LOGICAL      :: nlcc_
+  real(8), ALLOCATABLE :: rho_atc(:) ! core  charge
 
-  type (angular_comp), pointer :: comp(:)  ! PP numerical info
+  TYPE (angular_comp), POINTER :: comp(:)  ! PP numerical info
                                            ! (wfc, grid, potentials...)
   !------------------------------
 
   ! variables for the abinit header
 
   real(8) :: Zatom, Zion, r2well, rchrg, fchrg, qchrg
-  integer :: pspdat = 0, pspcod = 0 , pspxc = 0, lloc_ = -1, mmax = 0
-  character(len=256) :: info
+  INTEGER :: pspdat = 0, pspcod = 0 , pspxc = 0, lloc = -1, mmax = 0
+  CHARACTER(len=256) :: info
 
-end module fhi
-! 
+END MODULE fhi
+!
 !     ----------------------------------------------------------
-subroutine read_fhi(iunps)
+SUBROUTINE read_fhi(iunps)
   !     ----------------------------------------------------------
-  ! 
-  use fhi
-  implicit none
-  integer, parameter    :: Nl=7  ! max number of l-components
-  integer :: iunps
-  real(8) :: r, rhoc, drhoc, d2rhoc
   !
-  
-  integer               :: l, i, idum, mesh
+  USE fhi
+  IMPLICIT NONE
+  INTEGER, PARAMETER    :: Nl=7  ! max number of l-components
+  INTEGER :: iunps
+  real(8) :: r, drhoc, d2rhoc
+  !
+
+  INTEGER               :: l, i, idum, mesh
 
   ! Start reading file
 
-  read(iunps,'(a)') info
-  read(info,*,iostat=i) Zval, l
-  if ( i /= 0 .or. zval <= 0.0 .or. zval > 100.0 ) then
-     write (6,'("read_fhi: assuming abinit format")')
-     read(iunps,*) Zatom, Zion, pspdat
-     read(iunps,*) pspcod, pspxc, lmax_,lloc_, mmax, r2well
-     if (pspcod /= 6) then
-        write (6,'("read_fhi: unknown PP type ",i1,"...stopping")') pspcod
-        stop
-     end if
-     read(iunps,*) rchrg, fchrg, qchrg
+  READ(iunps,'(a)') info
+  READ(info,*,iostat=i) Zval, l
+  IF ( i /= 0 .or. zval <= 0.0 .or. zval > 100.0 ) THEN
+     WRITE (6,'("Assuming abinit format. First line:",/,A)') trim(info)
+     READ(iunps,*) Zatom, Zion, pspdat
+     READ(iunps,*) pspcod, pspxc, lmax,lloc, mmax, r2well
+     IF (pspcod /= 6) THEN
+        WRITE (6,'("read_fhi: unknown PP type ",i1,"...stopping")') pspcod
+        STOP
+     ENDIF
+     READ(iunps,*) rchrg, fchrg, qchrg
      !
-     read(iunps,*)
-     read(iunps,*)
-     read(iunps,*)
+     READ(iunps,*)
+     READ(iunps,*)
+     READ(iunps,*)
      !
-     read(iunps,*) Zval, l
-     if (abs(Zion-Zval) > 1.0d-8) then
-        write (6,'("read_fhi: Zval/Zion mismatch...stopping")')
-        stop
-     end if
-     if (l-1 /= lmax_) then
-        write (6,'("read_fhi: lmax mismatch...stopping")')
-        stop
-     end if
-  else 
+     READ(iunps,*) Zval, l
+     IF (abs(Zion-Zval) > 1.0d-8) THEN
+        WRITE (6,'("read_fhi: Zval/Zion mismatch...stopping")')
+        STOP
+     ENDIF
+     IF (l-1 /= lmax) THEN
+        WRITE (6,'("read_fhi: lmax mismatch...stopping")')
+        STOP
+     ENDIF
+  ELSE
      info = ' '
-  end if
-  lmax_ = l - 1
+  ENDIF
+  lmax = l - 1
 
-  if (lmax_+1 > Nl) then
-     write (6,'("read_fhi: too many l-components...stopping")')
-     stop
-  end if
+  IF (lmax+1 > Nl) THEN
+     WRITE (6,'("read_fhi: too many l-components...stopping")')
+     STOP
+  ENDIF
 
-  do i=1,10
-     read(iunps,*)     ! skipping 11 lines 
-  end do
+  DO i=1,10
+     READ(iunps,*)     ! skipping 11 lines
+  ENDDO
 
-  allocate( comp(0:lmax_) )
+  ALLOCATE( comp(0:lmax) )
 
-  do l=0,lmax_
+  DO l=0,lmax
      comp(l)%lcomp = l
-     read(iunps,*) comp(l)%nmesh, comp(l)%amesh
-     if (mmax > 0 .and. mmax /= comp(l)%nmesh) then
-        write (6,'("read_fhi: mismatched number of grid points...stopping")')
-        stop
-     end if
-     if ( l > 0) then
-        if (comp(l)%nmesh /= comp(0)%nmesh .or.   &
-            comp(l)%amesh /= comp(0)%amesh )      then
-           write(6,'("read_fhi: different radial grids not allowed...stopping")')
-           stop
-        end if
-     end if
+     READ(iunps,*) comp(l)%nmesh, comp(l)%amesh
+     IF (mmax > 0 .and. mmax /= comp(l)%nmesh) THEN
+        WRITE (6,'("read_fhi: mismatched number of grid points...stopping")')
+        STOP
+     ENDIF
+     IF ( l > 0) THEN
+        IF (comp(l)%nmesh /= comp(0)%nmesh .or.   &
+            comp(l)%amesh /= comp(0)%amesh )      THEN
+           WRITE(6,'("read_fhi: different radial grids not allowed...stopping")')
+           STOP
+        ENDIF
+     ENDIF
      mesh = comp(l)%nmesh
-     allocate( comp(l)%wfc(mesh),            &      ! wave-functions
+     ALLOCATE( comp(l)%wfc(mesh),            &      ! wave-functions
                comp(l)%pot(mesh),            &      ! potentials
                comp(l)%grid(mesh)            )      ! real space radial grid
      ! read the above quantities
-     do i=1,mesh
-        read(iunps,*) idum, comp(l)%grid(i),   &
+     DO i=1,mesh
+        READ(iunps,*) idum, comp(l)%grid(i),   &
                             comp(l)%wfc(i),    &
-                            comp(l)%pot(i)       
-     end do
-  end do
+                            comp(l)%pot(i)
+     ENDDO
+  ENDDO
 
   nlcc_ =.false.
-  allocate(rho_atc_(comp(0)%nmesh))
+  ALLOCATE(rho_atc(comp(0)%nmesh))
   mesh = comp(0)%nmesh
-  do i=1,mesh
-     read(iunps,*,end=10, err=20) r, rho_atc_(i), drhoc, d2rhoc
-     if ( abs( r - comp(0)%grid(i) ) > 1.d-6 ) then
-        write(6,'("read_fhi: radial grid for core charge? stopping")')
-        stop
-     end if
-  end do
+  DO i=1,mesh
+     READ(iunps,*,end=10, err=20) r, rho_atc(i), drhoc, d2rhoc
+     IF ( abs( r - comp(0)%grid(i) ) > 1.d-6 ) THEN
+        WRITE(6,'("read_fhi: radial grid for core charge? stopping")')
+        STOP
+     ENDIF
+  ENDDO
   nlcc_ = .true.
   !     ----------------------------------------------------------
-  write (6,'(a)') 'Pseudopotential with NLCC successfully read'
+  WRITE (6,'(a)') 'Pseudopotential with NLCC successfully read'
   !     ----------------------------------------------------------
-  return
-10 continue
+  RETURN
+20 WRITE(6,'("read_fhi: error reading core charge, assuming no core charge")')
+   WRITE(6,'("this error may be due to the presence of additional", &
+ &           " lines at the end of file")')
+10 CONTINUE
   !     ----------------------------------------------------------
-  write (6,'(a)') 'Pseudopotential without NLCC successfully read'
+  WRITE (6,'(a)') 'Pseudopotential without NLCC successfully read'
   !     ----------------------------------------------------------
-  return
+  RETURN
   !
-20 write(6,'("read_fhi: error reading core charge")')
-  stop
-  !
-100  write(6,'("read_fhi: error reading pseudopotential file")')
-  stop
+  STOP
 
-end subroutine read_fhi
+END SUBROUTINE read_fhi
 
 !     ----------------------------------------------------------
-subroutine convert_fhi
+SUBROUTINE convert_fhi (upf)
   !     ----------------------------------------------------------
   !
-  use fhi
-  use upf
-  use funct, ONLY : set_dft_from_name, get_iexch, get_icorr, get_igcx, get_igcc
-  use constants, ONLY : fpi
-  implicit none
-  real(8), parameter :: rmax = 10.0d0
-  real(8), allocatable :: aux(:)
+  USE fhi
+  USE pseudo_types, ONLY : pseudo_upf
+  USE funct, ONLY : set_dft_from_name, get_iexch, get_icorr, get_igcx, get_igcc
+  USE constants, ONLY : fpi
+  !
+  IMPLICIT NONE
+  !
+  TYPE(pseudo_upf) :: upf
+  !
+  real(8), ALLOCATABLE :: aux(:)
   real(8) :: vll
-  character (len=20):: dft  
-  character (len=2), external:: atom_name
-  integer :: lloc, kkbeta
-  integer :: l, i, ir, iv
+  CHARACTER (len=2):: label
+  CHARACTER (len=2), EXTERNAL:: atom_name
+  INTEGER :: l, i, ir, iv
   !
-  if (nint(Zatom) > 0) then
-     psd = atom_name(nint(Zatom))
-  else
-     print '("Atom name > ",$)'
-     read (5,'(a)') psd
-  end if
-  if ( lloc_ < 0 ) then
-     print '("l local (max: ",i1,") > ",$)', lmax_
-     read (5,*) lloc
-  else
-     lloc = lloc_
-  end if
-  if (pspxc == 7) then
-     dft = 'PW'
-  else
-     if (pspxc > 0) then
-        print '("DFT read from abinit file: ",i1)', pspxc
-     end if
-     print '("DFT > ",$)'
-     read (5,'(a)') dft
-  end if
-  write(generated, '("Generated using Fritz-Haber code")')
-  write(date_author,'("Author: unknown    Generation date: as well")')
-  if (trim(info) /= ' ') then
-     comment = trim(info)
-  else
-     comment = 'Info: automatically converted from FHI format'
-  end if
-  ! reasonable assumption
-  rel = 1
-  rcloc = 0.0d0
-  nwfs  = lmax_+1
-  allocate( els(nwfs), oc(nwfs), epseu(nwfs))
-  allocate(lchi(nwfs), nns(nwfs) )
-  allocate(rcut (nwfs), rcutus (nwfs))
-  do i=1, nwfs
-     print '("Wavefunction # ",i1,": label, occupancy > ",$)', i
-     read (5,*) els(i), oc(i)
-     nns (i)  = 0
-     lchi(i)  = i-1
-     rcut(i)  = 0.0d0
-     rcutus(i)= 0.0d0
-     epseu(i) = 0.0d0
-  end do
+  upf%nv       = "2.0.1"
+  upf%generated= "Generated using FHI98PP, converted with fhi2upf.x v.5.0.2"
+  upf%author   = "unknown"
+  upf%date     = "unknown"
+  IF (trim(info) /= ' ') THEN
+     upf%comment = trim(info)
+  ELSE
+     upf%comment = 'Info: automatically converted from FHI format'
+  ENDIF
+  upf%rel = 'scalar'  ! just guessing
+  IF (nint(Zatom) > 0) THEN
+     upf%psd = atom_name(nint(Zatom))
+     IF (nint(Zatom) > 18) upf%rel = 'no' ! just guessing
+  ELSE
+     PRINT '("Atom name > ",$)'
+     READ (5,'(a)') upf%psd
+  ENDIF
+  upf%typ = 'SL'
+  upf%tvanp = .false.
+  upf%tpawp = .false.
+  upf%tcoulombp=.false.
+  upf%nlcc = nlcc_
+  !
+  IF (pspxc == 7) THEN
+     upf%dft = 'SLA-PW'
+  ELSEIF (pspxc == 11) THEN
+     upf%dft = 'PBE'
+  ELSE
+     IF (pspxc > 0) THEN
+        PRINT '("DFT read from abinit file: ",i1)', pspxc
+     ENDIF
+     PRINT '("DFT > ",$)'
+     READ (5,'(a)') upf%dft
+  ENDIF
+  !
+  upf%zp   = Zval
+  upf%etotps =0.0d0
+  upf%ecutrho=0.0d0
+  upf%ecutwfc=0.0d0
+  !
+  PRINT '("Confirm or modify l max, l loc (read:",2i3,") > ",$)', lmax, lloc
+  READ (5,*) lmax, upf%lloc
 
-  pseudotype = 'NC'
-  nlcc = nlcc_
-  zp   = Zval
-  etotps = 0.0d0
-  ecutrho=0.0d0
-  ecutwfc=0.0d0
-  if ( lmax_ == lloc) then
-     lmax = lmax_-1
-  else
-     lmax = lmax_
-  end if
-  nbeta= lmax_
-  mesh = comp(0)%nmesh
-  ntwfc= nwfs
-  allocate( elsw(ntwfc), ocw(ntwfc), lchiw(ntwfc) )
-  do i=1, nwfs
-     lchiw(i) = lchi(i)
-     ocw(i)   = oc(i)
-     elsw(i)  = els(i)
-  end do
-  call set_dft_from_name(dft)
-  iexch = get_iexch()
-  icorr = get_icorr()
-  igcx  = get_igcx()
-  igcc  = get_igcc()
+  IF ( lmax == upf%lloc) THEN
+     upf%lmax = lmax-1
+  ELSE
+     upf%lmax = lmax
+  ENDIF
+  upf%lmax_rho = 0
+  upf%nwfc  = lmax+1
+  !
+  ALLOCATE( upf%els(upf%nwfc) )
+  ALLOCATE( upf%oc(upf%nwfc) )
+  ALLOCATE( upf%epseu(upf%nwfc) )
+  ALLOCATE( upf%lchi(upf%nwfc) )
+  ALLOCATE( upf%nchi(upf%nwfc) )
+  ALLOCATE( upf%rcut_chi (upf%nwfc) )
+  ALLOCATE( upf%rcutus_chi(upf%nwfc) )
 
-  allocate(rab(mesh))
-  allocate(  r(mesh))
-  r = comp(0)%grid
-  rab = r * log( comp(0)%amesh )
+  PRINT '("PPs in FHI format do not contain information on atomic valence (pseudo-)wavefunctions")'
+  PRINT '("Provide the label and the occupancy for each atomic wavefunction used in the PP generation")'
+  PRINT '("If unknown: list valence wfcts and occupancies for the atomic ground state ", &
+         &"in increasing l order: s,p,d,f")'
+  DO i=1, upf%nwfc
+10   PRINT '("Wavefunction # ",i1,": label (e.g. 4s), occupancy > ",$)', i
+     READ (5,*) label, upf%oc(i)
+     READ (label(1:1),*, err=10) l
+     upf%els(i)  = label
+     upf%nchi(i)  = l
+     IF ( label(2:2) == 's' .or. label(2:2) == 'S') THEN
+        l=0
+     ELSEIF ( label(2:2) == 'p' .or. label(2:2) == 'P') THEN
+        l=1
+     ELSEIF ( label(2:2) == 'd' .or. label(2:2) == 'D') THEN
+        l=2
+     ELSEIF ( label(2:2) == 'f' .or. label(2:2) == 'F') THEN
+        l=3
+     ELSE
+        l=i-1
+     ENDIF
+     upf%lchi(i)  = l
+     upf%rcut_chi(i)  = 0.0d0
+     upf%rcutus_chi(i)= 0.0d0
+     upf%epseu(i) = 0.0d0
+  ENDDO
 
-  if (nlcc) then
-     allocate (rho_atc(mesh))
-     rho_atc(:) = rho_atc_(:) / fpi
-  end if
+  upf%mesh = comp(0)%nmesh
+  upf%dx   = log( comp(0)%amesh )
+  upf%rmax = comp(0)%grid(upf%mesh)
+  upf%xmin = log( comp(0)%grid(1)*Zatom )
+  upf%zmesh= Zatom
+  ALLOCATE(upf%rab(upf%mesh))
+  ALLOCATE(upf%r(upf%mesh))
+  upf%r(:) = comp(0)%grid
+  upf%rab(:)=upf%r(:)*upf%dx
 
-  allocate (vloc0(mesh))
+  ALLOCATE (upf%rho_atc(upf%mesh))
+  IF (upf%nlcc) upf%rho_atc(:) = rho_atc(1:upf%mesh) / fpi
+
+  ALLOCATE (upf%vloc(upf%mesh))
   ! the factor 2 converts from Hartree to Rydberg
-  vloc0 = 2.d0*comp(lloc)%pot
+  upf%vloc(:) = 2.d0*comp(lloc)%pot
+  upf%rcloc = 0.0d0
 
-  if (nbeta > 0) then
+  ALLOCATE(upf%vnl(upf%mesh,0:upf%lmax,1))
+  DO l=0, upf%lmax
+     upf%vnl(:,l,1) = 2.d0*comp(l)%pot(:)
+  ENDDO
 
-     allocate(ikk2(nbeta), lll(nbeta))
-     kkbeta=mesh
-     do ir = 1,mesh
-        if ( r(ir) > rmax ) then
-           kkbeta=ir
-           exit
-        end if
-     end do
-     ikk2(:) = kkbeta
-     allocate(aux(kkbeta))
-     allocate(betar(mesh,nbeta))
-     allocate(qfunc(mesh,nbeta,nbeta))
-     allocate(dion(nbeta,nbeta))
-     allocate(qqq (nbeta,nbeta))
-     qfunc(:,:,:)=0.0d0
-     dion(:,:) =0.d0
-     qqq(:,:)  =0.d0
-     iv=0
-     do i=1,nwfs
-        l=lchi(i)
-        if (l.ne.lloc) then
+  ! calculate number of nonlocal projectors
+  IF ( upf%lloc >= 0 .and. upf%lloc <= upf%lmax ) THEN
+     upf%nbeta= upf%lmax
+  ELSE
+     upf%nbeta= upf%lmax+1
+  ENDIF
+
+  IF (upf%nbeta > 0) THEN
+
+     ALLOCATE(upf%els_beta(upf%nbeta) )
+     ALLOCATE(upf%lll(upf%nbeta))
+     ALLOCATE(upf%kbeta(upf%nbeta))
+     iv=0  ! counter on beta functions
+     DO i=1,upf%nwfc
+        l=upf%lchi(i)
+        IF (l/=upf%lloc) THEN
            iv=iv+1
-           lll(iv)=l
-           do ir=1,kkbeta
-              ! FHI potentials are in Hartree 
-              betar(ir,iv) = 2.d0 * comp(l)%wfc(ir) * &
-                   ( comp(l)%pot(ir) - comp(lloc)%pot(ir) )
-              aux(ir) = comp(l)%wfc(ir) * betar(ir,iv)
-           end do
-           call simpson(kkbeta,aux,rab,vll)
-           dion(iv,iv) = 1.0d0/vll
-        end if
-     enddo
+           upf%kbeta(iv)=upf%mesh
+           DO ir = upf%mesh,1,-1
+              IF ( abs ( upf%vnl(ir,l,1) - upf%vnl(ir,upf%lloc,1) ) > 1.0E-6 ) THEN
+                 ! include points up to the last with nonzero value
+                 upf%kbeta(iv)=ir+1
+                 exit
+              ENDIF
+           ENDDO
+        ENDIF
+     ENDDO
+     ! the number of points used in the evaluation of integrals
+     ! should be even (for simpson integration)
+     DO i=1,upf%nbeta
+        IF ( mod (upf%kbeta(i),2) == 0 ) upf%kbeta(i)=upf%kbeta(i)+1
+        upf%kbeta(i)=MIN(upf%mesh,upf%kbeta(i))
+     ENDDO
+     upf%kkbeta = maxval(upf%kbeta(:))
+     ALLOCATE(upf%beta(upf%mesh,upf%nbeta))
+     ALLOCATE(upf%dion(upf%nbeta,upf%nbeta))
+     upf%beta(:,:) =0.d0
+     upf%dion(:,:) =0.d0
+     ALLOCATE(upf%rcut  (upf%nbeta))
+     ALLOCATE(upf%rcutus(upf%nbeta))
+     ALLOCATE(aux(upf%kkbeta))
+     iv=0  ! counter on beta functions
+     DO i=1,upf%nwfc
+        l=upf%lchi(i)
+        IF (l/=upf%lloc) THEN
+           iv=iv+1
+           upf%lll(iv)=l
+           upf%els_beta(iv)=upf%els(i)
+           DO ir=1,upf%kbeta(iv)
+              ! the factor 2 converts from Hartree to Rydberg
+              upf%beta(ir,iv) = 2.d0 * comp(l)%wfc(ir) * &
+                   ( comp(l)%pot(ir) - comp(upf%lloc)%pot(ir) )
+              aux(ir) = comp(l)%wfc(ir) * upf%beta(ir,iv)
+           ENDDO
+           upf%rcut  (iv) = upf%r(upf%kbeta(iv))
+           upf%rcutus(iv) = 0.0
+           CALL simpson(upf%kbeta(iv),aux,upf%rab,vll)
+           upf%dion(iv,iv) = 1.0d0/vll
+        ENDIF
+     ENDDO
+     DEALLOCATE(aux)
+  ENDIF
 
-  end if
+  ALLOCATE (upf%chi(upf%mesh,upf%nwfc))
+  DO i=1,upf%nwfc
+     upf%chi(:,i) = comp(i-1)%wfc(:)
+  ENDDO
 
-  allocate (rho_at(mesh))
-  rho_at = 0.d0
-  do i=1,nwfs
-     l=lchi(i)
-     rho_at = rho_at + ocw(i) * comp(l)%wfc ** 2
-  end do
-  
-  allocate (chi(mesh,ntwfc))
-  do i=1,ntwfc
-     chi(:,i) = comp(i-1)%wfc(:)
-  end do
+  ALLOCATE (upf%rho_at(upf%mesh))
+  upf%rho_at(:) = 0.d0
+  DO i=1,upf%nwfc
+     upf%rho_at(:) = upf%rho_at(:) + upf%oc(i) * upf%chi(:,i) ** 2
+  ENDDO
   !     ----------------------------------------------------------
-  write (6,'(a)') 'Pseudopotential successfully converted'
+  WRITE (6,'(a)') 'Pseudopotential successfully converted'
   !     ----------------------------------------------------------
-  return
-end subroutine convert_fhi
+  RETURN
+END SUBROUTINE convert_fhi

@@ -20,15 +20,17 @@ SUBROUTINE input_from_file( )
   !
   IMPLICIT NONE
   !
-  INTEGER             :: unit = 5, &
+  INTEGER             :: stdin = 5, stderr = 6, &
                          ilen, iiarg, nargs, ierr
   ! do not define iargc as external: g95 does not like it
   INTEGER             :: iargc
-  CHARACTER (LEN=80)  :: input_file
+  CHARACTER (LEN=256)  :: input_file
   !
   ! ... Input from file ?
   !
   nargs = iargc()
+  !
+  ierr = -1
   !
   DO iiarg = 1, ( nargs - 1 )
      !
@@ -40,12 +42,15 @@ SUBROUTINE input_from_file( )
         !
         CALL getarg( ( iiarg + 1 ) , input_file )
         !
-        OPEN ( UNIT = unit, FILE = input_file, FORM = 'FORMATTED', &
+        OPEN ( UNIT = stdin, FILE = input_file, FORM = 'FORMATTED', &
                STATUS = 'OLD', IOSTAT = ierr )
         !
-        ! TODO: return error code instead
-        !CALL errore( 'input_from_file', 'input file ' // TRIM( input_file ) &
-        !     & // ' not found' , ierr )
+        ! TODO: return error code ierr (-1 no file, 0 file opened, > 1 error)
+        ! do not call "errore" here: it may hang in parallel execution
+        ! if this routine is called by ionode only
+        !
+        IF ( ierr > 0 ) WRITE (stderr, &
+                '(" *** input file ",A," not found ***")' ) TRIM( input_file )
         !
      END IF
      !
@@ -125,6 +130,37 @@ END SUBROUTINE get_arg_npool
 !
 !----------------------------------------------------------------------------
 !
+SUBROUTINE get_arg_npot( npot )
+   !
+   IMPLICIT NONE
+   !
+   INTEGER :: npot
+   !
+   INTEGER :: nargs, iiarg
+   CHARACTER(LEN=10) :: np
+   INTEGER :: iargc
+   !
+   npot = 1
+   nargs = iargc()
+   !
+   DO iiarg = 1, ( nargs - 1 )
+      !
+      CALL getarg( iiarg, np )
+      !
+      IF ( TRIM( np ) == '-npot' .OR. TRIM( np ) == '-npots' ) THEN
+         !
+         CALL getarg( ( iiarg + 1 ), np )
+         READ( np, * ) npot
+         !
+      END IF
+      !
+   END DO
+   !
+   RETURN
+END SUBROUTINE get_arg_npot
+!
+!----------------------------------------------------------------------------
+!
 SUBROUTINE get_arg_nimage( nimage )
    !
    IMPLICIT NONE
@@ -187,6 +223,38 @@ END SUBROUTINE get_arg_ntg
 !
 !----------------------------------------------------------------------------
 !
+SUBROUTINE get_arg_nbgrp( nbgrp )
+   !
+   IMPLICIT NONE
+   !
+   INTEGER :: nbgrp
+   !
+   INTEGER :: nargs, iiarg
+   CHARACTER(LEN=20) :: np
+   INTEGER :: iargc
+   !
+   nbgrp = 0
+   nargs = iargc()
+   !
+   DO iiarg = 1, ( nargs - 1 )
+      !
+      CALL getarg( iiarg, np )
+      !
+      IF ( TRIM( np ) == '-nbgrp' .OR. TRIM( np ) == '-nband_group' .OR. &
+           TRIM( np ) == '-nb' .OR. TRIM( np ) == '-nband' ) THEN
+         !
+         CALL getarg( ( iiarg + 1 ), np )
+         READ( np, * ) nbgrp
+         !
+      END IF
+      !
+   END DO
+   !
+   RETURN
+END SUBROUTINE get_arg_nbgrp
+!
+!----------------------------------------------------------------------------
+!
 SUBROUTINE get_arg_northo( nproc_ortho )
    !
    IMPLICIT NONE
@@ -216,7 +284,6 @@ SUBROUTINE get_arg_northo( nproc_ortho )
    !
    RETURN
 END SUBROUTINE get_arg_northo
-
 
 SUBROUTINE get_env ( variable_name, variable_value )
   !

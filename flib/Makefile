@@ -14,9 +14,12 @@ cryst_to_car.o \
 dost.o \
 erf.o \
 expint.o \
+find_free_unit.o \
+flush_unit.o \
 functionals.o \
 lsda_functionals.o \
 more_functionals.o \
+has_xml.o \
 iglocal.o \
 inpfile.o \
 int_to_char.o \
@@ -28,20 +31,27 @@ metagga.o \
 matches.o \
 plot_io.o \
 radial_gradients.o \
+rgen.o \
 recips.o \
 remove_tot_torque.o \
+set_hubbard_l.o \
 simpsn.o \
 sort.o \
 sph_bes.o \
 sph_dbes.o \
 transto.o \
+trimcheck.o \
+test_input_file.o \
 date_and_tim.o \
 volume.o \
 dylmr2.o \
-ylmr2.o
+ylmr2.o \
+wgauss.o \
+w0gauss.o \
+w1gauss.o \
+deviatoric.o
 
 POBJS = \
-flush_unit.o \
 distools.o 
 
 all: flib.a ptools.a 

@@ -60,8 +60,6 @@ SUBROUTINE tg_cft3s( f, dfft, isgn, use_task_groups )
   USE fft_scalar, ONLY : cft_1z, cft_2xy
   USE fft_base,   ONLY : fft_scatter
   USE kinds,      ONLY : DP
-  USE mp_global,  ONLY : me_pool, nproc_pool, ogrp_comm, npgrp, nogrp, &
-                         intra_pool_comm, nolist, nplist
   USE fft_types,  ONLY : fft_dlay_descriptor
   USE parallel_include
 
@@ -82,8 +80,6 @@ SUBROUTINE tg_cft3s( f, dfft, isgn, use_task_groups )
   LOGICAL                    :: use_tg
   !
   !
-  CALL start_clock( 'cft3s' )
-  !
   IF( present( use_task_groups ) ) THEN
      use_tg = use_task_groups
   ELSE
@@ -101,20 +97,20 @@ SUBROUTINE tg_cft3s( f, dfft, isgn, use_task_groups )
   nx3 = dfft%nr3x
   !
   IF( use_tg ) THEN
-     ALLOCATE( aux( nogrp * dfft%nnrx ) )
-     ALLOCATE( YF ( nogrp * dfft%nnrx ) )
+     ALLOCATE( aux( dfft%nogrp * dfft%tg_nnr ) )
+     ALLOCATE( YF ( dfft%nogrp * dfft%tg_nnr ) )
   ELSE
-     ALLOCATE( aux( dfft%nnrx ) )
+     ALLOCATE( aux( dfft%tg_nnr ) )
   ENDIF
   !
-  me_p = me_pool + 1
+  me_p = dfft%mype + 1
   !
   IF ( isgn > 0 ) THEN
      !
      IF ( isgn /= 2 ) THEN
         !
         IF( use_tg ) &
-           CALL errore( ' tg_cfft ', ' task groups on large mesh not implemented ', 1 )
+           CALL errore( ' tg_cft3s ', ' task groups on large mesh not implemented ', 1 )
         !
         CALL cft_1z( f, dfft%nsp( me_p ), n3, nx3, isgn, aux )
         !
@@ -147,7 +143,7 @@ SUBROUTINE tg_cft3s( f, dfft, isgn, use_task_groups )
      IF ( isgn /= -2 ) THEN
         !
         IF( use_tg ) &
-           CALL errore( ' tg_cfft ', ' task groups on large mesh not implemented ', 1 )
+           CALL errore( ' tg_cft3s ', ' task groups on large mesh not implemented ', 1 )
         !
         planes = dfft%iplp
         !
@@ -189,8 +185,6 @@ SUBROUTINE tg_cft3s( f, dfft, isgn, use_task_groups )
      DEALLOCATE( yf )
   ENDIF
   !
-  CALL stop_clock( 'cft3s' )
-  !
   RETURN
   !
 CONTAINS
@@ -202,11 +196,11 @@ CONTAINS
      !
      IF( .not. use_tg ) RETURN
      !
-     IF( dfft%tg_rdsp(nogrp) + dfft%tg_rcv(nogrp) > size( yf ) ) THEN
-        CALL errore( ' tg_cfft ', ' inconsistent size ', 1 )
+     IF( dfft%tg_rdsp(dfft%nogrp) + dfft%tg_rcv(dfft%nogrp) > size( yf ) ) THEN
+        CALL errore( 'pack_group_sticks' , ' inconsistent size ', 1 )
      ENDIF
-     IF( dfft%tg_psdsp(nogrp) + dfft%tg_snd(nogrp) > size( f ) ) THEN
-        CALL errore( ' tg_cfft ', ' inconsistent size ', 2 )
+     IF( dfft%tg_psdsp(dfft%nogrp) + dfft%tg_snd(dfft%nogrp) > size( f ) ) THEN
+        CALL errore( 'pack_group_sticks', ' inconsistent size ', 2 )
      ENDIF
 
      CALL start_clock( 'ALLTOALL' )
@@ -217,9 +211,9 @@ CONTAINS
 #if defined __MPI
 
      CALL MPI_ALLTOALLV( f(1), dfft%tg_snd, dfft%tg_psdsp, MPI_DOUBLE_COMPLEX, yf(1), dfft%tg_rcv, &
-      &                     dfft%tg_rdsp, MPI_DOUBLE_COMPLEX, ogrp_comm, IERR)
+      &                     dfft%tg_rdsp, MPI_DOUBLE_COMPLEX, dfft%ogrp_comm, IERR)
      IF( ierr /= 0 ) THEN
-        CALL errore( ' tg_cfft ', ' alltoall error 1 ', abs(ierr) )
+        CALL errore( 'pack_group_sticks', ' alltoall error 1 ', abs(ierr) )
      ENDIF
 
 #endif
@@ -241,11 +235,11 @@ CONTAINS
      !
      IF( .not. use_tg ) RETURN
      !
-     IF( dfft%tg_usdsp(nogrp) + dfft%tg_snd(nogrp) > size( f ) ) THEN
-        CALL errore( ' tg_cfft ', ' inconsistent size ', 3 )
+     IF( dfft%tg_usdsp(dfft%nogrp) + dfft%tg_snd(dfft%nogrp) > size( f ) ) THEN
+        CALL errore( 'unpack_group_sticks', ' inconsistent size ', 3 )
      ENDIF
-     IF( dfft%tg_rdsp(nogrp) + dfft%tg_rcv(nogrp) > size( yf ) ) THEN
-        CALL errore( ' tg_cfft ', ' inconsistent size ', 4 )
+     IF( dfft%tg_rdsp(dfft%nogrp) + dfft%tg_rcv(dfft%nogrp) > size( yf ) ) THEN
+        CALL errore( 'unpack_group_sticks', ' inconsistent size ', 4 )
      ENDIF
 
      CALL start_clock( 'ALLTOALL' )
@@ -253,9 +247,9 @@ CONTAINS
 #if defined __MPI
      CALL MPI_Alltoallv( yf(1), &
           dfft%tg_rcv, dfft%tg_rdsp, MPI_DOUBLE_COMPLEX, f(1), &
-          dfft%tg_snd, dfft%tg_usdsp, MPI_DOUBLE_COMPLEX, ogrp_comm, IERR)
+          dfft%tg_snd, dfft%tg_usdsp, MPI_DOUBLE_COMPLEX, dfft%ogrp_comm, IERR)
      IF( ierr /= 0 ) THEN
-        CALL errore( ' tg_cfft ', ' alltoall error 2 ', abs(ierr) )
+        CALL errore( 'unpack_group_sticks', ' alltoall error 2 ', abs(ierr) )
      ENDIF
 #endif
 
@@ -282,84 +276,22 @@ CONTAINS
      USE fft_base, ONLY: fft_scatter
      !
      INTEGER, INTENT(in) :: iopt
-     INTEGER :: nppx, ip, nnp, npp, ii, i, mc, j, ioff, it
      !
      IF( iopt == 2 ) THEN
         !
         IF( use_tg ) THEN
            !
-           nppx = dfft%tg_npp( me_p )
-           npp  = dfft%tg_npp( me_p )
-           nnp  = nx1*nx2
-           !
-           CALL fft_scatter( aux, nx3, nogrp*dfft%nnrx, f, dfft%tg_nsw, dfft%tg_npp, iopt, use_tg )
+           CALL fft_scatter( dfft, aux, nx3, dfft%nogrp*dfft%tg_nnr, f, dfft%tg_nsw, dfft%tg_npp, iopt, use_tg )
            !
         ELSE
            !
-           nppx = dfft%npp( me_p )
-           IF( nproc_pool == 1 ) nppx = dfft%nr3x
-           npp  = dfft%npp( me_p )
-           nnp  = dfft%nnp
-           !
-           CALL fft_scatter( aux, nx3, dfft%nnr, f, dfft%nsw, dfft%npp, iopt )
+           CALL fft_scatter( dfft, aux, nx3, dfft%nnr, f, dfft%nsw, dfft%npp, iopt )
            !
         ENDIF
-        !
-        !
-!$omp parallel default(shared), private( ii, mc, j, i, ioff, ip, it )
-!$omp do
-        DO i = 1, size( f )
-           f(i) = (0.d0, 0.d0)
-        ENDDO
-        !
-        ii = 0
-        !
-        DO ip = 1, nproc_pool
-           !
-           ioff = dfft%iss( ip )
-           !
-!$omp do
-           DO i = 1, dfft%nsw( ip )
-              !
-              mc = dfft%ismap( i + ioff )
-              !
-              it = ( ii + i - 1 ) * nppx
-              !
-              DO j = 1, npp
-                 f( mc + ( j - 1 ) * nnp ) = aux( j + it )
-              ENDDO
-              !
-           ENDDO
-           !
-           ii = ii + dfft%nsw( ip )
-           !
-        ENDDO
-!$omp end parallel
         !
      ELSEIF( iopt == 1 ) THEN
         !
-        IF ( nproc_pool == 1 ) THEN
-           nppx = dfft%nr3x
-        ELSE
-           nppx = dfft%npp( me_p )
-        ENDIF
-        !
-        CALL fft_scatter( aux, nx3, dfft%nnr, f, dfft%nsp, dfft%npp, iopt )
-        !
-!$omp parallel default(shared)
-!$omp do
-        DO i = 1, size(f)
-           f(i) = (0.d0, 0.d0)
-        ENDDO
-        !
-!$omp do private(mc,j)
-        DO i = 1, dfft%nst
-           mc = dfft%ismap( i )
-           DO j = 1, dfft%npp( me_p )
-              f( mc + ( j - 1 ) * dfft%nnp ) = aux( j + ( i - 1 ) * nppx )
-           ENDDO
-        ENDDO
-!$omp end parallel
+        CALL fft_scatter( dfft, aux, nx3, dfft%nnr, f, dfft%nsp, dfft%npp, iopt )
         !
      ENDIF
      !
@@ -373,70 +305,22 @@ CONTAINS
      USE fft_base, ONLY: fft_scatter
      !
      INTEGER, INTENT(in) :: iopt
-     INTEGER :: nppx, ip, nnp, npp, ii, i, mc, j, it
-     !
      !
      IF( iopt == -2 ) THEN
         !
         IF( use_tg ) THEN
            !
-           nppx = dfft%tg_npp( me_p )
-           npp  = dfft%tg_npp( me_p )
-           nnp  = nx1*nx2
+           CALL fft_scatter( dfft, aux, nx3, dfft%nogrp*dfft%tg_nnr, f, dfft%tg_nsw, dfft%tg_npp, iopt, use_tg )
            !
         ELSE
            !
-           nppx = dfft%npp( me_p )
-           IF( nproc_pool == 1 ) nppx = dfft%nr3x
-           npp  = dfft%npp( me_p )
-           nnp  = dfft%nnp
-           !
-        ENDIF
-
-
-!$omp parallel default(shared), private( mc, j, i, ii, ip, it )
-        ii = 0
-        DO ip = 1, nproc_pool
-!$omp do
-           DO i = 1, dfft%nsw( ip )
-              mc = dfft%ismap( i + dfft%iss( ip ) )
-              it = (ii + i - 1)*nppx
-              DO j = 1, npp
-                 aux( j + it ) = f( mc + ( j - 1 ) * nnp )
-              ENDDO
-           ENDDO
-           ii = ii + dfft%nsw( ip )
-        ENDDO
-!$omp end parallel
-        !
-        IF( use_tg ) THEN
-           !
-           CALL fft_scatter( aux, nx3, nogrp*dfft%nnrx, f, dfft%tg_nsw, dfft%tg_npp, iopt, use_tg )
-           !
-        ELSE
-           !
-           CALL fft_scatter( aux, nx3, dfft%nnr, f, dfft%nsw, dfft%npp, iopt )
+           CALL fft_scatter( dfft, aux, nx3, dfft%nnr, f, dfft%nsw, dfft%npp, iopt )
            !
         ENDIF
         !
      ELSEIF( iopt == -1 ) THEN
         !
-        IF ( nproc_pool == 1 ) THEN
-           nppx = dfft%nr3x
-        ELSE
-           nppx = dfft%npp( me_p )
-        ENDIF
-!$omp parallel default(shared), private( mc, j, i )
-!$omp do
-        DO i = 1, dfft%nst
-           mc = dfft%ismap( i )
-           DO j = 1, dfft%npp( me_p )
-              aux( j + ( i - 1 ) * nppx ) = f( mc + ( j - 1 ) * dfft%nnp )
-           ENDDO
-        ENDDO
-!$omp end parallel
-        !
-        CALL fft_scatter( aux, nx3, dfft%nnr, f, dfft%nsp, dfft%npp, iopt )
+        CALL fft_scatter( dfft, aux, nx3, dfft%nnr, f, dfft%nsp, dfft%npp, iopt )
         !
      ENDIF
      !

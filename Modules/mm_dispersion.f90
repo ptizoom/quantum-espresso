@@ -5,6 +5,7 @@
 ! in the root directory of the present distribution,
 ! or http://www.gnu.org/copyleft/gpl.txt .
 !
+! Z=55-86 contributed by Martin Andersson (2011)
 !------------------------------------------------------------------------------
 !
 MODULE london_module
@@ -65,15 +66,18 @@ MODULE london_module
       !
       USE io_global,           ONLY : ionode, ionode_id, stdout
       !
-#if defined __PARA
+#if defined __MPI
       USE mp,                  ONLY : mp_bcast
 #endif
       !
       IMPLICIT NONE
       !
-      INTEGER, PARAMETER :: maxZ = 54
+      INTEGER, PARAMETER :: maxZ = 86
       REAL (DP) :: vdw_coeffs(2,maxZ)
-      ! vdw C6 and radii for the first 54 atoms
+      ! vdw C6 and radii for the first 86 atoms for the DFTD2 method
+      ! data taken from the DFTD2 sections of the dftd3.f file found
+      ! on S.Grimmes home page for the DFTD3 method 
+      ! http://toc.uni-muenster.de/DFTD3/index.html
       DATA vdw_coeffs / &
          4.857,    1.892,&
          2.775,    1.912,&
@@ -128,7 +132,39 @@ MODULE london_module
       1333.532,    3.555,&
       1101.101,    3.575,&
       1092.775,    3.575,&
-      1040.391,    3.555/
+      1040.391,    3.555,&
+     10937.246,    3.405,&
+      7874.678,    3.330,&
+      6114.381,    3.251,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      4880.348,    3.313,&
+      3646.454,    3.378,&
+      2818.308,    3.349,&
+      2818.308,    3.349,&
+      2818.308,    3.349,&
+      2818.308,    3.349,&
+      2818.308,    3.349,&
+      2818.308,    3.349,&
+      2818.308,    3.349,&
+      1990.022,    3.322,&
+      1986.206,    3.752,&
+      2191.161,    3.673,&
+      2204.274,    3.586,&
+      1917.830,    3.789,&
+      1983.327,    3.762,&
+      1964.906,    3.636/
       !
       INTEGER :: ilab , ata , atb , i
       ! local : counter of atom type
@@ -161,7 +197,7 @@ MODULE london_module
          DO ilab = 1 , ntyp
            !
            i = atomic_number ( atom_label ( ilab ) )
-           IF ( i > 0 .AND. i < 55 ) THEN
+           IF ( i > 0 .AND. i < 87 ) THEN
               C6_i  ( ilab )  = vdw_coeffs(1,i)
               R_vdw ( ilab )  = vdw_coeffs(2,i)
            ELSE
@@ -221,11 +257,11 @@ MODULE london_module
          !
          ! ... define a gross maximum bound of the mxr size
          !
-         mxr = INT ( ( 2 * ( lon_rcut + alat ) ) ** 3 / omega )
+         mxr = 1 + INT ( ( 2 * ( lon_rcut + alat ) ) ** 3 / omega )
          !
       END IF
       !
-#if defined __PARA
+#if defined __MPI
       ! broadcast data to all processors
       !
       CALL mp_bcast ( C6_ij,  ionode_id )
@@ -257,7 +293,7 @@ MODULE london_module
     !
     ! and scal6 is a global scaling factor
     !
-#if defined __PARA
+#if defined __MPI
     USE mp_global,    ONLY : me_image , nproc_image, intra_image_comm
     USE mp,           ONLY : mp_sum
 #endif
@@ -299,7 +335,7 @@ MODULE london_module
     !
     energy_london = 0.d0
     !
-#if defined __PARA
+#if defined __MPI
       !
       ! parallelization: divide atoms across processors of this image
       ! (different images have different atomic positions)
@@ -341,8 +377,7 @@ MODULE london_module
             dist6 = dist ** 6
             !
             f_damp = 1.d0 / ( 1.d0 + &
-            !
-            exp ( -beta * ( dist / ( R_sum ( ityp ( atb ) , ityp ( ata ) ) ) - 1 )))
+            exp ( -beta * ( dist / ( R_sum ( ityp (atb) , ityp (ata) ) ) - 1 )))
             !
             energy_london = energy_london - &
                   ( C6_ij ( ityp ( atb ) , ityp ( ata ) ) / dist6 ) * &
@@ -357,7 +392,7 @@ MODULE london_module
       energy_london = scal6 * 0.5d0 * energy_london
       !
       !
-#if defined (__PARA)
+#if defined (__MPI)
 999 CALL mp_sum ( energy_london , intra_image_comm )
 #endif
     !
@@ -372,7 +407,7 @@ MODULE london_module
    FUNCTION force_london ( alat , nat , ityp , at , bg , tau )
     !
     !
-#if defined __PARA
+#if defined __MPI
     USE mp_global,    ONLY : me_image , nproc_image , intra_image_comm
     USE mp,           ONLY : mp_sum
 #endif
@@ -421,7 +456,7 @@ MODULE london_module
     !
     force_london ( : , : ) = 0.d0
     !
-#if defined __PARA
+#if defined __MPI
       !
       ! parallelization: divide atoms across processors of this image
       ! (different images have different atomic positions)
@@ -496,7 +531,7 @@ MODULE london_module
         !
       END DO
       !
-#if defined (__PARA)
+#if defined (__MPI)
 999 CALL mp_sum ( force_london , intra_image_comm )
 #endif
     !
@@ -512,7 +547,7 @@ MODULE london_module
    FUNCTION stres_london ( alat , nat , ityp , at , bg , tau , omega )
     !
     !
-#if defined __PARA
+#if defined __MPI
     USE mp_global,    ONLY : me_image , nproc_image , intra_image_comm
     USE mp,           ONLY : mp_sum
 #endif
@@ -564,7 +599,7 @@ MODULE london_module
     first=0
     last=0
     !
-#if defined __PARA
+#if defined __MPI
       !
       ! parallelization: divide atoms across processors of this image
       ! (different images have different atomic positions)
@@ -652,7 +687,7 @@ MODULE london_module
       !
       stres_london ( : , : ) = - stres_london ( : , : ) / ( 2.d0 * omega )
       !
-#if defined (__PARA)
+#if defined (__MPI)
 999 CALL mp_sum ( stres_london , intra_image_comm )
 #endif
     !

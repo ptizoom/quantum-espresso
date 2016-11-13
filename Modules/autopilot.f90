@@ -330,7 +330,7 @@ CONTAINS
     
     ! This is so we do not read a autopilot card twice from the input file
     IF (( .NOT. pilot_p ) .and. tread ) THEN
-       CALL errore( ' card_autopilot  ', ' two occurrence ', 2 )
+       CALL errore( ' card_autopilot  ', ' two occurrences', 2 )
     END IF
 
     ! If this routined has been called from parse_mailbox
@@ -417,7 +417,6 @@ CONTAINS
     CHARACTER(LEN=256) :: input_line
     CHARACTER(LEN=32)  :: var_label
     CHARACTER(LEN=32)  :: value_str
-    INTEGER            :: nrules
     INTEGER            :: on_step, now_step, plus_step
     integer            :: ios
     integer            :: event

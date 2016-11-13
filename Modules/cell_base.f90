@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2005 Quantum ESPRESSO group
+! Copyright (C) 2002-2011 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -10,12 +10,35 @@
   MODULE cell_base
 !------------------------------------------------------------------------------!
 
-      USE kinds, ONLY : DP
+    USE kinds, ONLY : DP
+    USE constants, ONLY : pi, bohr_radius_angs
+    USE io_global, ONLY : stdout
 !
-      IMPLICIT NONE
-      SAVE
-!
-
+    IMPLICIT NONE
+    SAVE
+    !
+    !  ibrav: index of the bravais lattice (see latgen.f90)
+    INTEGER          :: ibrav
+    !  celldm: old-style parameters of the simulation cell (se latgen.f90)
+    REAL(DP) :: celldm(6) = (/ 0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP /)
+    !  traditional crystallographic cell parameters (alpha=cosbc and so on)
+    REAL(DP) :: a, b, c, cosab, cosac, cosbc
+    !  alat: lattice parameter - often used to scale quantities, or
+    !  in combination to other parameters/constants to define new units
+    REAL(DP) :: alat = 0.0_DP
+    ! omega: volume of the simulation cell
+    REAl(DP) :: omega = 0.0_DP
+    ! tpiba: 2 PI/alat, tpiba2=tpiba^2
+    REAL(DP) :: tpiba  = 0.0_DP, tpiba2 = 0.0_DP
+    !  direct and reciprocal lattice primitive vectors
+    !  at(:,i) are the lattice vectors of the simulation cell, a_i,
+    !          in alat units: a_i(:) = at(:,i)/alat
+    !  bg(:,i) are the reciprocal lattice vectors, b_i,
+    !          in tpiba=2pi/alat units: b_i(:) = bg(:,i)/tpiba
+    REAL(DP) :: at(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
+    REAL(DP) :: bg(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
+    !
+! -------------------------------------------------------------------------
 ! ...  periodicity box
 ! ...  In the matrix "a" every row is the vector of each side of 
 ! ...  the cell in the real space
@@ -35,51 +58,10 @@
           INTEGER :: perd(3)
         END TYPE boxdimensions
 
-        REAL(DP) :: alat = 0.0_DP   !  lattice parameter, often used to scale quantities
-                                    !  or in combination to other parameters/constants
-                                    !  to define new units
-
-        !  celldm are che simulation cell parameters
-
-        REAL(DP) :: celldm(6) = (/ 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP /)
-
-        !  a1, a2 and a3 are the simulation cell base vector as calculated from celldm
-
-        REAL(DP) :: a1(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-        REAL(DP) :: a2(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-        REAL(DP) :: a3(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-        
-        !  b1, b2 and b3 are the simulation reciprocal lattice vectors
-
-        REAL(DP) :: b1(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-        REAL(DP) :: b2(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-        REAL(DP) :: b3(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-
-        REAL(DP) :: ainv(3,3) = 0.0_DP
-
-        REAl(DP) :: omega = 0.0_DP  !  volume of the simulation cell
-
-        REAL(DP) :: tpiba  = 0.0_DP   !  = 2 PI / alat
-        REAL(DP) :: tpiba2 = 0.0_DP   !  = ( 2 PI / alat ) ** 2
-
-        !  direct lattice vectors and reciprocal lattice vectors
-        !  The folloving relations should alwais be kept valid
-        !  at( :, 1 ) = a1( : ) / alat  ;  h( :, 1 ) = a1( : )
-        !  at( :, 2 ) = a2( : ) / alat  ;  h( :, 2 ) = a2( : )
-        !  at( :, 3 ) = a3( : ) / alat  ;  h( :, 3 ) = a3( : )
-        !  ht = h^t ; ainv = h^(-1)
-        !
-        !  bg( :, 1 ) = b1( : )
-        !  bg( :, 2 ) = b2( : )
-        !  bg( :, 3 ) = b3( : )
-
-        REAL(DP) :: at(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
-        REAL(DP) :: bg(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
-
-        INTEGER          :: ibrav      ! index of the bravais lattice
-        CHARACTER(len=9) :: symm_type  ! 'cubic' or 'hexagonal' when ibrav=0
-
+        !  The following relations should always be kept valid:
+        !     h = at*alat; ainv = h^(-1); ht=transpose(h)
         REAL(DP) :: h(3,3)    = 0.0_DP ! simulation cell at time t 
+        REAL(DP) :: ainv(3,3) = 0.0_DP
         REAL(DP) :: hold(3,3) = 0.0_DP ! simulation cell at time t-delt
         REAL(DP) :: hnew(3,3) = 0.0_DP ! simulation cell at time t+delt
         REAL(DP) :: velh(3,3) = 0.0_DP ! simulation cell velocity
@@ -87,13 +69,12 @@
 
         INTEGER   :: iforceh(3,3) = 1  ! if iforceh( i, j ) = 0 then h( i, j ) 
                                        ! is not allowed to move
-        LOGICAL   :: thdiag = .FALSE.  ! True if only cell diagonal elements 
-                                       ! should be updated
-
+        LOGICAL   :: fix_volume = .FALSE.! True if cell volume is kept fixed
+        LOGICAL   :: fix_area = .FALSE.  ! True if area in xy plane is kept constant
         REAL(DP) :: wmass = 0.0_DP     ! cell fictitious mass
         REAL(DP) :: press = 0.0_DP     ! external pressure 
 
-        REAL(DP) :: frich  = 0.0_DP    ! firction parameter for cell damped dynamics
+        REAL(DP) :: frich  = 0.0_DP    ! friction parameter for cell damped dynamics
         REAL(DP) :: greash = 1.0_DP    ! greas parameter for damped dynamics
 
         LOGICAL :: tcell_base_init = .FALSE.
@@ -113,14 +94,135 @@
         INTERFACE r_to_s
           MODULE PROCEDURE r_to_s1, r_to_s1b, r_to_s3
         END INTERFACE
-
-!
 !------------------------------------------------------------------------------!
   CONTAINS
 !------------------------------------------------------------------------------!
 !
+  SUBROUTINE cell_base_init( ibrav_, celldm_, a_, b_, c_, cosab_, cosac_, &
+               cosbc_, trd_ht, rd_ht, cell_units )
+    !
+    ! ... initialize cell_base module variables, set up crystal lattice
+    !
 
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: ibrav_
+    REAL(DP), INTENT(IN) :: celldm_ (6)
+    LOGICAL, INTENT(IN) :: trd_ht
+    REAL(DP), INTENT(IN) :: rd_ht (3,3)
+    CHARACTER(LEN=*), INTENT(IN) :: cell_units
+    REAL(DP), INTENT(IN) :: a_ , b_ , c_ , cosab_, cosac_, cosbc_
 
+    REAL(DP) :: units
+    !
+    IF ( ibrav_ == 0 .and. .not. trd_ht ) THEN
+       CALL errore('cell_base_init', 'ibrav=0: must read cell parameters', 1)
+    ELSE IF ( ibrav /= 0 .and. trd_ht ) THEN
+       CALL errore('cell_base_init', 'redundant data for cell parameters', 2)
+    END IF
+    !
+    ibrav  = ibrav_
+    celldm = celldm_
+    a = a_ ; b = b_ ; c = c_ ; cosab = cosab_ ; cosac = cosac_ ; cosbc = cosbc_
+    !
+    IF ( trd_ht ) THEN
+      !
+      ! ... crystal lattice vectors read from input: find units
+      !
+      SELECT CASE ( TRIM( cell_units ) )
+        CASE ( 'bohr' )
+          IF( celldm( 1 ) /= 0.0_DP .OR. a /= 0.0_dp ) CALL errore &
+              ('cell_base_init','lattice vectors in Bohr or in a0 units?',1)
+          units = 1.0_DP
+        CASE ( 'angstrom' )
+          IF( celldm( 1 ) /= 0.0_DP .OR. a /= 0.0_dp ) CALL errore &
+              ('cell_base_init','lattice vectors in A or in a0 units?',2)
+          units = 1.0_DP / bohr_radius_angs
+        CASE DEFAULT
+          IF( celldm( 1 ) /= 0.0_DP ) THEN
+             units = celldm( 1 )
+          ELSE IF ( a /= 0.0_dp ) THEN
+             units = a / bohr_radius_angs
+          ELSE
+             units = 1.0_DP
+          END IF
+     END SELECT
+     !
+     ! ... Beware the transpose operation between matrices ht and at!
+     !
+     at = TRANSPOSE( rd_ht ) * units
+     !
+     ! ... at is in atomic units: find alat, bring at to alat units, find omega
+     !
+     IF( celldm( 1 ) /= 0.0_DP ) THEN
+        alat = celldm( 1 )
+     ELSE IF ( a /= 0.0_dp ) THEN
+        alat = a / bohr_radius_angs
+     ELSE
+        alat = SQRT ( at(1,1)**2+at(2,1)**2+at(3,1)**2 )
+     END IF
+     ! for compatibility: celldm still used in phonon etc 
+     celldm(1) = alat
+     !
+     at(:,:) = at(:,:) / alat
+     CALL volume( alat, at(1,1), at(1,2), at(1,3), omega )
+     !
+  ELSE
+  ! ... crystal lattice via celldm or crystallographica parameters
+  !
+     IF ( celldm(1) == 0.D0 .and. a /= 0.D0 ) THEN
+        !
+        celldm(1) = a / bohr_radius_angs
+        celldm(2) = b / a
+        celldm(3) = c / a
+        !
+        IF ( ibrav == 14 ) THEN
+           !
+           ! ... triclinic lattice
+           !
+           celldm(4) = cosbc
+           celldm(5) = cosac
+           celldm(6) = cosab
+           !
+        ELSE IF ( ibrav ==-12 ) THEN
+           !
+           ! ... monoclinic P lattice, unique axis b
+           !
+           celldm(5) = cosac
+           !
+        ELSE
+           !
+           ! ... trigonal and monoclinic lattices, unique axis c
+           !
+           celldm(4) = cosab
+           !
+        ENDIF
+        !
+     ELSE IF ( celldm(1) /= 0.D0 .and. a /= 0.D0 ) THEN
+        !
+        CALL errore( 'input', 'do not specify both celldm and a,b,c!', 1 )
+        !
+     END IF
+     !
+     ! ... generate at (in atomic units) from ibrav and celldm
+     !
+     CALL latgen( ibrav, celldm, at(1,1), at(1,2), at(1,3), omega )
+     !
+     ! ... define lattice constants alat, divide at by alat
+     !
+     alat = celldm(1)
+     at(:,:) = at(:,:) / alat
+     !
+  END IF
+  !
+  ! ... Generate the reciprocal lattice vectors
+  !
+  CALL recips( at(1,1), at(1,2), at(1,3), bg(1,1), bg(1,2), bg(1,3) )
+  !
+  tpiba  = 2.0_DP * pi / alat
+  tpiba2 = tpiba * tpiba
+  RETURN
+  !
+  END SUBROUTINE cell_base_init
 
 !------------------------------------------------------------------------------!
 ! ...     set box
@@ -154,17 +256,19 @@
           
 !------------------------------------------------------------------------------!
 
-        SUBROUTINE cell_init_a( box, a1, a2, a3 )
+        SUBROUTINE cell_init_a( alat, at, box )
           TYPE (boxdimensions) :: box
-          REAL(DP) :: a1(3), a2(3), a3(3)
+          REAL(DP), INTENT(IN) :: alat, at(3,3)
           INTEGER :: i
             DO i=1,3
-              box%a(1,I) = A1(I)     ! this is HT: the row are the lattice vectors
-              box%a(2,I) = A2(I)
-              box%a(3,I) = A3(I)
-              box%hmat(I,1) = A1(I)  ! this is H : the column are the lattice vectors
-              box%hmat(I,2) = A2(I)
-              box%hmat(I,3) = A3(I)
+             ! this is HT: the rows are the lattice vectors
+              box%a(1,i) = at(i,1)*alat
+              box%a(2,i) = at(i,2)*alat
+              box%a(3,i) = at(i,3)*alat
+              ! this is H : the column are the lattice vectors
+              box%hmat(i,1) = at(i,1)*alat
+              box%hmat(i,2) = at(i,2)*alat
+              box%hmat(i,3) = at(i,3)*alat
             END DO
             box%pail = 0.0_DP
             box%paiu = 0.0_DP
@@ -326,7 +430,7 @@
         s = s - box%perd*nint(s)
         rout = matmul(box%hmat(:,:),s)
         IF (present(nl)) THEN
-          s = DBLE(nl)
+          s = REAL( nl, DP )
           rout = rout + matmul(box%hmat(:,:),s)
         END IF
       END FUNCTION pbc
@@ -344,14 +448,17 @@
         
         if (y.le.eopreg) then
         
-            sawout = (0.5 - y/eopreg) * (1-eopreg)
+            sawout = (0.5_DP - y/eopreg) * (1._DP-eopreg)
         
         else 
-            sawout = (-0.5 + (y-eopreg)/(1-eopreg)) * (1-eopreg)
+!
+! I would use:   sawout = y - 0.5_DP * ( 1.0_DP + eopreg )
+!
+            sawout = (-0.5_DP + (y-eopreg)/(1._DP-eopreg)) * (1._DP-eopreg)
         
         end if
         
-END FUNCTION saw
+      END FUNCTION saw
 
 !
 !------------------------------------------------------------------------------!
@@ -399,7 +506,7 @@ END FUNCTION saw
         REAL(DP),  INTENT(IN)  :: X1,Y1,Z1
         REAL(DP),  INTENT(OUT) :: X2,Y2,Z2
         REAL(DP) MIC
-        MIC = DBLE(M)
+        MIC = REAL( M, DP )
         X2 = X1 - DNINT(X1/MIC)*MIC
         Y2 = Y1 - DNINT(Y1/MIC)*MIC
         Z2 = Z1 - DNINT(Z1/MIC)*MIC
@@ -416,7 +523,7 @@ END FUNCTION saw
         REAL(DP),  INTENT(IN)  :: v(3)
         REAL(DP),  INTENT(OUT) :: w(3)
         REAL(DP) :: MIC
-        MIC = DBLE(M)
+        MIC = REAL( M, DP )
         w(1) = v(1) - DNINT(v(1)/MIC)*MIC
         w(2) = v(2) - DNINT(v(2)/MIC)*MIC
         w(3) = v(3) - DNINT(v(3)/MIC)*MIC
@@ -425,57 +532,30 @@ END FUNCTION saw
 
 !------------------------------------------------------------------------------!
 
-  SUBROUTINE cell_base_init( ibrav_ , celldm_ , trd_ht, cell_symmetry, rd_ht, cell_units, &
-               a_ , b_ , c_ , cosab, cosac, cosbc, wc_ , total_ions_mass , press_ ,  &
+  SUBROUTINE cell_dyn_init( trd_ht, rd_ht, wc_ , total_ions_mass , press_ , &
                frich_ , greash_ , cell_dofree )
 
-    USE constants, ONLY: bohr_radius_angs, au_gpa, pi, amu_au
+    USE constants, ONLY: au_gpa, amu_au
     USE io_global, ONLY: stdout
 
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: ibrav_
-    REAL(DP), INTENT(IN) :: celldm_ (6)
-    LOGICAL, INTENT(IN) :: trd_ht
-    CHARACTER(LEN=*), INTENT(IN) :: cell_symmetry
-    REAL(DP), INTENT(IN) :: rd_ht (3,3)
-    CHARACTER(LEN=*), INTENT(IN) :: cell_units
-    REAL(DP), INTENT(IN) :: a_ , b_ , c_ , cosab, cosac, cosbc
     CHARACTER(LEN=*), INTENT(IN) :: cell_dofree
+    LOGICAL, INTENT(IN) :: trd_ht
+    REAL(DP), INTENT(IN) :: rd_ht (3,3)
     REAL(DP),  INTENT(IN) :: wc_ , frich_ , greash_ , total_ions_mass
-    REAL(DP),  INTENT(IN) :: press_  ! external pressure from imput ( GPa )
-
-
-    REAL(DP) :: b1(3), b2(3), b3(3)
-    REAL(DP) :: a, b, c, units
-    INTEGER   :: j
-
+    REAL(DP),  INTENT(IN) :: press_ ! external pressure from input 
+                                    ! ( in KBar = 0.1 GPa )
+    INTEGER   :: i,j
     !
-    ! ... set up crystal lattice, and initialize cell_base module
-    !
-
-    celldm = celldm_
-    a = a_
-    b = b_
-    c = c_
-    ibrav  = ibrav_
-
-    IF ( ibrav == 0 .AND. .NOT. trd_ht ) &
-      CALL errore( ' cell_base_init ', ' ibrav=0: must read cell parameters', 1 )
-    IF ( ibrav /= 0 .AND. trd_ht ) &
-      CALL errore( ' cell_base_init ', ' redundant data for cell parameters', 2 )
-
-    IF ( celldm(1) /= 0.0_DP .AND. a /= 0.0_DP ) THEN
-      CALL errore( ' cell_base_init ', ' do not specify both celldm and a,b,c!', 1 )
-    END IF
-
-    press  = press_ / au_gpa
+    press  = press_ / 10.0_DP ! convert press in KBar to GPa
+    press  = press  / au_gpa  ! convert to AU
     !  frich  = frich_   ! for the time being this is set elsewhere
     greash = greash_
 
     WRITE( stdout, 105 )
     WRITE( stdout, 110 ) press_
 105 format(/,3X,'Simulation Cell Parameters (from input)')
-110 format(  3X,'external pressure       = ',f15.2,' [GPa]')
+110 format(  3X,'external pressure       = ',f15.2,' [KBar]')
 
     wmass  = wc_
     IF( wmass == 0.0_DP ) THEN
@@ -489,113 +569,23 @@ END FUNCTION saw
 130 format(3X,'wmass (calculated)      = ',f15.2,' [AU]')
 
     IF( wmass <= 0.0_DP ) &
-      CALL errore(' cell_base_init ',' wmass out of range ',0)
-
-
-
-    ! ... if celldm(1) /= 0  rd_ht should be in unit of alat
+      CALL errore(' cell_dyn_init',' wmass out of range ',0)
 
     IF ( trd_ht ) THEN
       !
-      SELECT CASE ( TRIM( cell_units ) )
-        CASE ( 'bohr' )
-          units = 1.0_DP
-        CASE ( 'angstrom' )
-          units = 1.0_DP / BOHR_RADIUS_ANGS
-        CASE ( 'alat' )
-          IF( celldm( 1 ) == 0.0_DP ) &
-            CALL errore( ' cell_base_init ', ' cell_parameter in alat without celldm(1) ', 1 )
-          units = celldm( 1 )
-        CASE DEFAULT
-          units = 1.0_DP
-      END SELECT
-      !
-      symm_type = cell_symmetry
-      !
-      !    The matrix "ht" in FPMD correspond to the transpose of matrix "at" in PW
-      !
-      at        = TRANSPOSE( rd_ht ) * units
       WRITE( stdout, 210 )
       WRITE( stdout, 220 ) ( rd_ht( 1, j ), j = 1, 3 )
       WRITE( stdout, 220 ) ( rd_ht( 2, j ), j = 1, 3 )
       WRITE( stdout, 220 ) ( rd_ht( 3, j ), j = 1, 3 )
       !
-      IF ( ANY( celldm(1:6) /= 0 ) .AND. TRIM( cell_units ) /= 'alat' ) THEN
-        WRITE( stdout, 230 )
-        celldm(1:6) = 0.0_DP
-      END IF
-      !
-      IF ( a /= 0 ) THEN
-        WRITE( stdout, 240 )
-        a = 0.0_DP
-        b = 0.0_DP
-        c = 0.0_DP
-      END IF
-      !
 210   format(3X,'initial cell from CELL_PARAMETERS card')
 220   format(3X,3F14.8)
-230   format(3X,'celldm(1:6) are ignored')
-240   format(3X,'a, b, c are ignored')
       !
-
-      IF ( celldm(1) == 0.0_DP ) THEN
-        !
-        ! ... input at are in atomic units: define alat
-        !
-        celldm(1) = SQRT( at(1,1)**2 + at(1,2)**2 + at(1,3)**2 )
-      END IF
-
-      alat = celldm(1)
-      !
-      ! ... bring at to alat units
-      !
-      at(:,:) = at(:,:) / alat
-
-    ELSE 
-
-      IF( a /= 0.0_DP ) THEN
-
-        celldm(1) = a / bohr_radius_angs
-        celldm(2) = b / a
-        celldm(3) = c / a
-        IF ( ibrav /= 14 ) THEN
-           celldm(4) = cosab
-        ELSE
-           celldm(4) = cosbc
-           celldm(5) = cosac
-           celldm(6) = cosab
-        END IF
-      END IF
-
-      !
-      ! ... generate at (atomic units)
-      !
-      CALL latgen( ibrav, celldm, at(1,1), at(1,2), at(1,3), omega )
-      alat = celldm(1)
-      !
-      ! ... bring at to alat units
-      !
-      at(:,:) = at(:,:) / alat
-
     END IF
     !
-    a1 =  at( :, 1 ) * alat
-    a2 =  at( :, 2 ) * alat
-    a3 =  at( :, 3 ) * alat
-    !
-    CALL volume( alat, at(1,1), at(1,2), at(1,3), omega )
-    !
-    CALL recips( a1, a2, a3, b1, b2, b3 )
-    !
-    ainv( 1, : ) = b1( : )
-    ainv( 2, : ) = b2( : )
-    ainv( 3, : ) = b3( : )
-    !
-    bg( :, 1 ) = b1( : ) * alat
-    bg( :, 2 ) = b2( : ) * alat
-    bg( :, 3 ) = b3( : ) * alat
-    !
-    ! ... The matrix "htm1" in FPMD correspond to the matrix "bg" in PW
+    ainv(1,:) = bg(:,1)/alat
+    ainv(2,:) = bg(:,2)/alat
+    ainv(3,:) = bg(:,3)/alat
     !
     CALL init_dofree ( cell_dofree ) 
     !
@@ -603,13 +593,13 @@ END FUNCTION saw
 
     WRITE( stdout, 300 ) ibrav
     WRITE( stdout, 305 ) alat
-    WRITE( stdout, 310 ) a1
-    WRITE( stdout, 320 ) a2
-    WRITE( stdout, 330 ) a3
+    WRITE( stdout, 310 ) at(:,1)*alat
+    WRITE( stdout, 320 ) at(:,2)*alat
+    WRITE( stdout, 330 ) at(:,3)*alat
     WRITE( stdout, *   )
-    WRITE( stdout, 350 ) b1
-    WRITE( stdout, 360 ) b2
-    WRITE( stdout, 370 ) b3
+    WRITE( stdout, 350 ) bg(:,1)/alat
+    WRITE( stdout, 360 ) bg(:,2)/alat
+    WRITE( stdout, 370 ) bg(:,3)/alat
     WRITE( stdout, 340 ) omega
 300 FORMAT( 3X, 'ibrav = ',I4)
 305 FORMAT( 3X, 'alat  = ',F14.8)
@@ -623,7 +613,7 @@ END FUNCTION saw
 
 
     RETURN
-  END SUBROUTINE cell_base_init
+  END SUBROUTINE cell_dyn_init
 
 !------------------------------------------------------------------------------!
   SUBROUTINE init_dofree ( cell_dofree ) 
@@ -632,11 +622,26 @@ END FUNCTION saw
 
      CHARACTER(LEN=*), INTENT(IN) :: cell_dofree
 
-     thdiag = .false.
      SELECT CASE ( TRIM( cell_dofree ) )
 
             CASE ( 'all', 'default' )
               iforceh = 1
+            CASE ( 'shape' )
+              iforceh = 1
+              fix_volume = .true.
+! 2DSHAPE: CASE FOR SHAPE CHANGE IN xy PLANE WITH CONST AREA
+! contribution from Richard Charles Andrew
+! Physics Department, University of Pretoria
+! South Africa, august 2012.
+            CASE ( '2Dshape' )
+              iforceh = 1
+              iforceh(3,3) = 0
+              iforceh(1,3) = 0
+              iforceh(3,1) = 0
+              iforceh(2,3) = 0
+              iforceh(3,2) = 0
+              fix_area = .true.
+! 2DSHAPE
             CASE ( 'volume' )
               CALL errore(' init_dofree ', &
                  ' cell_dofree = '//TRIM(cell_dofree)//' not yet implemented ', 1 )
@@ -653,6 +658,17 @@ END FUNCTION saw
               iforceh      = 0
               iforceh(1,1) = 1
               iforceh(2,2) = 1
+              ! ... if you want the entire xy plane to be free, uncomment:
+              ! iforceh(1,2) = 1
+              ! iforceh(2,1) = 1
+! 2DSHAPE THE ENTIRE xy PLANE IS FREE
+            CASE ('2Dxy')
+              iforceh      = 0
+              iforceh(1,1) = 1
+              iforceh(2,2) = 1
+              iforceh(1,2) = 1
+              iforceh(2,1) = 1
+! 2DSHAPE
             CASE ('xz')
               iforceh      = 0
               iforceh(1,1) = 1
@@ -662,7 +678,6 @@ END FUNCTION saw
               iforceh(2,2) = 1
               iforceh(3,3) = 1
             CASE ('xyz')
-              thdiag       = .true.
               iforceh      = 0
               iforceh(1,1) = 1
               iforceh(2,2) = 1
@@ -677,25 +692,18 @@ END FUNCTION saw
 
   SUBROUTINE cell_base_reinit( ht )
 
-    USE constants, ONLY: pi 
-    USE io_global, ONLY: stdout
-    USE control_flags, ONLY: iprsta
+    USE control_flags, ONLY: iverbosity
 
     IMPLICIT NONE
     REAL(DP), INTENT(IN) :: ht (3,3)
 
-    REAL(DP) :: b1(3), b2(3), b3(3)
     INTEGER   :: j
 
     alat   =  sqrt( ht(1,1)*ht(1,1) + ht(1,2)*ht(1,2) + ht(1,3)*ht(1,3) )
     tpiba  = 2.0_DP * pi / alat
     tpiba2 = tpiba * tpiba
     !
-    !    The matrix "ht" in FPMD correspond to the transpose of matrix "at" in PW
-    !
-    at     = TRANSPOSE( ht )
-    !
-    IF( iprsta > 3 ) THEN
+    IF( iverbosity > 2 ) THEN
       WRITE( stdout, 210 )
       WRITE( stdout, 220 ) ( ht( 1, j ), j = 1, 3 )
       WRITE( stdout, 220 ) ( ht( 2, j ), j = 1, 3 )
@@ -704,36 +712,28 @@ END FUNCTION saw
 210 format(3X,'Simulation cell parameters with the new cell:')
 220 format(3X,3F14.8)
 
+    !    matrix "ht" used in CP is the transpose of matrix "at"
+    !    times the lattice parameter "alat"; matrix "ainv" is "bg" divided alat
     !
-    a1  =  at( :, 1 )
-    a2  =  at( :, 2 )
-    a3  =  at( :, 3 )
-
-    at( :, : ) = at( :, : ) / alat
-
+    at     = TRANSPOSE( ht ) / alat
+    !
+    CALL recips( at(1,1), at(1,2), at(1,3), bg(1,1), bg(1,2), bg(1,3) )
     CALL volume( alat, at(1,1), at(1,2), at(1,3), deth )
     omega = deth
-
-    CALL recips( a1, a2, a3, b1, b2, b3 )
-    ainv( 1, : ) = b1( : )
-    ainv( 2, : ) = b2( : )
-    ainv( 3, : ) = b3( : )
-
-    bg( :, 1 ) = b1( : ) * alat
-    bg( :, 2 ) = b2( : ) * alat
-    bg( :, 3 ) = b3( : ) * alat
-
-    ! ...     The matrix "htm1" in FPMD correspond to the matrix "bg" in PW
-
-    IF( iprsta > 3 ) THEN
+    !
+    ainv(1,:) = bg(:,1)/alat
+    ainv(2,:) = bg(:,2)/alat
+    ainv(3,:) = bg(:,3)/alat
+    !
+    IF( iverbosity > 2 ) THEN
       WRITE( stdout, 305 ) alat
-      WRITE( stdout, 310 ) a1
-      WRITE( stdout, 320 ) a2
-      WRITE( stdout, 330 ) a3
+      WRITE( stdout, 310 ) at(:,1)*alat
+      WRITE( stdout, 320 ) at(:,2)*alat
+      WRITE( stdout, 330 ) at(:,3)*alat
       WRITE( stdout, *   )
-      WRITE( stdout, 350 ) b1
-      WRITE( stdout, 360 ) b2
-      WRITE( stdout, 370 ) b3
+      WRITE( stdout, 350 ) bg(:,1)/alat
+      WRITE( stdout, 360 ) bg(:,2)/alat
+      WRITE( stdout, 370 ) bg(:,3)/alat
       WRITE( stdout, 340 ) omega
     END IF
 
@@ -765,7 +765,7 @@ END FUNCTION saw
     dt2 = delt * delt
     DO j=1,3
       DO i=1,3
-        hnew(i,j) = h(i,j) + dt2 * fcell(i,j) * iforceh(i,j)
+        hnew(i,j) = h(i,j) + dt2 * fcell(i,j) * REAL( iforceh(i,j), DP )
       ENDDO
     ENDDO
     RETURN
@@ -782,7 +782,7 @@ END FUNCTION saw
     LOGICAL,      INTENT(IN) :: tnoseh
 
     REAL(DP) :: htmp(3,3)
-    REAL(DP) :: verl1, verl2, verl3, dt2, ftmp
+    REAL(DP) :: verl1, verl2, verl3, dt2, ftmp, v1, v2, v3
     INTEGER      :: i, j
   
     dt2 = delt * delt
@@ -795,15 +795,18 @@ END FUNCTION saw
       htmp = 0.0_DP
     END IF
 
-    verl1 = 2.0_DP / ( 1.0_DP + ftmp )
+    verl1 = 2.0_DP / ( 1.0_DP + ftmp ) 
     verl2 = 1.0_DP - verl1
     verl3 = dt2 / ( 1.0_DP + ftmp )
+    verl1 = verl1 - 1.0_DP
+
   
     DO j=1,3
       DO i=1,3
-        hnew(i,j) = h(i,j) + ( ( verl1 - 1.0_DP ) * h(i,j)               &
-     &     + verl2 * hold(i,j) + &
-             verl3 * ( fcell(i,j) - htmp(i,j) ) ) * iforceh(i,j)
+        v1 = verl1 * h(i,j)
+        v2 = verl2 * hold(i,j)
+        v3 = verl3 * ( fcell(i,j) - htmp(i,j) )
+        hnew(i,j) = h(i,j) + ( v1 + v2 + v3 ) * REAL( iforceh(i,j), DP )
       ENDDO
     ENDDO
     RETURN
@@ -870,6 +873,8 @@ END FUNCTION saw
     logical,  intent(in) :: tnoseh, tsdc
 
     REAL(DP) :: hnos(3,3)
+
+    hnew = 0.0
 
     if( tnoseh ) then
       hnos = vnhh * velh
@@ -955,144 +960,7 @@ END FUNCTION saw
     cell_alat = alat
     return 
   end function cell_alat
-
 !
 !------------------------------------------------------------------------------!
    END MODULE cell_base
 !------------------------------------------------------------------------------!
-
-
-!------------------------------------------------------------------------------!
-  MODULE cell_nose
-!------------------------------------------------------------------------------!
-
-      USE kinds, ONLY : DP
-!
-      IMPLICIT NONE
-      SAVE
-
-      REAL(DP) :: xnhh0(3,3) = 0.0_DP
-      REAL(DP) :: xnhhm(3,3) = 0.0_DP
-      REAL(DP) :: xnhhp(3,3) = 0.0_DP
-      REAL(DP) :: vnhh(3,3)  = 0.0_DP
-      REAL(DP) :: temph      = 0.0_DP  !  Thermostat temperature (from input)
-      REAL(DP) :: fnoseh     = 0.0_DP  !  Thermostat frequency (from input)
-      REAL(DP) :: qnh        = 0.0_DP  !  Thermostat mass (computed)
-
-CONTAINS
-
-  subroutine cell_nose_init( temph_init, fnoseh_init )
-     USE constants, ONLY: pi, au_terahertz, k_boltzmann_au
-     REAL(DP), INTENT(IN) :: temph_init, fnoseh_init
-     ! set thermostat parameter for cell
-     qnh    = 0.0_DP
-     temph  = temph_init
-     fnoseh = fnoseh_init
-     if( fnoseh > 0.0_DP ) qnh = 2.0_DP * ( 3 * 3 ) * temph * k_boltzmann_au / &
-          (fnoseh*(2.0_DP*pi)*au_terahertz)**2
-    return
-  end subroutine cell_nose_init
-
-  subroutine cell_nosezero( vnhh, xnhh0, xnhhm )
-    real(DP), intent(out) :: vnhh(3,3), xnhh0(3,3), xnhhm(3,3)
-    xnhh0=0.0_DP
-    xnhhm=0.0_DP
-    vnhh =0.0_DP
-    return
-  end subroutine cell_nosezero
-
-  subroutine cell_nosevel( vnhh, xnhh0, xnhhm, delt )
-    implicit none
-    REAL(DP), intent(inout) :: vnhh(3,3)
-    REAL(DP), intent(in) :: xnhh0(3,3), xnhhm(3,3), delt
-    vnhh(:,:)=2.0_DP*(xnhh0(:,:)-xnhhm(:,:))/delt-vnhh(:,:)
-    return
-  end subroutine cell_nosevel
-
-  subroutine cell_noseupd( xnhhp, xnhh0, xnhhm, delt, qnh, temphh, temph, vnhh )
-    use constants, only: k_boltzmann_au
-    implicit none
-    REAL(DP), intent(out) :: xnhhp(3,3), vnhh(3,3)
-    REAL(DP), intent(in) :: xnhh0(3,3), xnhhm(3,3), delt, qnh, temphh(3,3), temph
-    integer :: i, j
-    do j=1,3
-      do i=1,3
-        xnhhp(i,j) = 2.0_DP*xnhh0(i,j)-xnhhm(i,j) + &
-             (delt**2/qnh)* k_boltzmann_au * (temphh(i,j)-temph)
-        vnhh(i,j) =(xnhhp(i,j)-xnhhm(i,j))/( 2.0_DP * delt )
-      end do
-    end do
-    return
-  end subroutine cell_noseupd
-
-  
-  REAL(DP) function cell_nose_nrg( qnh, xnhh0, vnhh, temph, iforceh )
-    use constants, only: k_boltzmann_au
-    implicit none
-    REAL(DP) :: qnh, vnhh( 3, 3 ), temph, xnhh0( 3, 3 )
-    integer :: iforceh( 3, 3 )
-    integer :: i, j
-    REAL(DP) :: enij
-    cell_nose_nrg = 0.0_DP
-    do i=1,3
-      do j=1,3
-        enij = 0.5_DP*qnh*vnhh(i,j)*vnhh(i,j)+temph*k_boltzmann_au*xnhh0(i,j)
-        cell_nose_nrg = cell_nose_nrg + iforceh( i, j ) * enij
-      enddo
-    enddo
-    return
-  end function cell_nose_nrg
-
-  subroutine cell_nose_shiftvar( xnhhp, xnhh0, xnhhm )
-    !  shift values of nose variables to start a new step
-    implicit none
-    REAL(DP), intent(out) :: xnhhm(3,3)
-    REAL(DP), intent(inout) :: xnhh0(3,3)
-    REAL(DP), intent(in) :: xnhhp(3,3)
-      xnhhm = xnhh0
-      xnhh0 = xnhhp
-    return
-  end subroutine cell_nose_shiftvar
-
-
-  SUBROUTINE cell_nose_info()
-
-      use constants,     only: au_terahertz, pi
-      use time_step,     only: delt
-      USE io_global,     ONLY: stdout
-      USE control_flags, ONLY: tnoseh
-
-      IMPLICIT NONE
-
-      INTEGER   :: nsvar
-      REAL(DP) :: wnoseh
-
-      IF( tnoseh ) THEN
-        !
-        IF( fnoseh <= 0.0_DP) &
-          CALL errore(' cell_nose_info ', ' fnoseh less than zero ', 1)
-        IF( delt <= 0.0_DP) &
-          CALL errore(' cell_nose_info ', ' delt less than zero ', 1)
-
-        wnoseh = fnoseh * ( 2.0_DP * pi ) * au_terahertz
-        nsvar  = ( 2.0_DP * pi ) / ( wnoseh * delt )
-
-        WRITE( stdout,563) temph, nsvar, fnoseh, qnh
-      END IF
-
- 563  format( //, &
-     &       3X,'cell dynamics with nose` temperature control:', /, &
-     &       3X,'Kinetic energy required   = ', f10.5, ' (Kelvin) ', /, &
-     &       3X,'time steps per nose osc.  = ', i5, /, &
-     &       3X,'nose` frequency           = ', f10.3, ' (THz) ', /, &
-     &       3X,'nose` mass(es)            = ', 20(1X,f10.3),//)
-
-    RETURN
-  END SUBROUTINE cell_nose_info
-
-
-!
-!------------------------------------------------------------------------------!
-   END MODULE cell_nose
-!------------------------------------------------------------------------------!
-

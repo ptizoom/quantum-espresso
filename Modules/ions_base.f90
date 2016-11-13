@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2005 Quantum ESPRESSO group
+! Copyright (C) 2002-2011 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -26,11 +26,10 @@
       INTEGER :: nat     = 0
 
       !     zv(is)    = (pseudo-)atomic charge
-      !     pmass(is) = mass (converted to a.u.) of ions
+      !     amass(is) = mass of ions, in atomic mass units
       !     rcmax(is) = Ewald radius (for ion-ion interactions)
 
       REAL(DP) :: zv(ntypx)    = 0.0_DP
-      REAL(DP) :: pmass(ntypx) = 0.0_DP
       REAL(DP) :: amass(ntypx) = 0.0_DP
       REAL(DP) :: rcmax(ntypx) = 0.0_DP
 
@@ -50,12 +49,12 @@
       CHARACTER(LEN=80)     :: tau_format   ! format of input atomic positions:
                                             ! 'alat','crystal','bohr','angstrom'
 
-      INTEGER, ALLOCATABLE :: if_pos(:,:)  ! if if_pos( x, i ) = 0 then  x coordinate of 
-                                           ! the i-th atom will be kept fixed
+      ! if_pos( x, i ) = 0 : x coordinate of i-th atom will be kept fixed
+      INTEGER, ALLOCATABLE :: if_pos(:,:)  ! allowed values: 0 or 1 only
       INTEGER, ALLOCATABLE :: iforce(:,:)  ! if_pos sorted by specie 
-      INTEGER :: fixatom   = -1            ! to be removed
-      INTEGER :: ndofp     = -1            ! ionic degree of freedom
-      INTEGER :: ndfrz     = 0             ! frozen degrees of freedom
+      INTEGER :: fixatom   = 0            ! number of frozen atoms
+      INTEGER :: ndofp     =-1            ! ionic degree of freedom
+      INTEGER :: ndfrz     = 0            ! frozen degrees of freedom
 
       REAL(DP) :: fricp   ! friction parameter for damped dynamics
       REAL(DP) :: greasp  ! friction parameter for damped dynamics
@@ -64,7 +63,7 @@
       ! ... system at istep = 0
       ! ... this array is used to compute mean square displacements,
       ! ... it is initialized when NBEG = -1, NBEG = 0 and TAURDR = .TRUE.
-      ! ... first index: x,y,z, second index: atom sortred by specie with respect input
+      ! ... first index: x,y,z, second index: atom sorted by specie with respect input
       ! ... this array is saved in the restart file
 
       REAL(DP), ALLOCATABLE :: taui(:,:)
@@ -94,42 +93,6 @@
   CONTAINS
 !------------------------------------------------------------------------------!
 
-    SUBROUTINE packtau( taup, tau, na, nsp )
-      IMPLICIT NONE
-      REAL(DP), INTENT(OUT) :: taup( :, : )
-      REAL(DP), INTENT(IN) :: tau( :, :, : )
-      INTEGER, INTENT(IN) :: na( : ), nsp
-      INTEGER :: is, ia, isa
-      isa = 0
-      DO is = 1, nsp
-        DO ia = 1, na( is )
-          isa = isa + 1
-          taup( :, isa ) = tau( :, ia, is )
-        END DO
-      END DO
-      RETURN
-    END SUBROUTINE packtau
-
-!------------------------------------------------------------------------------!
-
-    SUBROUTINE unpacktau( tau, taup, na, nsp )
-      IMPLICIT NONE
-      REAL(DP), INTENT(IN) :: taup( :, : )
-      REAL(DP), INTENT(OUT) :: tau( :, :, : )
-      INTEGER, INTENT(IN) :: na( : ), nsp
-      INTEGER :: is, ia, isa
-      isa = 0
-      DO is = 1, nsp
-        DO ia = 1, na( is )
-          isa = isa + 1
-          tau( :, ia, is ) = taup( :, isa )
-        END DO
-      END DO
-      RETURN
-    END SUBROUTINE unpacktau
-
-!------------------------------------------------------------------------------!
-
     SUBROUTINE sort_tau( tausrt, isrt, tau, isp, nat, nsp )
       IMPLICIT NONE
       REAL(DP), INTENT(OUT) :: tausrt( :, : )
@@ -147,7 +110,8 @@
           CALL errore(' sorttau ', ' wrong species index for positions ', ia )
         na( is ) = na( is ) + 1
       END DO
-
+      IF ( ANY ( na(1:nsp) == 0 ) ) &
+         CALL errore ('sort_atoms', 'some atomic species have no atoms',1)
       ! ... compute the index of the first atom in each specie
       ina( 1 ) = 0
       DO is = 2, nsp
@@ -182,9 +146,9 @@
     END SUBROUTINE unsort_tau
 
     !-------------------------------------------------------------------------
-    SUBROUTINE ions_base_init( nsp_, nat_, na_, ityp_, tau_, vel_, amass_, &
-                               atm_, if_pos_, tau_format_, alat_, a1_, a2_, &
-                               a3_, rcmax_ , extfor_ )
+    SUBROUTINE ions_base_init( nsp_, nat_, na_, ityp_, tau_, vel_, amass_,&
+                               atm_, if_pos_, tau_format_, alat_, at_,    & 
+                               rcmax_ , extfor_ )
       !-------------------------------------------------------------------------
       !
       USE constants, ONLY: amu_au, bohr_radius_angs
@@ -199,7 +163,7 @@
       CHARACTER(LEN=*), INTENT(IN) :: atm_(:)
       CHARACTER(LEN=*), INTENT(IN) :: tau_format_
       INTEGER,          INTENT(IN) :: if_pos_(:,:)
-      REAL(DP),         INTENT(IN) :: alat_, a1_(3), a2_(3), a3_(3)
+      REAL(DP),         INTENT(IN) :: alat_, at_(3,3)
       REAL(DP),         INTENT(IN) :: rcmax_(:)
       REAL(DP),         INTENT(IN) :: extfor_(:,:)
       !
@@ -283,13 +247,13 @@
                !
                DO i = 1, 3
                   !
-                  tau(i,ia) = a1_(i) * tau_(1,ia) + &
-                              a2_(i) * tau_(2,ia) + &
-                              a3_(i) * tau_(3,ia)
+                  tau(i,ia) = at_(i,1)*alat_ * tau_(1,ia) + &
+                              at_(i,2)*alat_ * tau_(2,ia) + &
+                              at_(i,3)*alat_ * tau_(3,ia)
                   !
-                  vel(i,ia) = a1_(i) * vel_(1,ia) + &
-                              a2_(i) * vel_(2,ia) + &
-                              a3_(i) * vel_(3,ia)
+                  vel(i,ia) = at_(i,1)*alat_ * vel_(1,ia) + &
+                              at_(i,2)*alat_ * vel_(2,ia) + &
+                              at_(i,3)*alat_ * vel_(3,ia)
                
                END DO
                !
@@ -353,41 +317,24 @@
       !
       ! ... The constrain on fixed coordinates is implemented using the array
       ! ... if_pos whose value is 0 when the coordinate is to be kept fixed, 1
-      ! ... otherwise. fixatom is maintained for compatibility. ( C.S. 15/10/2003 )
+      ! ... otherwise. 
       !
       if_pos = 1
       if_pos(:,:) = if_pos_(:,1:nat)
       !
       iforce = 0
-      !
       iforce(:,:) = if_pos(:,ind_srt(:))
       !
-      ndofp = COUNT( iforce /= 0 )
-      !
-      ndfrz = COUNT( iforce == 0 )
-      !
-      ! ... TEMP: calculate fixatom (to be removed)
-      !
-      fixatom = 0
-      !
-      DO ia = 1, nat
-        !
-        IF ( if_pos(1,ia) /= 0 .OR. &
-             if_pos(2,ia) /= 0 .OR. &
-             if_pos(3,ia) /= 0 ) CYCLE
-        !
-        fixatom = fixatom + 1
-        !
-      END DO
+      fixatom=COUNT( if_pos(1,:)==0 .AND. if_pos(2,:)==0 .AND. if_pos(3,:)==0 )
+      ndofp = COUNT( iforce == 1 )
+      ndfrz = 3*nat - ndofp
       !
       amass(1:nsp) = amass_(1:nsp)
       !
       IF ( ANY( amass(1:nsp) <= 0.0_DP ) ) &
          CALL errore( 'ions_base_init ', 'invalid  mass', 1 ) 
       !
-      pmass(1:nsp) = amass_(1:nsp) * amu_au
-      !
-      CALL ions_cofmass( tau_srt, pmass, na, nsp, cdmi )
+      CALL ions_cofmass( tau_srt, amass, na, nsp, cdmi )
       !
       DO ia = 1, nat
          !
@@ -768,7 +715,7 @@
 
      INTEGER  :: isa
 
-     CALL ions_cofmass( tau, pmass, na, nsp, cdmi )
+     CALL ions_cofmass( tau, amass, na, nsp, cdmi )
      DO isa = 1, nat
         taui(:,isa) = tau(:,isa) - cdmi(:)
      END DO
@@ -798,9 +745,9 @@
       REAL(DP) :: rdist(3), r2, cdm(3)
       INTEGER  :: is, ia, isa
 
-      ! ...   Compute the current value of cdm "Centro Di Massa"
+      ! ...   Compute the current value of cdm "Center of Mass"
       !
-      CALL ions_cofmass(tau, pmass, na, nsp, cdm )
+      CALL ions_cofmass(tau, amass, na, nsp, cdm )
       !
       IF( SIZE( dis ) < nsp ) &
           CALL errore(' displacement ',' size of dis too small ', 1)

@@ -31,7 +31,8 @@
 # With the exception of IBM xlf, FDFLAGS = $(DFLAGS)
 # For IBM xlf, FDFLAGS is the same as DFLAGS with separating commas 
 
-DFLAGS         = @dflags@
+MANUAL_DFLAGS  =
+DFLAGS         = @dflags@ $(MANUAL_DFLAGS)
 FDFLAGS        = @fdflags@
 
 # IFLAGS = how to locate directories where files to be included are
@@ -78,6 +79,11 @@ FFLAGS         = @fflags@
 
 FFLAGS_NOOPT   = @fflags_noopt@
 
+# compiler flag needed by some compilers when the main is not fortran
+# Currently used for Yambo
+
+FFLAGS_NOMAIN   = @fflags_nomain@
+
 # Linker, linker-specific flags (if any)
 # Typically LD coincides with F90 or MPIF90, LD_LIBS is empty
 
@@ -95,18 +101,15 @@ BLAS_LIBS      = @blas_libs@
 BLAS_LIBS_SWITCH = @blas_libs_switch@
 
 # If you have nothing better, use the local copy :
-# LAPACK_LIBS = /your/path/to/espresso/LAPACK/lapack.a
+# LAPACK_LIBS = /your/path/to/espresso/lapack-3.2/lapack.a
 # LAPACK_LIBS_SWITCH = internal
-
-# The following lapack libraries will be available in flib/ :
-# ../flib/lapack.a : contains all needed routines
-# ../flib/lapack_atlas.a: only routines not present in the Atlas library
 # For IBM machines with essl (-D__ESSL): load essl BEFORE lapack !
 # remember that LAPACK_LIBS precedes BLAS_LIBS in loading order
 
 LAPACK_LIBS    = @lapack_libs@
 LAPACK_LIBS_SWITCH = @lapack_libs_switch@
 
+ELPA_LIBS_SWITCH = @elpa_libs_switch@
 SCALAPACK_LIBS = @scalapack_libs@
 
 # nothing needed here if the the internal copy of FFTW is compiled
@@ -123,10 +126,6 @@ MPI_LIBS       = @mpi_libs@
 
 MASS_LIBS      = @mass_libs@
 
-# pgplot libraries (used by some post-processing tools)
-
-PGPLOT_LIBS    = @pgplot_libs@
-
 # ar command and flags - for most architectures: AR = ar, ARFLAGS = ruv
 
 AR             = @ar@
@@ -141,8 +140,11 @@ RANLIB         = @ranlib@
 
 FLIB_TARGETS   = all
 
-LIBOBJS        = ../flib/ptools.a ../flib/flib.a ../clib/clib.a ../iotk/src/libiotk.a ../Multigrid/mglib.a
-LIBS           = $(SCALAPACK_LIBS) $(LAPACK_LIBS) $(FFT_LIBS) $(BLAS_LIBS) $(MPI_LIBS) $(MASS_LIBS) $(PGPLOT_LIBS) $(LD_LIBS)
+LIBOBJS        = ../flib/ptools.a ../flib/flib.a ../clib/clib.a ../iotk/src/libiotk.a 
+LIBS           = $(SCALAPACK_LIBS) $(LAPACK_LIBS) $(FFT_LIBS) $(BLAS_LIBS) $(MPI_LIBS) $(MASS_LIBS) $(LD_LIBS)
+
+# wget or curl - useful to download from network
+WGET = @wget@
 
 # topdir for linking espresso libs with plugins
 TOPDIR = @topdir@

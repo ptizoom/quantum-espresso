@@ -10,105 +10,118 @@ MODULE mp_global
   !----------------------------------------------------------------------------
   !
   USE mp, ONLY : mp_comm_free, mp_size, mp_rank, mp_sum, mp_barrier, &
-       mp_bcast, mp_start, mp_end, mp_env
-  USE io_global, ONLY : stdout, io_global_start, io_global_getmeta
+       mp_bcast, mp_start, mp_end
+  USE io_global, ONLY : stdout, io_global_start, meta_ionode_id, meta_ionode
   USE parallel_include
   !
   IMPLICIT NONE 
-  !
   SAVE
   !
-  INTEGER :: mpime = 0  ! absolute processor index starting from 0
-  INTEGER :: root  = 0  ! index of the absolute root processor
-  INTEGER :: nproc = 1  ! absolute number of processor
-  INTEGER :: nproc_file = 1  ! absolute number of processor written in the 
-  ! xml punch file
-  INTEGER :: world_comm = 0  ! communicator of all processor
+  ! ... World group (all processors)
+  !
+  INTEGER :: mpime = 0  ! processor index (starts from 0 to nproc-1)
+  INTEGER :: root  = 0  ! index of the root processor
+  INTEGER :: nproc = 1  ! number of processors
+  INTEGER :: world_comm = 0  ! communicator
+  INTEGER :: nproc_file = 1  ! saved on file
+  !
+  ! ... Image groups (processors within an image)
+  !
+  INTEGER :: nimage    = 1 ! number of images
+  INTEGER :: me_image  = 0 ! index of the processor within an image
+  INTEGER :: root_image= 0 ! index of the root processor within an image
+  INTEGER :: my_image_id=0 ! index of my image
+  INTEGER :: nproc_image=1 ! number of processors within an image
+  INTEGER :: inter_image_comm = 0  ! inter image communicator
+  INTEGER :: intra_image_comm = 0  ! intra image communicator  
+  INTEGER :: nproc_image_file = 1  ! value saved on file
+  !
+  ! ... Pot groups (processors within a cooking-pot)
+  !
+  INTEGER :: npot       = 1  ! number of pots
+  INTEGER :: me_pot     = 0  ! index of the processor within a pot
+  INTEGER :: root_pot   = 0  ! index of the root processor within a pot
+  INTEGER :: my_pot_id  = 0  ! index of my pot
+  INTEGER :: nproc_pot  = 1  ! number of processors within a pot
+  INTEGER :: inter_pot_comm  = 0  ! inter pot communicator
+  INTEGER :: intra_pot_comm  = 0  ! intra pot communicator
+  INTEGER :: nproc_pot_file = 1  ! value saved on file
+  !
+  ! ... Pool groups (processors within a pool of k-points)
+  !
+  INTEGER :: npool       = 1  ! number of "k-points"-pools
+  INTEGER :: me_pool     = 0  ! index of the processor within a pool 
+  INTEGER :: root_pool   = 0  ! index of the root processor within a pool
+  INTEGER :: my_pool_id  = 0  ! index of my pool
+  INTEGER :: nproc_pool  = 1  ! number of processors within a pool
+  INTEGER :: inter_pool_comm  = 0  ! inter pool communicator
+  INTEGER :: intra_pool_comm  = 0  ! intra pool communicator
+  INTEGER :: nproc_pool_file  = 1  ! saved on file
+  !
+  ! ... Band groups (processors within a pool of bands)
+  !
+  INTEGER :: nbgrp       = 1  ! number of band groups
+  INTEGER :: me_bgrp     = 0  ! index of the processor within a band group
+  INTEGER :: root_bgrp   = 0  ! index of the root processor within a band group
+  INTEGER :: my_bgrp_id  = 0  ! index of my band group
+  INTEGER :: nproc_bgrp  = 1  ! number of processor within a band group
+  INTEGER :: inter_bgrp_comm  = 0  ! inter band group communicator
+  INTEGER :: intra_bgrp_comm  = 0  ! intra band group communicator  
+  INTEGER :: ibnd_start = 0 !starting band index
+  INTEGER :: ibnd_end = 0   !ending band index
+  INTEGER :: nproc_bgrp_file = 1  ! value saved on file
+  !
+  ! ... ortho (or linear-algebra) groups
+  !
+  INTEGER :: np_ortho(2) = 1  ! size of the processor grid used in ortho
+  INTEGER :: me_ortho(2) = 0  ! coordinates of the processors
+  INTEGER :: me_ortho1   = 0  ! task id for the ortho group
+  INTEGER :: nproc_ortho = 1  ! size of the ortho group:
+  INTEGER :: leg_ortho   = 1  ! the distance in the father communicator
+                              ! of two neighbour processors in ortho_comm
+  INTEGER :: ortho_comm  = 0  ! communicator for the ortho group
+  INTEGER :: ortho_row_comm  = 0  ! communicator for the ortho row group
+  INTEGER :: ortho_col_comm  = 0  ! communicator for the ortho col group
+  INTEGER :: ortho_comm_id= 0 ! id of the ortho_comm
+  INTEGER :: nproc_ortho_file = 1  ! value saved on file
+  !
 #if defined __SCALAPACK
   INTEGER :: me_blacs   =  0  ! BLACS processor index starting from 0
   INTEGER :: np_blacs   =  1  ! BLACS number of processor
   INTEGER :: world_cntx = -1  ! BLACS context of all processor 
+  INTEGER :: ortho_cntx = -1  ! BLACS context for ortho_comm
 #endif
-
+  !
+  ! ... "task" groups (for band parallelization of FFT)
+  !
+  INTEGER :: ntask_groups = 1  ! number of proc. in an orbital "task group" 
+  INTEGER :: ntask_groups_file  = 1  ! number of task groups 
+  !
+  ! ... Misc parallelization info
+  ! 
   INTEGER :: kunit = 1  ! granularity of k-point distribution
+  ! ... number of processors written in the data file for checkin purposes:
   !
-  ! ... indeces ( all starting from 0 !!! )
-  !
-  INTEGER :: me_pool     = 0  ! index of the processor within a pool 
-  INTEGER :: me_image    = 0  ! index of the processor within an image
-  INTEGER :: root_pool   = 0  ! index of the root processor within a pool
-  INTEGER :: root_image  = 0  ! index of the root processor within an image
-  INTEGER :: my_pool_id  = 0  ! index of my pool
-  INTEGER :: my_image_id = 0  ! index of my image
-  INTEGER :: me_ortho(2) = 0  ! coordinates of the processors
-  INTEGER :: me_ortho1   = 0  ! task id for the ortho group
-  INTEGER :: me_pgrp     = 0  ! task id for plane wave task group
-  !
-  INTEGER :: npool       = 1  ! number of "k-points"-pools
-  INTEGER :: nimage      = 1  ! number of "path-images"-pools
-  INTEGER :: nogrp       = 1  ! number of proc. in an orbital "task group" 
-  INTEGER :: npgrp       = 1  ! number of proc. in a plane-wave "task group" 
-  INTEGER :: nproc_pool  = 1  ! number of processor within a pool
-  INTEGER :: nproc_pool_file  = 1  ! number of processor within a pool of
-  !   written in the xml punch file
-  INTEGER :: nproc_image = 1  ! number of processor within an image
-  INTEGER :: nproc_image_file  = 1  ! number of processor within a image
-  INTEGER :: np_ortho(2) = 1  ! size of the processor grid used in ortho
-  INTEGER :: nproc_ortho = 1  ! size of the ortho group:
-  INTEGER :: leg_ortho   = 1  ! the distance in the father communicator
-  ! of two neighbour processors in ortho_comm
-  INTEGER, ALLOCATABLE :: nolist(:) ! list of processors in my orbital task group 
-  INTEGER, ALLOCATABLE :: nplist(:) ! list of processors in my plane wave task group 
-  !
-  ! ... communicators
-  !
-  INTEGER :: inter_pool_comm  = 0  ! inter pool communicator
-  INTEGER :: intra_pool_comm  = 0  ! intra pool communicator
-  INTEGER :: inter_image_comm = 0  ! inter image communicator
-  INTEGER :: intra_image_comm = 0  ! intra image communicator  
-  INTEGER :: pgrp_comm        = 0  ! plane-wave group communicator (task grouping)
-  INTEGER :: ogrp_comm        = 0  ! orbital group communicarot (task grouping)
-  INTEGER :: ortho_comm       = 0  ! communicator used for fast and memory saving ortho
-  INTEGER :: ortho_comm_id    = 0  ! id of the ortho_comm
-#if defined __SCALAPACK
-  INTEGER :: ortho_cntx       = -1 ! BLACS context for ortho_comm
-#endif
-  !
-  ! ... Task Groups parallelization
-  !
-  LOGICAL :: &
-    use_task_groups = .FALSE.  ! if TRUE task groups parallelization is used
-  !
-  ! ... Module Private stuff
-  !
-  LOGICAL, PRIVATE :: user_nproc_ortho = .FALSE.
-  !
-  PRIVATE :: init_pool
+  PRIVATE :: init_pools, init_bands, init_ortho
+  PRIVATE :: ntask_groups
   !
 CONTAINS
   !
   !-----------------------------------------------------------------------
-  SUBROUTINE mp_startup ( ) 
+  SUBROUTINE mp_startup ( start_images )
     !-----------------------------------------------------------------------
-    ! ... This subroutine initializes MPI
-    ! ... Processes are organized in NIMAGE images each dealing with a subset of
-    ! ... images used to discretize the "path" (only in "path" optimizations)
-    ! ... Within each image processes are organized in NPOOL pools each dealing
-    ! ... with a subset of kpoints.
-    ! ... Within each pool R & G space distribution is performed.
-    ! ... NPROC is read from command line or can be set with the appropriate
-    ! ... environment variable ( for example use 'setenv MP_PROCS 8' on IBM SP
-    ! ... machine to run on NPROC=8 processors ); NIMAGE and NPOOL are read from
-    ! ... command line.
-    ! ... NPOOL must be a whole divisor of NPROC
+    ! ... This wrapper subroutine initializes MPI
+    ! ... If option with_images=.true., processes are organized into images,
+    ! ... each of which performing a quasi-indipendent calculation, uch as
+    ! ... a point in configuration space (NEB) or a phonon irrep (PHonon)
+    ! ... Within each image processes are further subdivided into various
+    ! ... groups and parallelization levels
     !
     IMPLICIT NONE
-    INTEGER :: world, ntask_groups, nproc_ortho_in, meta_ionode_id 
-    INTEGER :: root = 0
-    LOGICAL :: meta_ionode
+    LOGICAL, INTENT(IN), OPTIONAL :: start_images
+    INTEGER :: world, nproc_ortho_in = 0, root = 0
+    LOGICAL :: do_images
     !
-    !
-    CALL mp_start()
     !
     ! ... get the basic parameters from communications sub-system
     ! ... to handle processors
@@ -116,35 +129,96 @@ CONTAINS
     ! ... nproc = number of processors
     ! ... world = group index of all processors
     !
-    CALL mp_env( nproc, mpime, world )
+    CALL mp_start( nproc, mpime, world )
     !
+    ! ... for compatibility: initialize images
+    !
+    meta_ionode = ( mpime == root )
+    meta_ionode_id = root
+    do_images = PRESENT(start_images) 
+    IF ( do_images ) do_images = start_images
+    IF ( do_images ) THEN
+       !
+       ! ... get nimage from command line
+       !
+       IF ( meta_ionode ) THEN
+          !
+          CALL get_arg_nimage( nimage )
+          nimage = MAX( nimage, 1 )
+          nimage = MIN( nimage, nproc )
+          !
+       END IF
+       CALL mp_barrier(world)
+       CALL mp_bcast( nimage, meta_ionode_id )
+    ELSE
+       nimage = 1
+    END IF
+    !
+    CALL init_images ( world )
     !
     ! ... now initialize processors and groups variables
     ! ... set global coordinate for this processor
     ! ... root  = index of the root processor
     !
-    CALL mp_global_start( root, mpime, world, nproc )
+    CALL mp_startup_new (root_image, intra_image_comm ) 
     !
-    ! ... initialize input/output, set the I/O node
+    RETURN
     !
-    CALL io_global_start( mpime, root )
+  END SUBROUTINE mp_startup
+  !-----------------------------------------------------------------------
+  SUBROUTINE mp_startup_new (root, world ) 
+    !-----------------------------------------------------------------------
+    ! ... This subroutine initializes the various parallelization levels
+    ! ... inside an image. On input:
+    ! ...     root =root processor for this image
+    ! ...     world=communicator for this image (intra_image_comm)
+    ! ... Within each image processes are subdivided into:
+    ! ...     npool k-points groups, for parallelization over k-points
+    ! ... Each k-point group is subdivided into
+    ! ...     nbgr      band groups, for parallelization over bands
+    ! ... Each band group performs parallelization over plane waves 
+    ! ... and is subdivided into
+    ! ...    ntg        task groups, for parallelization of H*psi
+    ! ...    ndiag      linear-algebra groups, for parallelization of LA
+    ! ... Npool, nbgr, ntg, ndiag are read from command line 
     !
-    ! ... get the "meta" I/O node
+    IMPLICIT NONE
     !
-    CALL io_global_getmeta ( meta_ionode, meta_ionode_id )
+    INTEGER, INTENT(IN) :: world, root
+    INTEGER :: nproc_ortho_in = 0 
     !
-    IF ( meta_ionode ) THEN
+    INTEGER :: myrank, npe
+    !
+    ! ... now initialize processors and groups variables
+    ! ... set global coordinate for this processor
+    ! ... root  = index of the root processor
+    !
+    myrank = mp_rank(world)
+    npe = mp_size(world)
+    !
+    CALL mp_global_start_new( root, myrank, world, npe )
+    !
+    ! ... initialize input/output, set (and get) the I/O nodes
+    !
+    CALL io_global_start( myrank, root )
+    !
+    IF ( myrank == root ) THEN
        !
-       ! ... How many parallel images ?
+       ! ... How many parallel pots ?
        !
-       CALL get_arg_nimage( nimage )
+       CALL get_arg_npot( npot )
+       npot = MAX( npot, 1 )
+       npot = MIN( npot, nproc )
        !
-       nimage = MAX( nimage, 1 )
-       nimage = MIN( nimage, nproc )
-       ! ... How many pools ?
+       ! ... How many band groups?
+       !
+       CALL get_arg_nbgrp( nbgrp )
+       nbgrp = MAX( nbgrp, 1 )
+       nbgrp = MIN( nbgrp, nproc )
+       !
+       ! ... How many k-point pools ?
        !
        CALL get_arg_npool( npool )
-       !
        npool = MAX( npool, 1 )
        npool = MIN( npool, nproc )
        !
@@ -156,40 +230,34 @@ CONTAINS
        !
        CALL get_arg_northo( nproc_ortho_in )
        !
-       IF( nproc_ortho_in < 1 ) THEN
-          !  any invalid value means use the default
-          user_nproc_ortho = .FALSE.
-       ELSE
-          user_nproc_ortho = .TRUE.
-       END IF
-       !
-       nproc_ortho_in = MAX( nproc_ortho_in, 1 )
-       nproc_ortho_in = MIN( nproc_ortho_in, nproc )
-       !
+       ! ... nproc_ortho_in = 0 if no command-line option -ndiag or -northo
+       ! ... nproc_ortho_in = N if -ndiag N or -northo N comm-line opt present
+       ! 
     END IF
     !
-    CALL mp_barrier()
+    CALL mp_barrier(world)
     !
-    ! ... transmit npool and nimage
+    ! ... broadcast input parallelization options to all processors
     !
-    CALL mp_bcast( npool,  meta_ionode_id )
-    CALL mp_bcast( nimage, meta_ionode_id )
-    CALL mp_bcast( ntask_groups, meta_ionode_id )
-    CALL mp_bcast( nproc_ortho_in, meta_ionode_id )
-    CALL mp_bcast( user_nproc_ortho, meta_ionode_id )
+    CALL mp_bcast( npool,  root, world )
+    CALL mp_bcast( nbgrp, root, world )
+    CALL mp_bcast( ntask_groups, root, world )
+    CALL mp_bcast( nproc_ortho_in, root, world )
+    CALL mp_bcast( npot, root, world )
     !
-    use_task_groups = ( ntask_groups > 0 )
+    ! ... initialize k-point, band, ortho groups in sequence
     !
-    ! ... all pools are initialized here
-    !
-    CALL init_pool( nimage, ntask_groups, nproc_ortho_in )
+    CALL init_pots( world )
+    CALL init_pools( world )
+    CALL init_bands( intra_pool_comm )
+    CALL init_ortho( nproc_ortho_in, intra_bgrp_comm )
     !
     RETURN
     !
-  END SUBROUTINE mp_startup
+  END SUBROUTINE mp_startup_new
   !
   !-----------------------------------------------------------------------
-  SUBROUTINE mp_global_start( root_i, mpime_i, group_i, nproc_i )
+  SUBROUTINE mp_global_start_new( root_i, mpime_i, group_i, nproc_i )
     !-----------------------------------------------------------------------
     !
     IMPLICIT NONE
@@ -201,27 +269,24 @@ CONTAINS
     world_comm       = group_i
     nproc            = nproc_i
     nproc_pool       = nproc_i
-    nproc_image      = nproc_i
+    nproc_bgrp       = nproc_i
     my_pool_id       = 0
-    my_image_id      = 0
+    my_bgrp_id       = 0
     me_pool          = mpime
-    me_image         = mpime
-    me_pgrp          = me_pool
+    me_bgrp          = mpime
     root_pool        = root
-    root_image       = root
+    root_bgrp        = root
     inter_pool_comm  = group_i
     intra_pool_comm  = group_i
-    inter_image_comm = group_i
-    intra_image_comm = group_i
+    inter_bgrp_comm  = group_i
+    intra_bgrp_comm  = group_i
     ortho_comm       = group_i
-    ALLOCATE( nolist( nproc_i ) )
-    ALLOCATE( nplist( nproc_i ) )
-    nolist = 0
-    nplist = 0
+    ortho_row_comm   = group_i
+    ortho_col_comm   = group_i
     !
     RETURN
     !
-  END SUBROUTINE mp_global_start
+  END SUBROUTINE mp_global_start_new
   !
   !-----------------------------------------------------------------------
   SUBROUTINE mp_global_end ( )
@@ -229,8 +294,6 @@ CONTAINS
     !
     CALL mp_barrier()
     CALL mp_end ()
-    IF (ALLOCATED (nolist) ) DEALLOCATE ( nolist )
-    IF (ALLOCATED (nplist) ) DEALLOCATE ( nplist )
     !
   END SUBROUTINE mp_global_end
   !
@@ -251,104 +314,247 @@ CONTAINS
     !
   END SUBROUTINE mp_global_group_start
   !
-  !
   !----------------------------------------------------------------------------
-  SUBROUTINE init_pool( nimage_ , ntask_groups_ , nproc_ortho_in )
-    !----------------------------------------------------------------------------
+  SUBROUTINE init_images ( parent_comm )
+    !---------------------------------------------------------------------------
     !
-    ! ... This routine initialize the pool :  MPI division in pools and images
+    ! ... This routine divides all MPI processors into images
     !
     IMPLICIT NONE
     !
-    INTEGER, INTENT(IN) :: nimage_
-    INTEGER, INTENT(IN) :: ntask_groups_
-    INTEGER, INTENT(IN) :: nproc_ortho_in
+    INTEGER, INTENT(IN) :: parent_comm
     !
-    INTEGER :: nproc_ortho_try
     INTEGER :: ierr = 0
+    INTEGER :: parent_nproc = 1
+    INTEGER :: parent_mype  = 0
     !
-#if defined (__PARA)
-    ! 
+#if defined (__MPI)
     !
-    IF( nimage < 1 ) &
-       CALL errore( 'init_pool', 'invalid number of images, less than one', 1 )
+    parent_nproc = mp_size( parent_comm )
+    parent_mype  = mp_rank( parent_comm )
     !
-    nimage = nimage_
-    !  
-    ! ... here we set all parallel indeces (defined in mp_global): 
-    !
-    !
-    ! ... number of cpus per image
-    !
-    nproc_image = nproc / nimage
-    !
-    IF ( nproc < nimage ) &
-       CALL errore( 'init_pool', 'invalid number of images, nimage > nproc', 1 )
-    !
+    IF ( nimage < 1 .OR. nimage > parent_nproc ) &
+       CALL errore( 'init_images', 'invalid number of images, out of range', 1 )
     IF ( MOD( nproc, nimage ) /= 0 ) &
-       CALL errore( 'init_pool', 'invalid number of images, nproc /= nproc_image * nimage', 1 ) 
+       CALL errore( 'init_images', 'n. of images must be divisor of parent_nproc', 1 )
     !
-    ! ... my_image_id  =  image index for this processor   ( 0 : nimage - 1 )
-    ! ... me_image     =  processor index within the image ( 0 : nproc_image - 1 )
+    ! ... set number of cpus per image
     !
-    my_image_id = mpime / nproc_image
-    me_image    = MOD( mpime, nproc_image )
+    nproc_image = parent_nproc / nimage
     !
-    CALL mp_barrier()
+    ! ... set index of image for this processor   ( 0 : nimage - 1 )
+    !
+    my_image_id = parent_mype / nproc_image
+    !
+    ! ... set index of processor within the image ( 0 : nproc_image - 1 )
+    !
+    me_image    = MOD( parent_mype, nproc_image )
+    !
+    CALL mp_barrier( parent_comm )
     !
     ! ... the intra_image_comm communicator is created
     !
-    CALL MPI_COMM_SPLIT( MPI_COMM_WORLD, &
-         my_image_id, mpime, intra_image_comm, ierr )
+    CALL MPI_COMM_SPLIT( parent_comm, my_image_id, parent_mype, intra_image_comm, ierr )
+    IF ( ierr /= 0 ) CALL errore &
+       ( 'init_images', 'intra image communicator initialization', ABS(ierr) )
+    !
+    CALL mp_barrier( parent_comm )
+    !
+    ! ... the inter_image_comm communicator is created
+    !
+    CALL MPI_COMM_SPLIT( parent_comm, me_image, parent_mype, inter_image_comm, ierr )
+    IF ( ierr /= 0 ) CALL errore &
+       ( 'init_images', 'inter image communicator initialization', ABS(ierr) )
+#endif
+    RETURN
+    !
+  END SUBROUTINE init_images
+
+  !----------------------------------------------------------------------------
+  SUBROUTINE init_bands( parent_comm )
+    !---------------------------------------------------------------------------
+    !
+    ! ... This routine divides parent_comm into band pools
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(IN) :: parent_comm
+    !
+    INTEGER :: ierr = 0
+    INTEGER :: parent_nproc = 1
+    INTEGER :: parent_mype  = 0
+    !
+#if defined (__MPI)
+    !
+    parent_nproc = mp_size( parent_comm )
+    parent_mype  = mp_rank( parent_comm )
+    !
+    IF ( nbgrp < 1 .OR. nbgrp > parent_nproc ) &
+       CALL errore( 'init_bands', 'invalid number of band groups, out of range', 1 )
+    IF ( MOD( parent_nproc, nbgrp ) /= 0 ) &
+       CALL errore( 'init_bands', 'n. of band groups  must be divisor of parent_nproc', 1 )
+    ! 
+    ! ... Set number of processors per band group
+    !
+    nproc_bgrp = parent_nproc / nbgrp
+    !
+    ! ... set index of band group for this processor   ( 0 : nbgrp - 1 )
+    !
+    my_bgrp_id = parent_mype / nproc_bgrp
+    !
+    ! ... set index of processor within the image ( 0 : nproc_image - 1 )
+    !
+    me_bgrp    = MOD( parent_mype, nproc_bgrp )
+    !
+    CALL mp_barrier( parent_comm )
+    !
+    ! ... the intra_bgrp_comm communicator is created
+    !
+    CALL MPI_COMM_SPLIT( parent_comm, my_bgrp_id, parent_mype, intra_bgrp_comm, ierr )
     !
     IF ( ierr /= 0 ) &
-       CALL errore( 'init_pool', 'intra image communicator initialization', ABS(ierr) )
+       CALL errore( 'init_bands', 'intra band group communicator initialization', ABS(ierr) )
     !
-    CALL mp_barrier()
+    CALL mp_barrier( parent_comm )
     !
-    ! ... the inter_image_comm communicator is created                     
+    ! ... the inter_bgrp_comm communicator is created                     
     !     
-    CALL MPI_COMM_SPLIT( MPI_COMM_WORLD, &
-         me_image, mpime, inter_image_comm, ierr )  
+    CALL MPI_COMM_SPLIT( parent_comm, me_bgrp, parent_mype, inter_bgrp_comm, ierr )  
     !
     IF ( ierr /= 0 ) &
-       CALL errore( 'init_pool', 'inter image communicator initialization', ABS(ierr) )
+       CALL errore( 'init_bands', 'inter band group communicator initialization', ABS(ierr) )
+    !
+#endif
+    RETURN
+    !
+  END SUBROUTINE init_bands
+  !
+  !----------------------------------------------------------------------------
+  SUBROUTINE init_pots( parent_comm )
+    !---------------------------------------------------------------------------
+    !
+    ! ... This routine divides the parent group into pots
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(IN) :: parent_comm
+    !
+    INTEGER :: ierr = 0
+    INTEGER :: parent_nproc = 1
+    INTEGER :: parent_mype  = 0
+    !
+#if defined (__MPI)
+    !
+    parent_nproc = mp_size( parent_comm )
+    parent_mype  = mp_rank( parent_comm )
+    !
+    ! ... number of cpus per pot (they are created inside each parent group)
+    !
+    nproc_pot = parent_nproc / npot
+    !
+    IF ( MOD( parent_nproc, npot ) /= 0 ) &
+         CALL errore( 'init_pots', 'invalid number of pots, parent_nproc /= nproc_pot * npot', 1 )  
+    !
+    ! ... my_pot_id  =  pot index for this processor    ( 0 : npot - 1 )
+    ! ... me_pot     =  processor index within the pot  ( 0 : nproc_pot - 1 )
+    !
+    my_pot_id = parent_mype / nproc_pot    
+    me_pot    = MOD( parent_mype, nproc_pot )
+    !
+    CALL mp_barrier( parent_comm )
+    !
+    ! ... the intra_pot_comm communicator is created
+    !
+    CALL MPI_COMM_SPLIT( parent_comm, my_pot_id, parent_mype, intra_pot_comm, ierr )
+    !
+    IF ( ierr /= 0 ) &
+       CALL errore( 'init_pots', 'intra pot communicator initialization', ABS(ierr) )
+    !
+    CALL mp_barrier( parent_comm )
+    !
+    ! ... the inter_pot_comm communicator is created
+    !
+    CALL MPI_COMM_SPLIT( parent_comm, me_pot, parent_mype, inter_pot_comm, ierr )
+    !
+    IF ( ierr /= 0 ) &
+       CALL errore( 'init_pots', 'inter pot communicator initialization', ABS(ierr) )
+    !
+#endif
+    !
+    RETURN
+  END SUBROUTINE init_pots
+  !
+  !----------------------------------------------------------------------------
+  SUBROUTINE init_pools( parent_comm )
+    !---------------------------------------------------------------------------
+    !
+    ! ... This routine divides band groups into k-point pools
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(IN) :: parent_comm
+    !
+    INTEGER :: ierr = 0
+    INTEGER :: parent_nproc = 1
+    INTEGER :: parent_mype  = 0
+    !
+#if defined (__MPI)
+    !
+    parent_nproc = mp_size( parent_comm )
+    parent_mype  = mp_rank( parent_comm )
     !
     ! ... number of cpus per pool of k-points (they are created inside each image)
     !
-    nproc_pool = nproc_image / npool
+    nproc_pool = parent_nproc / npool
     !
-    IF ( MOD( nproc_image, npool ) /= 0 ) &
-         CALL errore( 'init_pool', 'invalid number of pools, nproc_image /= nproc_pool * npool', 1 )  
+    IF ( MOD( parent_nproc, npool ) /= 0 ) &
+         CALL errore( 'init_pools', 'invalid number of pools, parent_nproc /= nproc_pool * npool', 1 )  
     !
     ! ... my_pool_id  =  pool index for this processor    ( 0 : npool - 1 )
     ! ... me_pool     =  processor index within the pool  ( 0 : nproc_pool - 1 )
     !
-    my_pool_id = me_image / nproc_pool    
-    me_pool    = MOD( me_image, nproc_pool )
+    my_pool_id = parent_mype / nproc_pool    
+    me_pool    = MOD( parent_mype, nproc_pool )
     !
-    CALL mp_barrier( intra_image_comm )
+    CALL mp_barrier( parent_comm )
     !
     ! ... the intra_pool_comm communicator is created
     !
-    CALL MPI_COMM_SPLIT( intra_image_comm, &
-         my_pool_id, me_image, intra_pool_comm, ierr )
+    CALL MPI_COMM_SPLIT( parent_comm, my_pool_id, parent_mype, intra_pool_comm, ierr )
     !
     IF ( ierr /= 0 ) &
-       CALL errore( 'init_pool', 'intra pool communicator initialization', ABS(ierr) )
+       CALL errore( 'init_pools', 'intra pool communicator initialization', ABS(ierr) )
     !
-    CALL mp_barrier( intra_image_comm )
+    CALL mp_barrier( parent_comm )
     !
     ! ... the inter_pool_comm communicator is created
     !
-    CALL MPI_COMM_SPLIT( intra_image_comm, &
-         me_pool, me_image, inter_pool_comm, ierr )
+    CALL MPI_COMM_SPLIT( parent_comm, me_pool, parent_mype, inter_pool_comm, ierr )
     !
     IF ( ierr /= 0 ) &
-       CALL errore( 'init_pool', 'inter pool communicator initialization', ABS(ierr) )
+       CALL errore( 'init_pools', 'inter pool communicator initialization', ABS(ierr) )
     !
 #endif
     !
+    RETURN
+  END SUBROUTINE init_pools
+  !
+  !----------------------------------------------------------------------------
+  SUBROUTINE init_ortho( nproc_ortho_in, parent_comm )
+    !---------------------------------------------------------------------------
+    !
+    ! ... Ortho group initialization
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(IN) :: nproc_ortho_in! read from command-line, 0 if unset
+    INTEGER, INTENT(IN) :: parent_comm   ! communicator of the parent group
+    !
+    INTEGER :: nproc_ortho_try
+    INTEGER :: parent_nproc  ! nproc of the parent group
+    INTEGER :: ierr = 0
+    !
+    parent_nproc = mp_size( parent_comm )
     !
 #if defined __SCALAPACK
 
@@ -360,14 +566,15 @@ CONTAINS
     !
 #endif
     !
-    IF( user_nproc_ortho ) THEN
-       ! use the command line value ensuring that it falls in the proper range.
-       nproc_ortho_try = MIN( nproc_ortho_in , nproc_pool )
-       nproc_ortho_try = MAX( nproc_ortho_try , 1 )
-    ELSE
-       ! here we can play with custom architecture specific default definitions
+    IF( nproc_ortho_in > 0 ) THEN
+       ! command-line argument -ndiag N or -nproc N set to N
+       ! use the command line value ensuring that it falls in the proper range
+       nproc_ortho_try = MIN( nproc_ortho_in , parent_nproc )
+    ELSE 
+       ! no command-line argument -ndiag N or -nproc N is present
+       ! insert here custom architecture specific default definitions
 #if defined __SCALAPACK
-       nproc_ortho_try = MAX( nproc_pool/2, 1 )
+       nproc_ortho_try = MAX( parent_nproc/2, 1 )
 #else
        nproc_ortho_try = 1
 #endif
@@ -376,97 +583,11 @@ CONTAINS
     ! the ortho group for parallel linear algebra is a sub-group of the pool,
     ! then there are as many ortho groups as pools.
     !
-    CALL init_ortho_group( nproc_ortho_try, intra_pool_comm )
+    CALL init_ortho_group( nproc_ortho_try, parent_comm )
     !  
-    IF( ntask_groups_ > 0 ) THEN
-       nogrp = ntask_groups_
-       CALL init_task_groups( )
-    END IF
-    !
     RETURN
     !
-  END SUBROUTINE init_pool
-  !
-  !
-  SUBROUTINE init_task_groups( )
-    !
-    INTEGER :: i, n1, ipos, color, key, ierr, itsk, ntsk
-    INTEGER :: pgroup( nproc_pool )
-    !
-    !SUBDIVIDE THE PROCESSORS IN GROUPS
-    !
-    !THE NUMBER OF GROUPS HAS TO BE A DIVISOR OF THE NUMBER
-    !OF PROCESSORS
-    !
-    IF( MOD( nproc_pool, nogrp ) /= 0 ) &
-         CALL errore( " init_task_groups ", "the number of task groups should be a divisor of nproc_pool ", 1 )
-    !
-    npgrp = nproc_pool / nogrp
-
-    DO i = 1, nproc_pool
-       pgroup( i ) = i - 1
-    ENDDO
-    !
-    !LIST OF PROCESSORS IN MY ORBITAL GROUP
-    !
-    !  processors in these group have contiguous indexes
-    !
-    N1 = ( me_pool / NOGRP ) * NOGRP - 1
-    DO i = 1, nogrp
-       nolist( I ) = pgroup( N1 + I + 1 )
-       IF( me_pool == nolist( I ) ) ipos = i - 1
-    ENDDO
-    !
-    !LIST OF PROCESSORS IN MY PLANE WAVE GROUP
-    !
-    DO I = 1, npgrp
-       nplist( I ) = pgroup( ipos + ( i - 1 ) * nogrp + 1 )
-    ENDDO
-
-    !
-    !SET UP THE GROUPS
-    !
-    !
-    !CREATE ORBITAL GROUPS
-    !
-#if defined __MPI
-    color = me_pool / nogrp
-    key   = MOD( me_pool , nogrp )
-    CALL MPI_COMM_SPLIT( intra_pool_comm, color, key, ogrp_comm, ierr )
-    if( ierr /= 0 ) &
-         CALL errore( ' init_task_groups ', ' creating ogrp_comm ', ABS(ierr) )
-    CALL MPI_COMM_RANK( ogrp_comm, itsk, IERR )
-    CALL MPI_COMM_SIZE( ogrp_comm, ntsk, IERR )
-    IF( nogrp /= ntsk ) CALL errore( ' init_task_groups ', ' ogrp_comm size ', ntsk )
-    DO i = 1, nogrp
-       IF( me_pool == nolist( i ) ) THEN
-          IF( (i-1) /= itsk ) CALL errore( ' init_task_groups ', ' ogrp_comm rank ', itsk )
-       END IF
-    END DO
-#endif
-    !
-    !CREATE PLANEWAVE GROUPS
-    !
-#if defined __MPI
-    color = MOD( me_pool , nogrp )
-    key   = me_pool / nogrp
-    CALL MPI_COMM_SPLIT( intra_pool_comm, color, key, pgrp_comm, ierr )
-    if( ierr /= 0 ) &
-         CALL errore( ' init_task_groups ', ' creating pgrp_comm ', ABS(ierr) )
-    CALL MPI_COMM_RANK( pgrp_comm, itsk, IERR )
-    CALL MPI_COMM_SIZE( pgrp_comm, ntsk, IERR )
-    IF( npgrp /= ntsk ) CALL errore( ' init_task_groups ', ' pgrp_comm size ', ntsk )
-    DO i = 1, npgrp
-       IF( me_pool == nplist( i ) ) THEN
-          IF( (i-1) /= itsk ) CALL errore( ' init_task_groups ', ' pgrp_comm rank ', itsk )
-       END IF
-    END DO
-    me_pgrp = itsk
-#endif
-
-
-    RETURN
-  END SUBROUTINE init_task_groups
+  END SUBROUTINE init_ortho
   !
   !
   SUBROUTINE init_ortho_group( nproc_try_in, comm_all )
@@ -480,10 +601,17 @@ CONTAINS
 
 #if defined __SCALAPACK
     INTEGER, ALLOCATABLE :: blacsmap(:,:)
-    INTEGER, ALLOCATABLE :: ortho_cntx_pe(:,:)
-    INTEGER :: nprow, npcol, myrow, mycol, i, j
+    INTEGER, ALLOCATABLE :: ortho_cntx_pe(:,:,:)
+    INTEGER :: nprow, npcol, myrow, mycol, i, j, k
     INTEGER, EXTERNAL :: BLACS_PNUM
+    !
+    INTEGER :: nparent=1
+    INTEGER :: total_nproc=1
+    INTEGER :: total_mype=0
+    INTEGER :: nproc_parent=1
+    INTEGER :: my_parent_id=0
 #endif
+
 
 #if defined __MPI
 
@@ -573,28 +701,45 @@ CONTAINS
             CALL errore( " init_ortho_group ", " wrong task coordinates in ortho group ", ierr )
        IF( me_ortho1*leg_ortho /= me_all ) &
             CALL errore( " init_ortho_group ", " wrong rank assignment in ortho group ", ierr )
+
+       CALL MPI_COMM_SPLIT( ortho_comm, me_ortho(2), me_ortho(1), ortho_col_comm, ierr )
+       CALL MPI_COMM_SPLIT( ortho_comm, me_ortho(1), me_ortho(2), ortho_row_comm, ierr )
+
     else
        ortho_comm_id = 0
        me_ortho(1) = me_ortho1
        me_ortho(2) = me_ortho1
     endif
-
 #if defined __SCALAPACK
-
-    ALLOCATE( ortho_cntx_pe( npool, nimage ) )
+    !
+    !  This part is used to eliminate the image dependency from ortho groups
+    !  SCALAPACK is now independent of whatever level of parallelization
+    !  is present on top of pool parallelization
+    !
+    total_nproc = mp_size(mpi_comm_world)
+    total_mype = mp_rank(mpi_comm_world)
+    nparent = total_nproc/npool/nproc_pool
+    nproc_parent = total_nproc/nparent
+    my_parent_id = total_mype/nproc_parent
+    !
+    !
+    ALLOCATE( ortho_cntx_pe( npool, nbgrp, nparent ) )
     ALLOCATE( blacsmap( np_ortho(1), np_ortho(2) ) )
 
-    DO j = 1, nimage
+    DO j = 1, nparent
+
+     DO k = 1, nbgrp
 
        DO i = 1, npool
 
-         CALL BLACS_GET( -1, 0, ortho_cntx_pe( i, j ) ) ! take a default value 
+         CALL BLACS_GET( -1, 0, ortho_cntx_pe( i, k, j ) ) ! take a default value 
 
          blacsmap = 0
          nprow = np_ortho(1)
          npcol = np_ortho(2)
 
-         IF( ( j == ( my_image_id + 1 ) ) .and. ( i == ( my_pool_id + 1 ) ) .and. ( ortho_comm_id > 0 ) ) THEN
+         IF( ( j == ( my_parent_id + 1 ) ) .and. ( k == ( my_bgrp_id + 1 ) ) .and.  &
+             ( i == ( my_pool_id  + 1 ) ) .and. ( ortho_comm_id > 0 ) ) THEN
 
            blacsmap( me_ortho(1) + 1, me_ortho(2) + 1 ) = BLACS_PNUM( world_cntx, 0, me_blacs )
 
@@ -604,11 +749,12 @@ CONTAINS
 
          CALL mp_sum( blacsmap ) 
 
-         CALL BLACS_GRIDMAP( ortho_cntx_pe(i,j), blacsmap, nprow, nprow, npcol )
+         CALL BLACS_GRIDMAP( ortho_cntx_pe(i,k,j), blacsmap, nprow, nprow, npcol )
 
-         CALL BLACS_GRIDINFO( ortho_cntx_pe(i,j), nprow, npcol, myrow, mycol )
+         CALL BLACS_GRIDINFO( ortho_cntx_pe(i,k,j), nprow, npcol, myrow, mycol )
 
-         IF( ( j == ( my_image_id + 1 ) ) .and. ( i == ( my_pool_id + 1 ) ) .and. ( ortho_comm_id > 0 ) ) THEN
+         IF( ( j == ( my_parent_id + 1 ) ) .and. ( k == ( my_bgrp_id + 1 ) ) .and. &
+             ( i == ( my_pool_id  + 1 ) ) .and. ( ortho_comm_id > 0 ) ) THEN
 
             IF(  np_ortho(1) /= nprow ) &
                CALL errore( ' init_ortho_group ', ' problem with SCALAPACK, wrong no. of task rows ', 1 )
@@ -619,11 +765,13 @@ CONTAINS
             IF(  me_ortho(2) /= mycol ) &
                CALL errore( ' init_ortho_group ', ' problem with SCALAPACK, wrong task columns ID ', 1 )
 
-            ortho_cntx = ortho_cntx_pe(i,j)
+            ortho_cntx = ortho_cntx_pe(i,k,j)
 
          END IF
 
        END DO
+
+     END DO
 
     END DO 
 
@@ -644,5 +792,64 @@ CONTAINS
     RETURN
   END SUBROUTINE init_ortho_group
   !
+  !
+  SUBROUTINE distribute_over_bgrp( i2g, nl, nx )
+     !
+     IMPLICIT NONE
+     INTEGER, INTENT(OUT) :: i2g  !  global index of the first local element
+     INTEGER, INTENT(OUT) :: nl   !  local number of elements
+     INTEGER, INTENT(IN)  :: nx   !  dimension of the global array to be distributed
+     !
+     INTEGER, EXTERNAL :: ldim_block, gind_block
+     !
+     nl  = ldim_block( nx, nbgrp, my_bgrp_id )
+     i2g = gind_block( 1, nx, nbgrp, my_bgrp_id )
+     !
+     RETURN
+     !
+  END SUBROUTINE distribute_over_bgrp
+  !
+  SUBROUTINE init_index_over_band(comm,nbnd)
+    IMPLICIT NONE
+#if defined (__MPI)
+    !
+    include 'mpif.h'
+    !
+#endif
+    INTEGER, INTENT(IN) :: comm, nbnd
+
+    INTEGER :: npe, myrank, ierror, rest, k
+
+    myrank = mp_rank(comm)
+    npe = mp_size(comm)
+
+!    call mpi_comm_rank(comm, mp_rank, ierror)
+!    call mpi_comm_size(comm, mp_size, ierror)
+    rest = mod(nbnd, npe)
+    k = int(nbnd/npe)
+
+    if(k.ge.1)then
+     if(rest > myrank)then
+       ibnd_start = (myrank)*k + (myrank+1)
+       ibnd_end  =  (myrank+1)*k + (myrank+1)
+     else
+       ibnd_start = (myrank)*k + rest + 1
+       ibnd_end  =  (myrank+1)*k + rest
+     endif
+    else
+     ibnd_start = 1
+     ibnd_end = nbnd
+    endif
+
+
+  END SUBROUTINE init_index_over_band
+  !
+  !
+  FUNCTION get_ntask_groups()
+     IMPLICIT NONE
+     INTEGER :: get_ntask_groups
+     get_ntask_groups = ntask_groups
+     RETURN
+  END FUNCTION get_ntask_groups
   !
 END MODULE mp_global

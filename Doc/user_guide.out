@@ -1,0 +1,27 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}
+\BOOKMARK [2][-]{subsection.1.1}{People}{section.1}
+\BOOKMARK [2][-]{subsection.1.2}{Contacts}{section.1}
+\BOOKMARK [2][-]{subsection.1.3}{Guidelines for posting to the mailing list}{section.1}
+\BOOKMARK [2][-]{subsection.1.4}{Terms of use}{section.1}
+\BOOKMARK [1][-]{section.2}{Installation}{}
+\BOOKMARK [2][-]{subsection.2.1}{Download}{section.2}
+\BOOKMARK [2][-]{subsection.2.2}{Prerequisites}{section.2}
+\BOOKMARK [2][-]{subsection.2.3}{configure}{section.2}
+\BOOKMARK [3][-]{subsubsection.2.3.1}{Manual configuration}{subsection.2.3}
+\BOOKMARK [2][-]{subsection.2.4}{Libraries}{section.2}
+\BOOKMARK [2][-]{subsection.2.5}{Compilation}{section.2}
+\BOOKMARK [2][-]{subsection.2.6}{Running tests and examples}{section.2}
+\BOOKMARK [2][-]{subsection.2.7}{Installation tricks and problems}{section.2}
+\BOOKMARK [3][-]{subsubsection.2.7.1}{All architectures}{subsection.2.7}
+\BOOKMARK [3][-]{subsubsection.2.7.2}{Cray XE and XT machines}{subsection.2.7}
+\BOOKMARK [3][-]{subsubsection.2.7.3}{IBM AIX}{subsection.2.7}
+\BOOKMARK [3][-]{subsubsection.2.7.4}{IBM BlueGene}{subsection.2.7}
+\BOOKMARK [3][-]{subsubsection.2.7.5}{Linux PC}{subsection.2.7}
+\BOOKMARK [3][-]{subsubsection.2.7.6}{Linux PC clusters with MPI}{subsection.2.7}
+\BOOKMARK [3][-]{subsubsection.2.7.7}{Intel Mac OS X}{subsection.2.7}
+\BOOKMARK [1][-]{section.3}{Parallelism}{}
+\BOOKMARK [2][-]{subsection.3.1}{Understanding Parallelism}{section.3}
+\BOOKMARK [2][-]{subsection.3.2}{Running on parallel machines}{section.3}
+\BOOKMARK [2][-]{subsection.3.3}{Parallelization levels}{section.3}
+\BOOKMARK [3][-]{subsubsection.3.3.1}{Understanding parallel I/O}{subsection.3.3}
+\BOOKMARK [2][-]{subsection.3.4}{Tricks and problems}{section.3}

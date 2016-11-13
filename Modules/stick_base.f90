@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002 FPMD group
+! Copyright (C) 2002-2010 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -18,25 +18,20 @@
         SAVE
 
         PUBLIC :: sticks_maps, sticks_sort, sticks_countg, sticks_dist, sticks_pairup
-        PUBLIC :: sticks_owner, sticks_deallocate, pstickset, sticks_maps_scalar
+        PUBLIC :: sticks_owner, sticks_deallocate, sticks_maps_scalar, sticks_ordered_dist
 
 ! ...   sticks_owner :   stick owner, sticks_owner( i, j ) is the index of the processor
 ! ...     (starting from 1) owning the stick whose x and y coordinate  are i and j.
 
         INTEGER, ALLOCATABLE, TARGET :: sticks_owner( : , : )
 
-        INTERFACE sticks_dist
-          MODULE PROCEDURE sticks_dist1
-        END INTERFACE
-
 !=----------------------------------------------------------------------=
    CONTAINS
 !=----------------------------------------------------------------------=
 
-      SUBROUTINE sticks_maps( tk, ub, lb, b1, b2, b3, gcut, gcutw, gcuts, st, stw, sts )
+      SUBROUTINE sticks_maps( tk, ub, lb, b1, b2, b3, gcut, gcutw, gcuts, st, stw, sts, me, nproc, comm )
 
           USE mp, ONLY: mp_sum
-          USE mp_global, ONLY: me_pool, nproc_pool, intra_pool_comm
 
           LOGICAL, INTENT(in) :: tk    !  if true use the full space grid
           INTEGER, INTENT(in) :: ub(:) !  upper bounds for i-th grid dimension
@@ -48,6 +43,9 @@
           INTEGER, INTENT(out) :: st( lb(1): ub(1), lb(2):ub(2) ) ! stick map for potential
           INTEGER, INTENT(out) :: stw(lb(1): ub(1), lb(2):ub(2) ) ! stick map for wave functions
           INTEGER, INTENT(out) :: sts(lb(1): ub(1), lb(2):ub(2) ) ! stick map for smooth mesh
+          INTEGER, INTENT(in) :: me ! my proc id (starting from 0)
+          INTEGER, INTENT(in) :: nproc ! number of proc in the g-vec group
+          INTEGER, INTENT(in) :: comm ! communicator of the g-vec group
 
           INTEGER :: i, j, k, kip
           REAL(DP) :: gsq
@@ -68,7 +66,7 @@
           IF( .not. tk ) THEN
 
             kip = 0 + abs(lb(3)) + 1
-            IF( mod( kip, nproc_pool ) == me_pool ) THEN
+            IF( mod( kip, nproc ) == me ) THEN
               st (0,0) = st (0,0) + 1
               stw(0,0) = stw(0,0) + 1
               sts(0,0) = sts(0,0) + 1
@@ -78,7 +76,7 @@
               DO j= 0, 0
                 DO k= 1, ub(3)
                   kip = k + abs(lb(3)) + 1
-                  IF( mod( kip, nproc_pool ) == me_pool ) THEN
+                  IF( mod( kip, nproc ) == me ) THEN
                     gsq=    (dble(i)*b1(1)+dble(j)*b2(1)+dble(k)*b3(1) )**2
                     gsq=gsq+(dble(i)*b1(2)+dble(j)*b2(2)+dble(k)*b3(2) )**2
                     gsq=gsq+(dble(i)*b1(3)+dble(j)*b2(3)+dble(k)*b3(3) )**2
@@ -100,7 +98,7 @@
               DO j = 1, ub(2)
                 DO k = lb(3), ub(3)
                   kip = k + abs(lb(3)) + 1
-                  IF( mod( kip, nproc_pool) == me_pool ) THEN
+                  IF( mod( kip, nproc) == me ) THEN
                     gsq=    (dble(i)*b1(1)+dble(j)*b2(1)+dble(k)*b3(1) )**2
                     gsq=gsq+(dble(i)*b1(2)+dble(j)*b2(2)+dble(k)*b3(2) )**2
                     gsq=gsq+(dble(i)*b1(3)+dble(j)*b2(3)+dble(k)*b3(3) )**2
@@ -122,7 +120,7 @@
               DO j = lb(2), ub(2)
                 DO k = lb(3), ub(3)
                   kip = k + abs(lb(3)) + 1
-                  IF( mod( kip, nproc_pool) == me_pool ) THEN
+                  IF( mod( kip, nproc) == me ) THEN
                     gsq=    (dble(i)*b1(1)+dble(j)*b2(1)+dble(k)*b3(1) )**2
                     gsq=gsq+(dble(i)*b1(2)+dble(j)*b2(2)+dble(k)*b3(2) )**2
                     gsq=gsq+(dble(i)*b1(3)+dble(j)*b2(3)+dble(k)*b3(3) )**2
@@ -146,7 +144,7 @@
               DO j= lb(2), ub(2)
                 DO k= lb(3), ub(3)
                   kip = k + abs(lb(3)) + 1
-                  IF( mod( kip, nproc_pool ) == me_pool ) THEN
+                  IF( mod( kip, nproc ) == me ) THEN
                     gsq=    (dble(i)*b1(1)+dble(j)*b2(1)+dble(k)*b3(1) )**2
                     gsq=gsq+(dble(i)*b1(2)+dble(j)*b2(2)+dble(k)*b3(2) )**2
                     gsq=gsq+(dble(i)*b1(3)+dble(j)*b2(3)+dble(k)*b3(3) )**2
@@ -166,9 +164,9 @@
 
           ENDIF
 
-          CALL mp_sum(st  ,intra_pool_comm )
-          CALL mp_sum(stw ,intra_pool_comm )
-          CALL mp_sum(sts ,intra_pool_comm )
+          CALL mp_sum(st  , comm )
+          CALL mp_sum(stw , comm )
+          CALL mp_sum(sts , comm )
 
 #if defined __STICKS_DEBUG
 ! Test sticks
@@ -258,19 +256,18 @@
 
 !=----------------------------------------------------------------------=
 
-      SUBROUTINE sticks_sort( ngc, ngcw, ngcs, nct, idx )
+      SUBROUTINE sticks_sort( ngc, ngcw, ngcs, nct, idx, nproc )
 
 ! ...     This subroutine sorts the sticks indexes, according to
 ! ...     the length and type of the sticks, wave functions sticks
 ! ...     first, then smooth mesh sticks, and finally potential
 ! ...     sticks
 
-        USE mp_global, ONLY: nproc_pool
-
         ! lengths of sticks, ngc for potential mesh, ngcw for wave functions mesh
         ! and ngcs for smooth mesh
 
         INTEGER, INTENT(in) :: ngc(:), ngcw(:), ngcs(:)
+        INTEGER, INTENT(in) :: nproc ! number of proc in the g-vec group
 
         ! nct, total number of sticks
 
@@ -287,7 +284,7 @@
         nr3x = maxval( ngc(1:nct) ) + 1
         dn3  = REAL( nr3x )
 
-        IF( nproc_pool > 1 ) THEN
+        IF( nproc > 1 ) THEN
           ALLOCATE( aux( nct ) )
           DO mc = 1, nct
             aux(mc) = ngcw(mc)
@@ -396,10 +393,8 @@
 
 !=----------------------------------------------------------------------=
 
-    SUBROUTINE sticks_dist1( tk, ub, lb, idx, in1, in2, ngc, ngcw, ngcs, nct, &
-                             ncp, ncpw, ncps, ngp, ngpw, ngps, stown, stownw, stowns )
-
-      USE mp_global, ONLY: nproc_pool
+    SUBROUTINE sticks_dist( tk, ub, lb, idx, in1, in2, ngc, ngcw, ngcs, nct, &
+                            ncp, ncpw, ncps, ngp, ngpw, ngps, stown, stownw, stowns, nproc )
 
       LOGICAL, INTENT(in) :: tk
 
@@ -413,6 +408,7 @@
       INTEGER, INTENT(in) :: nct
       INTEGER, INTENT(out) :: ncp(:), ncpw(:), ncps(:)
       INTEGER, INTENT(out) :: ngp(:), ngpw(:), ngps(:)
+      INTEGER, INTENT(in) :: nproc ! number of proc in the g-vec group
 
       INTEGER :: mc, i1, i2, i, j, jj
 
@@ -445,7 +441,7 @@
 ! this is an active sticks: find which processor has currently
 ! the smallest number of plane waves
 !
-            DO j = 1, nproc_pool
+            DO j = 1, nproc
                IF ( ngpw(j) < ngpw(jj) ) THEN
                  jj = j
                ELSEIF ( ( ngpw(j) == ngpw(jj) ) .and. ( ncpw(j) < ncpw(jj) ) ) THEN
@@ -458,7 +454,7 @@
 ! this is an inactive sticks: find which processor has currently
 ! the smallest number of G-vectors
 !
-            DO j = 1, nproc_pool
+            DO j = 1, nproc
                IF ( ngp(j) < ngp(jj) ) jj = j
             ENDDO
 
@@ -491,14 +487,12 @@
       ENDDO
 
       RETURN
-    END SUBROUTINE sticks_dist1
+    END SUBROUTINE sticks_dist
 
 !=----------------------------------------------------------------------=
 
     SUBROUTINE sticks_pairup( tk, ub, lb, idx, in1, in2, ngc, ngcw, ngcs, nct, &
-                             ncp, ncpw, ncps, ngp, ngpw, ngps, stown, stownw, stowns )
-
-      USE mp_global, ONLY: nproc_pool
+                             ncp, ncpw, ncps, ngp, ngpw, ngps, stown, stownw, stowns, nproc )
 
       LOGICAL, INTENT(in) :: tk
 
@@ -512,6 +506,7 @@
       INTEGER, INTENT(in) :: nct
       INTEGER, INTENT(out) :: ncp(:), ncpw(:), ncps(:)
       INTEGER, INTENT(out) :: ngp(:), ngpw(:), ngps(:)
+      INTEGER, INTENT(in) :: nproc ! number of proc in the g-vec group
 
       INTEGER :: mc, i1, i2, i, jj
 
@@ -567,262 +562,83 @@
 
 !=----------------------------------------------------------------------=
 
-
-        SUBROUTINE pstickset( dfftp, dffts, alat, a1, a2, a3, gcut, gkcut, gcuts, &
-          nr1, nr2, nr3, nr1x, nr2x, nr3x, nr1s, nr2s, nr3s, nr1sx, nr2sx, nr3sx, &
-          ngw, ngm, ngs )
-
-          USE kinds, ONLY: DP
-          USE mp_global, ONLY: me_pool, nproc_pool, intra_pool_comm, nogrp
-          USE control_flags, ONLY: gamma_only
-          USE io_global, ONLY: ionode
-          USE io_global, ONLY: stdout
-          USE fft_types, ONLY: fft_dlay_descriptor, fft_dlay_allocate, fft_dlay_set, &
-               fft_dlay_scalar
-
-
-          TYPE(fft_dlay_descriptor), INTENT(inout) :: dfftp, dffts
-          REAL(DP), INTENT(in) :: a1(3), a2(3), a3(3), alat
-          REAL(DP), INTENT(in) :: gcut, gkcut, gcuts
-          INTEGER, INTENT(in) :: nr1, nr2, nr3, nr1x, nr2x, nr3x
-          INTEGER, INTENT(in) :: nr1s, nr2s, nr3s, nr1sx, nr2sx, nr3sx
-          INTEGER, INTENT(out) :: ngw, ngm, ngs
-
-          LOGICAL :: tk
-! ...     tk  logical flag, TRUE if the symulation does not have the
-! ...         GAMMA symmetry
-
-          REAL(DP) :: b1(3), b2(3), b3(3)
-! ...     b1, b2, b3 reciprocal space base vectors.
-
-          INTEGER :: ub(3), lb(3)
-! ...     ub(i), lb(i) upper and lower miller indexes
-
+    SUBROUTINE sticks_ordered_dist( tk, ub, lb, idx, in1, in2, ngc, ngcw, ngcs, nct, &
+                            ncp, ncpw, ncps, ngp, ngpw, ngps, stown, stownw, stowns, nproc )
 !
-! ...     Plane Waves
+! This routine works as sticks_dist only it distributes the sticks according to sticks_owner.
+! This ensures that the gvectors for any 'smooth like grid' remain on the same proc as the 
+! original grid.
 !
+      LOGICAL, INTENT(in) :: tk
 
-        INTEGER, ALLOCATABLE :: stw(:,:)
-! ...   stick map (wave functions), stw(i,j) = number of G-vector in the
-! ...     stick whose x and y miller index are i and j
+      INTEGER, INTENT(in) :: ub(:), lb(:), idx(:)
+      INTEGER, INTENT(out) :: stown( lb(1): ub(1), lb(2):ub(2) ) ! stick map for potential
+      INTEGER, INTENT(out) :: stownw(lb(1): ub(1), lb(2):ub(2) ) ! stick map for wave functions
+      INTEGER, INTENT(out) :: stowns(lb(1): ub(1), lb(2):ub(2) ) ! stick map for smooth mesh
 
-        INTEGER, ALLOCATABLE :: nstpw(:)
-! ...   number of sticks (wave functions), nstpw(ip) = number of stick
-! ...     for processor ip
+      INTEGER, INTENT(in) :: in1(:), in2(:)
+      INTEGER, INTENT(in) :: ngc(:), ngcw(:), ngcs(:)
+      INTEGER, INTENT(in) :: nct
+      INTEGER, INTENT(out) :: ncp(:), ncpw(:), ncps(:)
+      INTEGER, INTENT(out) :: ngp(:), ngpw(:), ngps(:)
+      INTEGER, INTENT(in) :: nproc ! number of proc in the g-vec group
 
-        INTEGER, ALLOCATABLE :: sstpw(:)
-! ...   number of G-vectors (wave functions), sstpw(ip) = sum of the
-! ...     sticks length for processor ip = number of G-vectors
-! ...     owned by the processor ip
+      INTEGER :: mc, i1, i2, i, j, jj
 
-        INTEGER :: nstw, nstpwx
-! ...   nstw     local number of sticks (wave functions)
-! ...   nstpwx   maximum among all processors of nstw
+      ncp  = 0
+      ncps = 0
+      ncpw = 0
+      ngp  = 0
+      ngps = 0
+      ngpw = 0
 
+      stown  = sticks_owner
+      stownw = 0
+      stowns = 0
+
+      DO mc = 1, nct
+
+         i = idx( mc )
 !
-! ...     Potentials
+! index has no effect in this case
 !
-
-        INTEGER, ALLOCATABLE :: st(:,:)
-! ...   stick map (potentials), st(i,j) = number of G-vector in the
-! ...     stick whose x and y miller index are i and j
-
-        INTEGER, ALLOCATABLE :: nstp(:)
-! ...   number of sticks (potentials), nstp(ip) = number of stick
-! ...     for processor ip
-
-        INTEGER, ALLOCATABLE :: sstp(:)
-! ...   number of G-vectors (potentials), sstp(ip) = sum of the
-! ...     sticks length for processor ip = number of G-vectors
-! ...     owned by the processor ip
-
-        INTEGER :: nst, nstpx
-! ...   nst      local number of sticks (potentials)
-! ...   nstpx    maximum among all processors of nst
-
+         i1 = in1( i )
+         i2 = in2( i )
 !
-! ...     Smooth Mesh
+         IF ( ( .not. tk ) .and. ( (i1 < 0) .or. ( (i1 == 0) .and. (i2 < 0) ) ) ) GOTO 30
 !
+         ! potential mesh set according to sticks_owner
 
-        INTEGER, ALLOCATABLE :: sts(:,:)
-! ...   stick map (smooth mesh), sts(i,j) = number of G-vector in the
-! ...     stick whose x and y miller index are i and j
+         jj = stown(i1,i2) 
+         ncp(jj) = ncp(jj) + 1
+         ngp(jj) = ngp(jj) + ngc(i)
 
-        INTEGER, ALLOCATABLE :: nstps(:)
-! ...   number of sticks (smooth mesh), nstp(ip) = number of stick
-! ...     for processor ip
+         ! smooth mesh
 
-        INTEGER, ALLOCATABLE :: sstps(:)
-! ...   number of G-vectors (smooth mesh), sstps(ip) = sum of the
-! ...     sticks length for processor ip = number of G-vectors
-! ...     owned by the processor ip
+         IF ( ngcs(i) > 0 ) THEN
+            ncps(jj) = ncps(jj) + 1
+            ngps(jj) = ngps(jj) + ngcs(i)
+            stowns(i1,i2) = jj
+         ENDIF
 
-        INTEGER :: nsts
-! ...   nsts      local number of sticks (smooth mesh)
+         ! wave functions mesh
 
+         IF ( ngcw(i) > 0 ) THEN
+            ncpw(jj) = ncpw(jj) + 1
+            ngpw(jj) = ngpw(jj) + ngcw(i)
+            stownw(i1,i2) = jj
+         ENDIF
 
-        INTEGER, ALLOCATABLE :: ist(:,:)    ! sticks indexes ordered
+ 30      CONTINUE
 
+      ENDDO
 
-
-          INTEGER :: ip, ngm_ , ngs_
-          INTEGER, ALLOCATABLE :: idx(:)
-
-          tk    = .not. gamma_only
-          ub(1) = ( nr1 - 1 ) / 2
-          ub(2) = ( nr2 - 1 ) / 2
-          ub(3) = ( nr3 - 1 ) / 2
-          lb    = - ub
-
-          ! ... reciprocal lattice generators
-
-          CALL recips( a1, a2, a3, b1, b2, b3 )
-          b1 = b1 * alat
-          b2 = b2 * alat
-          b3 = b3 * alat
-
-          ! ...       Allocate maps
-
-          ALLOCATE( stw ( lb(1):ub(1), lb(2):ub(2) ) )
-          ALLOCATE( st  ( lb(1):ub(1), lb(2):ub(2) ) )
-          ALLOCATE( sts ( lb(1):ub(1), lb(2):ub(2) ) )
-
-          st  = 0
-          stw = 0
-          sts = 0
-
-! ...       Fill in the stick maps, for given g-space base (b1,b2,b3)  and cut-off
-
-          CALL sticks_maps( tk, ub, lb, b1, b2, b3, gcut, gkcut, gcuts, st, stw, sts )
-
-! ...       Now count the number of stick nst and nstw
-
-          nst  = count( st  > 0 )
-          nstw = count( stw > 0 )
-          nsts = count( sts > 0 )
-
-          IF (ionode) THEN
-            WRITE( stdout,*)
-            WRITE( stdout,10)
- 10         FORMAT(3X,'Stick Mesh',/, &
-                   3X,'----------')
-            WRITE( stdout,15) nst, nstw, nsts
- 15         FORMAT( 3X, 'nst =', I6, ',  nstw =', I6, ', nsts =', I6 )
-          ENDIF
-
-          ALLOCATE(ist(nst,5))
-
-          ALLOCATE(nstp(nproc_pool))
-          ALLOCATE(sstp(nproc_pool))
-
-          ALLOCATE(nstpw(nproc_pool))
-          ALLOCATE(sstpw(nproc_pool))
-
-          ALLOCATE(nstps(nproc_pool))
-          ALLOCATE(sstps(nproc_pool))
-
-! ...       initialize the sticks indexes array ist
-
-          CALL sticks_countg( tk, ub, lb, st, stw, sts, &
-            ist(:,1), ist(:,2), ist(:,4), ist(:,3), ist(:,5) )
-
-! ...       Sorts the sticks according to their length
-
-          ALLOCATE( idx( nst ) )
-
-          CALL sticks_sort( ist(:,4), ist(:,3), ist(:,5), nst, idx )
-
-          ! ... Set as first stick the stick containing the G=0
-          !
-          !  DO iss = 1, nst
-          !    IF( ist( idx( iss ), 1 ) == 0 .AND. ist( idx( iss ), 2 ) == 0 )  EXIT
-          !  END DO
-          !  itmp         = idx( 1 )
-          !  idx( 1 )   = idx( iss )
-          !  idx( iss ) = itmp
-
-          CALL sticks_dist( tk, ub, lb, idx, ist(:,1), ist(:,2), ist(:,4), ist(:,3), ist(:,5), &
-             nst, nstp, nstpw, nstps, sstp, sstpw, sstps, st, stw, sts )
-
-          ngw = sstpw( me_pool + 1 )
-          ngm = sstp( me_pool + 1 )
-          ngs = sstps( me_pool + 1 )
-
-          CALL sticks_pairup( tk, ub, lb, idx, ist(:,1), ist(:,2), ist(:,4), ist(:,3), ist(:,5), &
-             nst, nstp, nstpw, nstps, sstp, sstpw, sstps, st, stw, sts )
-
-          ! ...   Allocate and Set fft data layout descriptors
-
-#if defined __PARA
-
-          CALL fft_dlay_allocate( dfftp, nproc_pool, nr1x,  nr2x )
-          CALL fft_dlay_allocate( dffts, nproc_pool, nr1sx, nr2sx )
-
-          CALL fft_dlay_set( dfftp, tk, nst, nr1, nr2, nr3, nr1x, nr2x, nr3x, (me_pool+1), &
-            nproc_pool, nogrp, ub, lb, idx, ist(:,1), ist(:,2), nstp, nstpw, sstp, sstpw, st, stw )
-          CALL fft_dlay_set( dffts, tk, nsts, nr1s, nr2s, nr3s, nr1sx, nr2sx, nr3sx, (me_pool+1), &
-            nproc_pool, nogrp, ub, lb, idx, ist(:,1), ist(:,2), nstps, nstpw, sstps, sstpw, sts, stw )
-
-#else
-
-          DEALLOCATE( stw )
-          ALLOCATE( stw( lb(2) : ub(2), lb(3) : ub(3) ) )
-
-          CALL sticks_maps_scalar( (.not.tk), ub, lb, b1, b2, b3, gcut, gkcut, gcuts, stw, ngm_ , ngs_ )
-
-          IF( ngm_ /= ngm ) CALL errore( ' pstickset ', ' inconsistent ngm ', abs( ngm - ngm_ ) )
-          IF( ngs_ /= ngs ) CALL errore( ' pstickset ', ' inconsistent ngs ', abs( ngs - ngs_ ) )
-
-          CALL fft_dlay_allocate( dfftp, nproc_pool, max(nr1x, nr3x),  nr2x  )
-          CALL fft_dlay_allocate( dffts, nproc_pool, max(nr1sx, nr3sx), nr2sx )
-
-          CALL fft_dlay_scalar( dfftp, ub, lb, nr1, nr2, nr3, nr1x, nr2x, nr3x, stw )
-          CALL fft_dlay_scalar( dffts, ub, lb, nr1s, nr2s, nr3s, nr1sx, nr2sx, nr3sx, stw )
-
-#endif
-
-! ...     Maximum number of sticks (potentials)
-          nstpx  = maxval( nstp )
-! ...     Maximum number of sticks (wave func.)
-          nstpwx = maxval( nstpw  )
-
-          IF (ionode) WRITE( stdout,118)
- 118      FORMAT(3X,'            n.st   n.stw   n.sts    n.g    n.gw   n.gs')
- 119      FORMAT(3X,'     PEs    n.st   n.stw   n.sts    n.g    n.gw   n.gs')
-          WRITE( stdout,121) minval(nstp),  minval(nstpw), minval(nstps), minval(sstp), minval(sstpw), minval(sstps)
-          WRITE( stdout,122) maxval(nstp),  maxval(nstpw), maxval(nstps), maxval(sstp), maxval(sstpw), maxval(sstps)
-!          DO ip = 1, nproc_pool
-!            IF (ionode) THEN
-!              WRITE( stdout,120) ip, nstp(ip),  nstpw(ip), nstps(ip), sstp(ip), sstpw(ip), sstps(ip)
-!            END IF
-!          END DO
-          IF (ionode) THEN
-            WRITE( stdout,120)  sum(nstp),  sum(nstpw), sum(nstps), sum(sstp), sum(sstpw), sum(sstps)
-          ENDIF
- 120      FORMAT(3X,7I8)
- 121      FORMAT(3X,'min    ',6I8)
- 122      FORMAT(3X,'max    ',6I8)
- 123      FORMAT(3X,'total  ',6I8)
-
-
-          DEALLOCATE( ist )
-          DEALLOCATE( idx )
-
-          DEALLOCATE( st, stw, sts )
-          DEALLOCATE( sstp )
-          DEALLOCATE( nstp )
-          DEALLOCATE( sstpw )
-          DEALLOCATE( nstpw )
-          DEALLOCATE( sstps )
-          DEALLOCATE( nstps )
-
-          IF(ionode) WRITE( stdout,*)
-
-          RETURN
-        END SUBROUTINE pstickset
-
+      RETURN
+    END SUBROUTINE sticks_ordered_dist
 
 !=----------------------------------------------------------------------=
+
+
 
     SUBROUTINE sticks_deallocate
       IF( allocated( sticks_owner ) ) DEALLOCATE( sticks_owner )

@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2005 Quantum ESPRESSO group
+! Copyright (C) 2002-2010 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -21,9 +21,9 @@ MODULE io_files
   CHARACTER(len=256) :: wfc_dir = 'undefined'     ! directory for large files on each node, should be kept 'undefined' if not known 
   CHARACTER(len=256) :: prefix  = 'os'            ! prepended to file names
   CHARACTER(len=6)   :: nd_nmbr = '000000'        ! node number (used only in parallel case)
-  CHARACTER(len=256) :: pseudo_dir = './'
+  CHARACTER(len=256) :: pseudo_dir = './'    ! original location of PP files
+  CHARACTER(len=256) :: pseudo_dir_cur = ' ' ! current location when restarting
   CHARACTER(len=256) :: psfile( ntypx ) = 'UPF'
-  CHARACTER(len=256) :: scradir = './'
   CHARACTER(len=256) :: outdir  = './'
   !
   CHARACTER(len=256) :: qexml_version = ' '       ! the format of the current qexml datafile 
@@ -32,37 +32,7 @@ MODULE io_files
   CHARACTER(LEN=256) :: input_drho = ' '          ! name of the file with the input drho
   CHARACTER(LEN=256) :: output_drho = ' '         ! name of the file with the output drho
   !
-  CHARACTER(LEN=256) :: band_file = ' '
-  CHARACTER(LEN=256) :: tran_file = ' '
-  CHARACTER(LEN=256) :: prefixt   = ' '
-  CHARACTER(LEN=256) :: prefixl   = ' '
-  CHARACTER(LEN=256) :: prefixs   = ' '
-  CHARACTER(LEN=256) :: prefixr   = ' '
-  CHARACTER(LEN=256) :: save_file = ' '
-  CHARACTER(LEN=256) :: tran_prefix = ' '  !  prefix for restart directory
-  CHARACTER(LEN=12), PARAMETER :: tk_file = 'transmission'
-  CHARACTER(LEN=256) :: fil_loc = ' '      !  file with 2D eigenvectors and eigenvalues
-  !
-  CHARACTER(LEN=14), PARAMETER :: rho_name      = 'CHARGE_DENSITY'
-  CHARACTER(LEN=17), PARAMETER :: rho_name_up   = 'CHARGE_DENSITY.UP'
-  CHARACTER(LEN=19), PARAMETER :: rho_name_down = 'CHARGE_DENSITY.DOWN'
-  CHARACTER(LEN=14), PARAMETER :: rho_name_avg  = 'CHARGE_AVERAGE'
-  !
-  CHARACTER(LEN=4 ), PARAMETER :: chifile       = 'CHI2'
-  CHARACTER(LEN=7 ), PARAMETER :: dielecfile    = 'EPSILON'
-  !
   CHARACTER(LEN=5 ), PARAMETER :: crash_file    = 'CRASH'
-  CHARACTER(LEN=7 ), PARAMETER :: stop_file     = '.cpstop'
-  CHARACTER(LEN=2 ), PARAMETER :: ks_file       = 'KS'
-  CHARACTER(LEN=16), PARAMETER :: sfac_file     = 'STRUCTURE_FACTOR'
-  CHARACTER (LEN=256) :: &
-    dat_file      = 'os.dat',    &! file containing the enegy profile
-    int_file      = 'os.int',    &! file containing the interpolated energy profile
-    crd_file      = 'os.crd',    &! file containing path coordinates in pw.x input format
-    path_file     = 'os.path',   &! file containing informations needed to restart a path simulation
-    xyz_file      = 'os.xyz',    &! file containing coordinates of all images in xyz format
-    axsf_file     = 'os.axsf',   &! file containing coordinates of all images in axsf format
-    broy_file     = 'os.broyden'  ! file containing broyden's history
   CHARACTER (LEN=261) :: &
     exit_file = "os.EXIT"    ! file required for a soft exit  
   !
@@ -73,12 +43,7 @@ MODULE io_files
   !
   INTEGER :: rhounit     = 17
   INTEGER :: crashunit   = 15
-  INTEGER :: stopunit    = 7
-  INTEGER :: ksunit      = 18
-  INTEGER :: sfacunit    = 20
   INTEGER :: pseudounit  = 10
-  INTEGER :: chiunit     = 20
-  INTEGER :: dielecunit  = 20
   INTEGER :: opt_unit    = 20 ! optional unit 
   !
   ! ... units in pwscf
@@ -110,26 +75,6 @@ MODULE io_files
   !
   ! ... "path" specific
   !
-  INTEGER :: iunpath     =  6 ! unit for string output ( stdout or what else )
-  INTEGER :: iunrestart  = 2021 ! unit for saving the restart file ( neb_file )
-  INTEGER :: iundat      = 2022 ! unit for saving the enegy profile
-  INTEGER :: iunint      = 2023 ! unit for saving the interpolated energy profile
-  INTEGER :: iunxyz      = 2024 ! unit for saving coordinates ( xyz format )
-  INTEGER :: iunaxsf     = 2025 ! unit for saving coordinates ( axsf format )
-  INTEGER :: iunbroy     = 2026 ! unit for saving broyden's history
-  INTEGER :: iuncrd      = 2027 ! unit for saving coordinates in pw.x input format
-  !
-  ! ... meta-dynamics
-  !
-  INTEGER :: iunmeta     = 77 ! unit for saving meta-dynamics history
-  !
-  ! ... Y. Kanai combined smd/cp method
-  !
-  INTEGER :: smwout      = 20 ! base value to compute index for replica files
-  !
-  INTEGER :: vib_out     = 20 ! output of phrozen phonon vibrational calculation
-  INTEGER :: vib_mass    = 21 ! isotope masses used for the dynamical matrix
-  !
   !... finite electric field (Umari)
   !
   INTEGER :: iunefield   = 31 ! unit to store wavefunction for calculatin electric field operator
@@ -138,75 +83,15 @@ MODULE io_files
   !
   INTEGER :: iunefieldp  = 33 !unit to store projectors for hermitean electric field potential
   !
-  ! ... Wannier
+  ! ... For Wannier Hamiltonian
   !
   INTEGER :: iunwpp   = 113
   INTEGER :: iunwf    = 114
   INTEGER :: nwordwpp = 2
   INTEGER :: nwordwf  = 2
-
+  !
+  INTEGER, EXTERNAL :: find_free_unit
 CONTAINS
-  !
-  !-----------------------------------------------------------------------
-  FUNCTION trimcheck ( directory )
-    !-----------------------------------------------------------------------
-    !
-    ! ... verify if directory ends with /, add one if needed; 
-    ! ... trim white spaces and put the result in trimcheck
-    !
-    IMPLICIT NONE
-    !
-    CHARACTER (LEN=*), INTENT(IN) :: directory
-    CHARACTER (LEN=256) :: trimcheck
-    INTEGER  :: l
-    !
-    l = LEN_TRIM( directory )
-    IF ( l == 0 ) CALL errore( 'trimcheck', ' input name empty', 1)
-    !
-    IF ( directory(l:l) == '/' ) THEN
-       trimcheck = TRIM ( directory)
-    ELSE
-       IF ( l < LEN( trimcheck ) ) THEN
-          trimcheck = TRIM ( directory ) // '/'
-       ELSE
-          CALL errore(  'trimcheck', ' input name too long', l )
-       END IF
-    END IF
-    !
-    RETURN
-    !
-  END FUNCTION trimcheck
-  !
-  !--------------------------------------------------------------------------
-  FUNCTION find_free_unit()
-    !--------------------------------------------------------------------------
-    !
-    IMPLICIT NONE
-    !
-    INTEGER :: find_free_unit
-    INTEGER :: iunit
-    LOGICAL :: opnd
-    !
-    !
-    unit_loop: DO iunit = 99, 1, -1
-       !
-       INQUIRE( UNIT = iunit, OPENED = opnd )
-       !
-       IF ( .NOT. opnd ) THEN
-          !
-          find_free_unit = iunit
-          !
-          RETURN
-          !
-       END IF
-       !
-    END DO unit_loop
-    !
-    CALL errore( 'find_free_unit()', 'free unit not found ?!?', 1 )
-    !
-    RETURN
-    !
-  END FUNCTION find_free_unit
   !
   !--------------------------------------------------------------------------
   SUBROUTINE delete_if_present( filename, in_warning )
@@ -277,7 +162,231 @@ CONTAINS
     !
     CLOSE( UNIT = 4, STATUS = 'DELETE' )
     !
+    !-----------------------------------------------------------------------
   END FUNCTION check_writable 
+!-----------------------------------------------------------------------
+!
+!-----------------------------------------------------------------------
+subroutine diropn (unit, extension, recl, exst, tmp_dir_)
+  !-----------------------------------------------------------------------
+  !
+  !     this routine opens a file named "prefix"."extension" in tmp_dir 
+  !     for direct I/O access
+  !     If appropriate, the node number is added to the file name
+  !
+#if defined(__SX6)
+#  define DIRECT_IO_FACTOR 1
+#else
+#  define DIRECT_IO_FACTOR 8 
+#endif
+  !
+  ! the  record length in direct-access I/O is given by the number of
+  ! real*8 words times DIRECT_IO_FACTOR (may depend on the compiler)
+  !
+  USE kinds
+  implicit none
+  !
+  !    first the input variables
+  !
+  character(len=*) :: extension
+  ! input: name of the file to open
+  character(len=*), optional :: tmp_dir_
+  ! optional variable, if present it is used as tmp_dir
+  integer :: unit, recl
+  ! input: unit of the file to open
+  ! input: length of the records
+  logical :: exst
+  ! output: if true the file exists
+  !
+  !    local variables
+  !
+  character(len=256) :: tempfile, filename
+  ! complete file name
+  integer :: ios
+  integer*8 :: unf_recl
+  ! used to check I/O operations
+  ! length of the record
+  logical :: opnd
+
+  ! Check if the optional variable tmp_dir is included
+  !
+
+  ! if true the file is already opened
+  !
+  if (unit < 0) call errore ('diropn', 'wrong unit', 1)
+  !
+  !    we first check that the file is not already openend
+  !
+  ios = 0
+  inquire (unit = unit, opened = opnd)
+  if (opnd) call errore ('diropn', "can't open a connected unit", abs(unit))
+  !
+  !      then we check the filename extension
+  !
+  if (extension == ' ') call errore ('diropn','filename extension not given',2)
+  filename = trim(prefix) // "." // trim(extension)
+  if (present(tmp_dir_)) then
+     tempfile = trim(tmp_dir_) // trim(filename) //nd_nmbr
+  else
+     tempfile = trim(tmp_dir) // trim(filename) //nd_nmbr
+  endif
+
+  inquire (file = tempfile, exist = exst)
+  !
+  !      the unit for record length is unfortunately machine-dependent
+  !
+  unf_recl = DIRECT_IO_FACTOR * int(recl, kind=kind(unf_recl))
+  if (unf_recl <= 0) call errore ('diropn', 'wrong record length', 3)
+  !
+  open (unit, file = trim(adjustl(tempfile)), iostat = ios, form = 'unformatted', &
+       status = 'unknown', access = 'direct', recl = unf_recl)
+
+  if (ios /= 0) call errore ('diropn', 'error opening '//trim(tempfile), unit)
+  return
+  !-----------------------------------------------------------------------
+end subroutine diropn
+!-----------------------------------------------------------------------
+!
+!-----------------------------------------------------------------------
+subroutine seqopn (unit, extension, formatt, exst, tmp_dir_)
+  !-----------------------------------------------------------------------
+  !
+  !     this routine opens a file named "prefix"."extension"
+  !     in tmp_dir for sequential I/O access
+  !     If appropriate, the node number is added to the file name
+  !
+  implicit none
+  !
+  !    first the dummy variables
+  !
+  character(len=*) :: formatt, extension
+  ! input: name of the file to connect
+  ! input: 'formatted' or 'unformatted'
+  character(len=*), optional :: tmp_dir_
+  ! optional variable, if present it is used as tmp_dir
+  integer :: unit
+  ! input: unit to connect
+  logical :: exst
+  ! output: true if the file already exist
+  !
+  !    here the local variables
+  !
+  character(len=256) :: tempfile, filename
+  ! complete file name
+  integer :: ios
+  ! integer variable to test I/O status
+  logical :: opnd
+  ! true if the file is already opened
+
+
+  if (unit < 1) call errore ('seqopn', 'wrong unit', 1)
+  !
+  !    test if the file is already opened
+  !
+  ios = 0
+  inquire (unit = unit, opened = opnd)
+  if (opnd) call errore ('seqopn', "can't open a connected unit", &
+       abs (unit) )
+  !
+  !      then we check the extension of the filename
+  !
+  if (extension.eq.' ') call errore ('seqopn','filename extension  not given',2)
+  filename = trim(prefix) // "." // trim(extension)
+  ! Use the tmp_dir from input, if available
+  if ( present(tmp_dir_) ) then
+    tempfile = trim(tmp_dir_) // trim(filename)
+  else
+    tempfile = trim(tmp_dir) // trim(filename)
+  end if
+  if ( trim(nd_nmbr) == '1' .or. trim(nd_nmbr) == '01'.or. &
+       trim(nd_nmbr) == '001' .or. trim(nd_nmbr) == '0001'.or. &
+       trim(nd_nmbr) == '00001' .or. trim(nd_nmbr) == '000001' ) then
+     !
+     ! do not add processor number to files opened by processor 1
+     ! in parallel execution: if only the first processor writes,
+     ! we do not want the filename to be dependent on the number
+     ! of processors
+     !
+     !tempfile = tempfile
+  else
+     tempfile = trim(tempfile) // nd_nmbr
+  end if
+  inquire (file = tempfile, exist = exst)
+  !
+  !    Open the file
+  !
+
+  open (unit = unit, file = tempfile, form = formatt, status = &
+       'unknown', iostat = ios)
+
+  if (ios /= 0) call errore ('seqopn', 'error opening '//trim(tempfile), unit)
+  return
+  !-----------------------------------------------------------------------
+end subroutine seqopn
+!-----------------------------------------------------------------------
+!
 !=----------------------------------------------------------------------------=!
 END MODULE io_files
 !=----------------------------------------------------------------------------=!
+!
+!----------------------------------------------------------------------------
+SUBROUTINE davcio( vect, nword, unit, nrec, io )
+  !----------------------------------------------------------------------------
+  !
+  ! ... direct-access vector input/output
+  ! ... read/write nword words starting from the address specified by vect
+  !
+  USE io_global, ONLY : stdout
+  USE kinds,     ONLY : DP
+  !
+  IMPLICIT NONE
+  !
+  INTEGER, INTENT(IN) :: nword, unit, nrec, io
+    ! input: the dimension of vect
+    ! input: the unit where to read/write
+    ! input: the record where to read/write
+    ! input: flag if < 0 reading if > 0 writing
+  REAL(DP), INTENT(INOUT) :: vect(nword)
+   ! input/output: the vector to read/write
+  !
+  INTEGER :: ios
+    ! integer variable for I/O control
+  LOGICAL :: opnd
+  !
+  !
+  CALL start_clock( 'davcio' )
+  !
+  INQUIRE( UNIT = unit )
+  !
+  IF ( unit  <= 0 ) CALL errore(  'davcio', 'wrong unit', 1 )
+  IF ( nrec  <= 0 ) CALL errore(  'davcio', 'wrong record number', 2 )
+  IF ( nword <= 0 ) CALL errore(  'davcio', 'wrong record length', 3 )
+  IF ( io    == 0 ) CALL infomsg( 'davcio', 'nothing to do?' )
+  !
+  INQUIRE( UNIT = unit, OPENED = opnd )
+  !
+  IF ( .NOT. opnd ) &
+     CALL errore(  'davcio', 'unit is not opened', unit )
+  !
+  ios = 0
+  !
+  IF ( io < 0 ) THEN
+     !
+     READ( UNIT = unit, REC = nrec, IOSTAT = ios ) vect
+     IF ( ios /= 0 ) &
+        CALL errore( 'davcio', 'error while reading from file', unit )
+     !
+  ELSE IF ( io > 0 ) THEN
+     !
+     WRITE( UNIT = unit, REC = nrec, IOSTAT = ios ) vect
+     IF ( ios /= 0 ) &
+        CALL errore( 'davcio', 'error while writing to file', unit )
+     !
+  END IF
+  !
+  CALL stop_clock( 'davcio' )
+  !
+  RETURN
+  !
+END SUBROUTINE davcio
+

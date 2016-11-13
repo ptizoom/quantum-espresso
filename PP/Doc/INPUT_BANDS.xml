@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml-stylesheet type="text/xsl" href="input_xx.xsl"?>
+<!-- FILE AUTOMATICALLY CREATED: DO NOT EDIT, CHANGES WILL BE LOST -->
+    
+<input_description distribution="Quantum Espresso" package="PWscf" program="bands.x" >
+   <toc>
+   </toc>
+   <intro>
+Purpose of bands.x:
+    Rewrite the bands ordering them using the overlap
+    of the wave-functions on neighbor k points
+    and calculate properties of each eigen-function.
+
+Presently it can calculate:
+
+   (a) The expectation value of the spin operator on each spinor
+       wave-function.
+   (b) The symmetry properties of each wavefunction. With this option
+       the bands are not ordered according to the overlap.
+
+The input data of this program are read from standard input
+or from a file and have the following format:
+
+
+Structure of the input data:
+============================
+
+   &amp;BANDS
+     ...
+   /
+   </intro>
+   <namelist name="BANDS" >
+      <var name="prefix" type="CHARACTER" >
+         <info>
+prefix of files saved by program pw.x
+         </info>
+      </var>
+      <var name="outdir" type="CHARACTER" >
+         <info>
+temporary directory where pw.x files resides
+         </info>
+      </var>
+      <var name="filband" type="CHARACTER" >
+         <info>
+file &quot;filband&quot; contains the bands
+         </info>
+      </var>
+      <var name="spin_component" type="INTEGER" >
+         <info>
+In the lsda case select:
+
+   1 = spin-up
+   2 = spin-down
+         </info>
+      </var>
+      <dimension name="lsigma" start="1" end="3" type="LOGICAL" >
+         <info>
+If true writes a file filband.i with the expectation
+values of the spin operator on the spinor wave-functions.
+(only in the noncollinear case).
+         </info>
+      </dimension>
+      <var name="lsym" type="LOGICAL" >
+         <info>
+If .true. the bands are classified according to the
+irreducible representations of the small group of k. A
+file &quot;filband&quot;.rap with the same format of &quot;filband&quot;
+is written.
+         </info>
+      </var>
+      <var name="no_overlap" type="LOGICAL" >
+         <default> .false.
+         </default>
+         <info>
+If .true. writes the eigenvalues in the output file
+without changing their order.
+         </info>
+      </var>
+      <var name="plot_2d" type="LOGICAL" >
+         <default> .false.
+         </default>
+         <info>
+If .true. writes the eigenvalues in the output file
+in a 2D format readable by gnuplot. Band ordering is not
+changed. Each band is written in a different file called
+filband.# with the format:
+xk, yk, energy
+xk, yk, energy
+..  ..  ..
+enegies are written in eV and xk in units 2\pi/a.
+         </info>
+      </var>
+      <vargroup type="INTEGER" >
+         <var name="firstk" >
+         </var>
+         <var name="lastk" >
+         </var>
+         <info>
+if lsym=.true. makes the symmetry analysis only for k
+points between firstk to lastk
+         </info>
+      </vargroup>
+   </namelist>
+</input_description>

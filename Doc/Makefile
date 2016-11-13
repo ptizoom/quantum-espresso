@@ -1,9 +1,11 @@
 LATEX   = pdflatex
 LATEX2HTML = latex2html
 
-PDFS = constraints_HOWTO.pdf  developer_man.pdf  eps_man.pdf  user_guide.pdf
+PDFS = constraints_HOWTO.pdf  developer_man.pdf  user_guide.pdf plumed_quick_ref.pdf
 AUXS = $(PDFS:.pdf=.aux)
 LOGS = $(PDFS:.pdf=.log)
+OUTS = $(PDFS:.pdf=.out)
+TOCS = $(PDFS:.pdf=.toc)
 
 all:  pdf html
 pdf:  $(PDFS)
@@ -14,8 +16,9 @@ $(PDFS): %.pdf: %.tex
 	$(LATEX)  $<
 
 clean:
-	- rm -f $(PDFS) $(AUXS) $(LOGS) *~
-	- rm -rf user_guide developer_man
+	- rm -f $(PDFS) $(AUXS) $(LOGS) $(OUTS) $(TOCS) *~
+	- rm -rf user_guide/ developer_man/
+	- rm -f INPUT_*.html INPUT_*.txt INPUT_*.xml
 
 developer_man: developer_man.pdf
 	rm -rf developer_man/
@@ -23,7 +26,7 @@ developer_man: developer_man.pdf
                 -t "Developer's Manual for Quantum-ESPRESSO" \
                 -html_version 3.2,math \
                 -toc_depth 3 -split 3 -toc_stars -show_section_numbers \
-                -local_icons -image_type gif \
+                -local_icons -image_type png \
                 developer_man.tex
 	cd developer_man; \
         for file in *.html; do \
@@ -43,7 +46,7 @@ user_guide: user_guide.pdf
                 -t "User's Guide for Quantum-ESPRESSO" \
                 -html_version 3.2,math \
                 -toc_depth 5 -split 5 -toc_stars -show_section_numbers \
-                -local_icons -image_type gif \
+                -local_icons -image_type png \
                 user_guide.tex
 	cd user_guide; \
         for file in *.html; do \
@@ -56,3 +59,4 @@ user_guide: user_guide.pdf
 	@echo "*** User's Guide created in user_guide/user_guide.html"
 	@echo "***"
 	@echo ""
+

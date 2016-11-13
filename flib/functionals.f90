@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2009 Quantum ESPRESSO group
+! Copyright (C) 2001-2012 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -11,7 +11,7 @@ subroutine slater (rs, ex, vx)
   !-----------------------------------------------------------------------
   !        Slater exchange with alpha=2/3
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ex, vx
   real(DP), parameter  :: f= -0.687247939924714d0, alpha = 2.0d0/3.0d0
@@ -29,7 +29,7 @@ subroutine slater1(rs, ex, vx)
   !        Slater exchange with alpha=1, corresponding to -1.374/r_s Ry
   !        used to recover old results
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ex, vx
   real(DP), parameter  :: f= -0.687247939924714d0, alpha = 1.0d0
@@ -45,7 +45,7 @@ subroutine slater_rxc (rs, ex, vx)
   !-----------------------------------------------------------------------
   !        Slater exchange with alpha=2/3 and Relativistic exchange
   !
-  USE kinds
+  USE kinds, ONLY : DP
   USE constants, ONLY : pi, c_au
   IMPLICIT none
   real (DP):: rs, ex, vx
@@ -88,7 +88,7 @@ END SUBROUTINE slater_rxc
   !        Slater exchange with alpha=2/3, Kwee, Zhang and Krakauer KE
   !        correction
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ex, vx, dL, vol, ga, pi, a0
   real(DP), parameter  ::  a1 = -2.2037d0, &
@@ -126,7 +126,7 @@ subroutine pz (rs, iflag, ec, vc)
   !     iflag=1: J.P. Perdew and A. Zunger, PRB 23, 5048 (1981)
   !     iflag=2: G. Ortiz and P. Ballone, PRB 50, 1391 (1994)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc
   integer :: iflag
@@ -167,7 +167,7 @@ subroutine pzKZK (rs, ec, vc, vol)
   !     iflag=1: J.P. Perdew and A. Zunger, PRB 23, 5048 (1981)
   !     iflag=2: G. Ortiz and P. Ballone, PRB 50, 1391 (1994)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc, ec0 (2), vc0(2), ec0p 
   integer :: iflag, kr
@@ -256,7 +256,7 @@ subroutine vwn (rs, ec, vc)
   !-----------------------------------------------------------------------
   !     S.H. Vosko, L. Wilk, and M. Nusair, Can. J. Phys. 58, 1200 (1980)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc
   real(DP) :: a, b, c, x0
@@ -286,7 +286,7 @@ subroutine lyp (rs, ec, vc)
   !     C. Lee, W. Yang, and R.G. Parr, PRB 37, 785 (1988)
   !     LDA part only
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc
   real(DP) :: a, b, c, d, pi43
@@ -310,7 +310,7 @@ subroutine pw (rs, iflag, ec, vc)
   !     iflag=1: J.P. Perdew and Y. Wang, PRB 45, 13244 (1992)
   !     iflag=2: G. Ortiz and P. Ballone, PRB 50, 1391 (1994)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc
   integer :: iflag
@@ -361,7 +361,7 @@ subroutine wigner (rs, ec, vc)
   !-----------------------------------------------------------------------
   !        Wigner correlation
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc
   real(DP) :: pi34, rho13
@@ -381,7 +381,7 @@ subroutine hl (rs, ec, vc)
   !-----------------------------------------------------------------------
   !     L. Hedin and  B.I. Lundqvist,  J. Phys. C 4, 2064 (1971)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, ec, vc
   real(DP) :: a, x
@@ -400,7 +400,7 @@ subroutine gl (rs, ec, vc)
   !-----------------------------------------------------------------------
   !  O. Gunnarsson and B. I. Lundqvist, PRB 13, 4274 (1976)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rs, vc, ec
   real(DP) :: c, r, x
@@ -421,7 +421,7 @@ subroutine becke88 (rho, grho, sx, v1x, v2x)
   ! Becke exchange: A.D. Becke, PRA 38, 3098 (1988)
   ! only gradient-corrected part, no Slater term included
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rho, grho, sx, v1x, v2x
   real(DP) :: beta, third, two13
@@ -452,7 +452,7 @@ subroutine ggax (rho, grho, sx, v1x, v2x)
   ! Perdew-Wang GGA (PW91), exchange part:
   ! J.P. Perdew et al.,PRB 46, 6671 (1992)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rho, grho, sx, v1x, v2x
   real(DP) :: f1, f2, f3, f4, f5
@@ -484,13 +484,124 @@ subroutine ggax (rho, grho, sx, v1x, v2x)
   !
   return
 end subroutine ggax
+
+!
+!-----------------------------------------------------------------------
+subroutine rPW86 (rho, grho, sx, v1x, v2x)
+  !-----------------------------------------------------------------------
+  ! PRB 33, 8800 (1986) and J. Chem. Theory comp. 5, 2754 (2009)
+  !
+  USE kinds
+  implicit none
+
+  real(DP), intent(in) :: rho, grho
+  real(DP), intent(out) :: sx, v1x, v2x
+  real(DP) :: s, s_2, s_3, s_4, s_5, s_6, fs, grad_rho, df_ds
+  real(DP) :: a, b, c, s_prefactor, Ax, four_thirds
+  parameter( a = 1.851d0, b = 17.33d0, c = 0.163d0, s_prefactor = 6.18733545256027d0, &
+       Ax = -0.738558766382022d0, four_thirds = 4.d0/3.d0)
+
+  grad_rho = sqrt(grho)
+
+  s = grad_rho/(s_prefactor*rho**(four_thirds))
+
+  s_2 = s**2
+  s_3 = s_2 * s
+  s_4 = s_2**2
+  s_5 = s_3 * s_2
+  s_6 = s_2 * s_4
+
+  !! Calculation of energy
+  fs = (1 + a*s_2 + b*s_4 + c*s_6)**(1.d0/15.d0)
+  sx = Ax * rho**(four_thirds) * (fs -1.0D0)
+
+
+  !! Calculation of the potential
+  df_ds = (1.d0/(15.d0*fs**(14.0D0)))*(2*a*s + 4*b*s_3 + 6*c*s_5)
+
+
+  v1x = Ax*(four_thirds)*(rho**(1.d0/3.d0)*(fs -1.0D0) &
+       -grad_rho/(s_prefactor * rho)*df_ds)
+
+  v2x = Ax * df_ds/(s_prefactor*grad_rho)
+
+end subroutine rPW86
+
+!
+!---------------------------------------------------------------
+subroutine c09x (rho, grho, sx, v1x, v2x)
+  !---------------------------------------------------------------
+  ! Cooper '09 exchange for vdW-DF (without Slater exchange):
+  ! V. R. Cooper, Phys. Rev. B 81, 161104(R) (2010)
+  !
+  ! Developed thanks to the contribution of 
+  ! Ikutaro Hamada - ikutaro@wpi-aimr.tohoku.ac.jp
+  ! WPI-Advanced Institute of Materials Research, Tohoku University  
+  !
+  USE kinds, ONLY : DP
+  USE constants, ONLY : pi
+  implicit none
+  real(DP) :: rho, grho, sx, v1x, v2x
+  ! input: charge and squared gradient
+  ! output: energy
+  ! output: potential
+  ! local variables
+  real(DP) :: kf, agrho, s1, s2, ds, dsg, exunif, fx
+  ! (3*pi2*|rho|)^(1/3)
+  ! |grho|
+  ! |grho|/(2*kf*|rho|)
+  ! s^2
+  ! n*ds/dn
+  ! n*ds/d(gn)
+  ! exchange energy LDA part
+  ! exchange energy gradient part
+  real(DP) :: dxunif, dfx, f1, f2, f3, dfx1, dfx2
+  ! numerical coefficients (NB: c2=(3 pi^2)^(1/3) )
+  real(DP) :: third, c1, c2, c5
+  parameter (third = 1.d0 / 3.d0, c1 = 0.75d0 / pi , &
+       c2 = 3.093667726280136d0, c5 = 4.d0 * third)
+  ! parameters of the functional
+  real(DP) :: kappa, mu, alpha
+  data kappa / 1.245d0  /, &
+       mu  / 0.0617d0 /, &
+       alpha / 0.0483d0 /
+  !
+  agrho = sqrt (grho)
+  kf = c2 * rho**third
+  dsg = 0.5d0 / kf
+  s1 = agrho * dsg / rho
+  s2 = s1 * s1
+  ds = - c5 * s1
+  !
+  !   Energy
+  !
+  f1 = exp( - alpha * s2 )
+  f2 = exp( - alpha * s2 / 2.0d0 )
+  f3 = mu * s2 * f1
+  fx = f3 + kappa * ( 1.0d0 - f2 )
+  exunif = - c1 * kf
+  sx = exunif * fx
+  !
+  !   Potential
+  !
+  dxunif = exunif * third
+  dfx1 = 2.0d0 * mu * s1 * ( 1.0d0 - alpha * s2 ) * f1
+  dfx2 = kappa * alpha * s1 * f2 
+  dfx = dfx1 + dfx2 
+  v1x = sx + dxunif * fx + exunif * dfx * ds
+  v2x = exunif * dfx * dsg / agrho
+
+  sx = sx * rho
+  return
+end subroutine c09x
+
 !
 !-----------------------------------------------------------------------
 subroutine perdew86 (rho, grho, sc, v1c, v2c)
   !-----------------------------------------------------------------------
   ! Perdew gradient correction on correlation: PRB 33, 8822 (1986)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rho, grho, sc, v1c, v2c
   real(DP) :: p1, p2, p3, p4, pc1, pc2, pci
@@ -531,7 +642,7 @@ subroutine glyp (rho, grho, sc, v1c, v2c)
   !-----------------------------------------------------------------------
   ! Lee Yang Parr: gradient correction part
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rho, grho, sc, v1c, v2c
   real(DP) :: a, b, c, d
@@ -561,7 +672,7 @@ subroutine ggac (rho, grho, sc, v1c, v2c)
   !-----------------------------------------------------------------------
   ! Perdew-Wang GGA (PW91) correlation part
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: rho, grho, sc, v1c, v2c
   real(DP) :: al, pa, pb, pc, pd, cx, cxc0, cc0
@@ -623,8 +734,9 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   ! iflag=1  J.P.Perdew, K.Burke, M.Ernzerhof, PRL 77, 3865 (1996)
   ! iflag=2  "revised' PBE: Y. Zhang et al., PRL 80, 890 (1998)
   ! iflag=3  PBEsol: J.P.Perdew et al., PRL 100, 136406 (2008)
+  ! iflag=4  PBEQ2D: L. Chiodo et al., PRL 108, 126402 (2012)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   USE constants, ONLY : pi
   implicit none
   real(DP) :: rho, grho, sx, v1x, v2x
@@ -643,14 +755,15 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   ! exchange energy LDA part
   ! exchange energy gradient part
   real(DP) :: dxunif, dfx, f1, f2, f3, dfx1
+  real(DP) :: p,  amu, ab, c, dfxdp, dfxds, upbe, uge, s, ak, aa
   ! numerical coefficients (NB: c2=(3 pi^2)^(1/3) )
-  real(DP) :: third, c1, c2, c5
-  parameter (third = 1.d0 / 3.d0, c1 = 0.75d0 / pi , &
-       c2 = 3.093667726280136d0, c5 = 4.d0 * third)
+  real(DP), parameter :: third = 1.d0 / 3.d0, c1 = 0.75d0 / pi , &
+       c2 = 3.093667726280136d0, c5 = 4.d0 * third
   ! parameters of the functional
-  real(DP) :: k (3), mu(3)
-  data k / 0.804d0, 1.2450D0, 0.804d0 /, &
-       mu/ 0.21951d0, 0.21951d0, 0.12345679012345679012d0  /
+  real(DP) :: k (4), mu(4)
+!           pbe        rpbe       pbesol                    pbeq2d
+  data k / 0.804d0,   1.2450D0,   0.804d0 ,                 0.804d0 /, &
+       mu/ 0.21951d0, 0.21951d0, 0.12345679012345679012d0,  0.12345679012345679/
   !
   agrho = sqrt (grho)
   kf = c2 * rho**third
@@ -661,18 +774,44 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   !
   !   Energy
   !
-  f1 = s2 * mu(iflag) / k (iflag)
-  f2 = 1.d0 + f1
-  f3 = k (iflag) / f2
-  fx = k (iflag) - f3
+  if ( iflag == 4) then
+     p=s1*s1
+     s=s1
+     ak=0.804d0
+     amu=10.d0/81.d0
+     ab=0.5217d0
+     c=2.d0
+     fx =  ak - ak / (1.0_dp + amu * p / ak)  + p**2 * (1 + p) &
+           /(10**c + p**3) * (-1.0_dp - ak + ak / (1.0_dp + amu * p / ak) &
+           + ab * p ** (-0.1d1/ 0.4D1))
+  else
+     f1 = s2 * mu(iflag) / k (iflag)
+     f2 = 1.d0 + f1
+     f3 = k (iflag) / f2
+     fx = k (iflag) - f3
+  end if
   exunif = - c1 * kf
   sx = exunif * fx
   !
   !   Potential
   !
   dxunif = exunif * third
-  dfx1 = f2 * f2
-  dfx = 2.d0 * mu(iflag) * s1 / dfx1
+  if ( iflag == 4) then
+      dfxdp = dble(1 / (1 + amu * p / ak) ** 2 * amu) + dble(2 * p * (1 &
+     + p) / (10 ** c + p ** 3) * (-1 - ak + ak / (1 + amu * p / ak) + ab &
+      * p ** (-0.1d1 / 0.4D1))) + dble(p ** 2 / (10 ** c + p ** 3) * ( &
+     -1 - ak + ak / (1 + amu * p / ak) + ab * p ** (-0.1d1 / 0.4D1))) - &
+      dble(3 * p ** 4 * (1 + p) / (10 ** c + p ** 3) ** 2 * (-1 - ak + &
+     ak / (1 + amu * p / ak) + ab * p ** (-0.1d1 / 0.4D1))) + dble(p ** &
+      2) * dble(1 + p) / dble(10 ** c + p ** 3) * (-dble(1 / (1 + amu * &
+      p / ak) ** 2 * amu) - dble(ab * p ** (-0.5d1 / 0.4D1)) / 0.4D1)
+
+      dfxds=dfxdp*2.d0*s
+      dfx=dfxds
+  else
+      dfx1 = f2 * f2
+      dfx = 2.d0 * mu(iflag) * s1 / dfx1
+  end if
   v1x = sx + dxunif * fx + exunif * dfx * ds
   v2x = exunif * dfx * dsg / agrho
 
@@ -689,7 +828,7 @@ subroutine pbex_vec (rho, grho, iflag, sx, v1x, v2x, length, small)
   ! iflag=2  "revised' PBE: Y. Zhang et al., PRL 80, 890 (1998)
   ! iflag=3  PBEsol: J.P.Perdew et al., PRL 100, 136406 (2008)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   USE constants, ONLY : pi
   implicit none
   integer, intent(in)   :: length
@@ -753,20 +892,21 @@ subroutine pbec (rho, grho, iflag, sc, v1c, v2c)
   ! PBE correlation (without LDA part)
   ! iflag=1: J.P.Perdew, K.Burke, M.Ernzerhof, PRL 77, 3865 (1996).
   ! iflag=2: J.P.Perdew et al., PRL 100, 136406 (2008).
+  ! iflag=3: L. Chiodo et al, PRL 108, 126402 (2012)  (PBEQ2D)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   integer, intent(in) :: iflag
   real(DP) :: rho, grho, sc, v1c, v2c
-  real(DP) :: ga, be (2)
-  parameter (ga = 0.031091d0)
-  data be / 0.066725d0, 0.046d0 /
-  real(DP) :: third, pi34, xkf, xks
-  parameter (third = 1.d0 / 3.d0, pi34 = 0.6203504908994d0)
-  parameter (xkf = 1.919158292677513d0, xks = 1.128379167095513d0)
+  real(DP), parameter :: ga = 0.031091d0
+  real(DP) :: be (3)
+!             pbe           pbesol   pbeq2d
+  data be / 0.066725d0, 0.046d0,     0.066725d0/
+  real(DP), parameter :: third = 1.d0 / 3.d0, pi34 = 0.6203504908994d0
+  real(DP), parameter :: xkf = 1.919158292677513d0, xks = 1.128379167095513d0
   ! pi34=(3/4pi)^(1/3), xkf=(9 pi/4)^(1/3), xks= sqrt(4/pi)
   real(DP) :: kf, ks, rs, ec, vc, t, expe, af, bf, y, xy, qy
-  real(DP) :: s1, h0, dh0, ddh0
+  real(DP) :: s1, h0, dh0, ddh0, sc2D, v1c2D, v2c2D
   !
   rs = pi34 / rho**third
   call pw (rs, 1, ec, vc)
@@ -787,10 +927,310 @@ subroutine pbec (rho, grho, iflag, sc, v1c, v2c)
   sc = rho * h0
   v1c = h0 + dh0
   v2c = ddh0
+! q2D
+  if (iflag == 3)then
+     call cpbe2d(rho,grho,sc2D,v1c2D,v2c2D)
+     sc=sc+sc2D
+     v1c=v1c+v1c2D
+     v2c=v2c+v2c2D
+  endif
   !
   return
 end subroutine pbec
 
+!---------------------------------------------------------------
+subroutine cpbe2d(rho,grho,sc,v1c,v2c)
+!---------------------------------------------------------------
+
+  ! 2D correction (last term of Eq. 5, PRL 108, 126402 (2012))
+
+  USE kinds, ONLY : dp
+  USE constants, ONLY : pi
+  IMPLICIT NONE
+  !
+  REAL(dp), INTENT(in) :: rho, grho 
+  REAL(dp), INTENT(OUT) :: sc, v1c, v2c
+  !
+  REAL(dp), PARAMETER:: ex1=0.333333333333333333_dp, ex2=1.166666666666667_dp
+  REAL(dp), PARAMETER:: ex3=ex2+1.0_dp
+  REAL(dp) :: fac1, fac2, zeta, phi, gr, rs, drsdn, akf, aks, t, dtdn, dtdgr
+  REAL(dp) :: p, a, g, alpha1, beta1,beta2,beta3,beta4, dgdrs, epsc, depscdrs
+  REAL(dp) :: c, gamma1, beta, aa, cg, adddepsc, h, dhdaa, dhdt, dhdrs
+  REAL(dp) :: epscpbe, depscpbedrs, depscpbedt, a0,a1,a2, b0,b1,b2, c0,c1,c2
+  REAL(dp) :: e0,e1,e2, f0,f1,f2, g0,g1,g2, h0,h1,h2, d0,d1,d2, ff, dffdt
+  REAL(dp) :: rs3d, rs2d, drs2ddrs3d, eps2d, deps2ddrs2, depsGGAdrs, depsGGAdt
+  REAL(dp) :: drs2ddt, rs2, ec, decdn, decdgr, daadepsc
+  !
+  fac1=(3.d0*pi*pi)**ex1
+  fac2=sqrt(4.d0*fac1/pi)
+
+  zeta=0.d0
+  phi=1.d0
+!
+  gr=sqrt (grho)
+!
+  rs=(3.d0/4.d0/pi/rho)**ex1
+  drsdn = -dble(3 ** (0.1D1 / 0.3D1)) * dble(2 ** (0.1D1 / 0.3D1)) * &
+  0.3141592654D1 ** (-0.1D1 / 0.3D1) * (0.1D1 / rho) ** (-0.2D1 / &
+  0.3D1) / rho ** 2 / 0.6D1
+!
+  akf=(3.d0*pi*pi*rho)**(1.d0/3.d0)
+  aks=dsqrt(4.d0*akf/pi)
+  t=gr/2.d0/phi/aks/rho
+  dtdn=-7.d0/6.d0*gr/2.d0/phi/dsqrt(4.d0/pi)/   &
+  ((3.d0*pi*pi)**(1.d0/6.d0))/(rho**(13.d0/6.d0))
+  dtdgr=1.d0/2.d0/phi/aks/rho
+!
+! for the LDA correlation
+  p=1.d0
+  A=0.031091d0
+  alpha1=0.21370d0
+  beta1=7.5957d0
+  beta2=3.5876d0
+  beta3=1.6382d0
+  beta4=0.49294d0
+  G = -0.2D1 * A * dble(1 + alpha1 * rs) * log(0.1D1 + 0.1D1 / A / ( &
+  beta1 * sqrt(dble(rs)) + dble(beta2 * rs) + dble(beta3 * rs ** ( &
+  0.3D1 / 0.2D1)) + dble(beta4 * rs ** (p + 1))) / 0.2D1)
+
+  dGdrs = -0.2D1 * A * alpha1 * log(0.1D1 + 0.1D1 / A / (beta1 * sqrt(rs) &
+   + beta2 * rs + beta3 * rs ** (0.3D1 / 0.2D1) + beta4 * rs ** &
+  (p + 1)) / 0.2D1) + (0.1D1 + alpha1 * rs) / (beta1 * sqrt(rs) +  &
+  beta2 * rs + beta3 * rs ** (0.3D1 / 0.2D1) + beta4 * rs ** (p + 1)) &
+  ** 2 * (beta1 * rs ** (-0.1D1 / 0.2D1) / 0.2D1 + beta2 + 0.3D1 / &
+  0.2D1 * beta3 * sqrt(rs) + beta4 * rs ** (p + 1) * dble(p + 1) /  &
+  rs) / (0.1D1 + 0.1D1 / A / (beta1 * sqrt(rs) + beta2 * rs + beta3 * &
+  rs ** (0.3D1 / 0.2D1) + beta4 * rs ** (p + 1)) / 0.2D1)
+!
+  epsc=G
+  depscdrs=dGdrs
+!
+! PBE
+  c=1.d0
+  gamma1=0.031091d0
+  beta=0.066725d0
+!
+  AA = beta / gamma1 / (exp(-epsc / gamma1 / phi ** 3) - 0.1D1)
+  cg = beta / gamma1 ** 2 / (exp(-epsc/ gamma1 / phi ** 3) - 0.1D1) &
+  ** 2 / phi ** 3 * exp(-epsc / gamma1 / phi ** 3)
+  dAAdepsc=cg
+!
+  if(t.le.10.d0)then
+  H = dble(gamma1) * phi ** 3 * log(dble(1 + beta / gamma1 * t ** 2 &
+  * (1 + AA * t ** 2) / (1 + c * AA * t ** 2 + AA ** 2 * t ** 4)))
+!
+  dHdAA = gamma1 * phi ** 3 * (beta / gamma1 * t ** 4 / (1 + c * AA &
+  * t ** 2 + AA ** 2 * t ** 4) - beta / gamma1 * t ** 2 * (1 + AA * &
+  t ** 2) / (1 + c * AA * t ** 2 + AA ** 2 * t ** 4) ** 2 * (c * t **&
+   2 + 2 * AA * t ** 4)) / (1 + beta / gamma1 * t ** 2 * (1 + AA * &
+  t ** 2) / (1 + c * AA * t ** 2 + AA ** 2 * t ** 4))
+!
+  dHdt = gamma1 * phi ** 3 * (2 * beta / gamma1 * t * (1 + AA * t ** &
+   2) / (1 + c * AA * t ** 2 + AA ** 2 * t ** 4) + 2 * beta / gamma1 &
+   * t ** 3 * AA / (1 + c * AA * t ** 2 + AA ** 2 * t ** 4) - beta / &
+   gamma1 * t ** 2 * (1 + AA * t ** 2) / (1 + c * AA * t ** 2 + AA ** &
+   2 * t ** 4) ** 2 * (2 * c * AA * t + 4 * AA ** 2 * t ** 3)) / (1 &
+   + beta / gamma1 * t ** 2 * (1 + AA * t ** 2) / (1 + c * AA * t ** &
+   2 + AA ** 2 * t ** 4))
+
+  else
+
+  H=gamma1*(phi**3)*dlog(1.d0+(beta/gamma1)*(1.d0/AA))
+!
+  dHdAA =gamma1*(phi**3)*1.d0/(1.d0+(beta/gamma1)*(1.d0/AA))* &
+  (beta/gamma1)*(-1.d0/AA/AA)
+!
+  dHdt=0.d0
+  endif
+!
+  dHdrs=dHdAA*dAAdepsc*depscdrs
+!
+  epscPBE=epsc+H
+  depscPBEdrs=depscdrs+dHdrs
+  depscPBEdt=dHdt
+!
+! START THE 2D CORRECTION 
+!
+  beta=1.3386d0
+  a0=-0.1925d0
+  a1=0.117331d0
+  a2=0.0234188d0
+  b0=0.0863136d0
+  b1=-0.03394d0
+  b2=-0.037093d0
+  c0=0.057234d0
+  c1=-0.00766765d0
+  c2=0.0163618d0
+  e0=1.0022d0
+  e1=0.4133d0
+  e2=1.424301d0
+  f0=-0.02069d0
+  f1=0.d0
+  f2=0.d0
+  g0=0.340d0
+  g1=0.0668467d0
+  g2=0.d0
+  h0=0.01747d0
+  h1=0.0007799d0
+  h2=1.163099d0
+  d0=-a0*h0
+  d1=-a1*h1
+  d2=-a2*h2
+!
+  ff = t ** 4 * (1 + t ** 2) / (1000000 + t ** 6)
+  dffdt = 4 * t ** 3 * (1 + t ** 2) / (1000000 + t ** 6) + 2 * t ** &
+  5 / (1000000 + t ** 6) - 6 * t ** 9 * (1 + t ** 2) / (1000000 + t &
+  ** 6) ** 2
+!
+  rs3d=rs
+  rs2d = 0.4552100000D0 * dble(3 ** (0.7D1 / 0.12D2)) * dble(4 ** ( &
+  0.5D1 / 0.12D2)) * (0.1D1 / pi) ** (-0.5D1 / 0.12D2) * rs3d ** ( &
+  0.5D1 / 0.4D1) * sqrt(t)
+
+  cg = 0.5690125000D0 * dble(3 ** (0.7D1 / 0.12D2)) * dble(4 ** ( &
+  0.5D1 / 0.12D2)) * (0.1D1 / pi) ** (-0.5D1 / 0.12D2) * rs3d ** (0.1D1 &
+   / 0.4D1) * sqrt(t)
+  drs2ddrs3d=cg
+
+  cg = 0.2276050000D0 * dble(3 ** (0.7D1 / 0.12D2)) * dble(4 ** ( &
+  0.5D1 / 0.12D2)) * dble((1 / pi) ** (-0.5D1 / 0.12D2)) * dble(rs3d ** &
+   (0.5D1 / 0.4D1)) * dble(t ** (-0.1D1 / 0.2D1))
+  drs2ddt=cg
+  rs2=rs2d
+!
+  eps2d = (exp(-beta * rs2) - 0.1D1) * (-0.2D1 / 0.3D1 * sqrt(0.2D1) &
+   * dble((1 + zeta) ** (0.3D1 / 0.2D1) + (1 - zeta) ** (0.3D1 /  &
+  0.2D1)) / pi / rs2 + 0.4D1 / 0.3D1 * (0.1D1 + 0.3D1 / 0.8D1 * dble( &
+  zeta ** 2) + 0.3D1 / 0.128D3 * dble(zeta ** 4)) * sqrt(0.2D1) / pi / &
+   rs2) + a0 + (b0 * rs2 + c0 * rs2 ** 2 + d0 * rs2 ** 3) * log(0.1D1 &
+   + 0.1D1 / (e0 * rs2 + f0 * rs2 ** (0.3D1 / 0.2D1) + g0 * rs2 ** &
+  2 + h0 * rs2 ** 3)) + (a1 + (b1 * rs2 + c1 * rs2 ** 2 + d1 * rs2 ** &
+   3) * log(0.1D1 + 0.1D1 / (e1 * rs2 + f1 * rs2 ** (0.3D1 / 0.2D1) &
+   + g1 * rs2 ** 2 + h1 * rs2 ** 3))) * dble(zeta ** 2) + (a2 + (b2  &
+  * rs2 + c2 * rs2 ** 2 + d2 * rs2 ** 3) * log(0.1D1 + 0.1D1 / (e2 * &
+   rs2 + f2 * rs2 ** (0.3D1 / 0.2D1) + g2 * rs2 ** 2 + h2 * rs2 ** 3 &
+  ))) * dble(zeta ** 4)
+!
+  cg = -beta * exp(-beta * rs2) * (-0.2D1 / 0.3D1 * sqrt(0.2D1) *  &
+  dble((1 + zeta) ** (0.3D1 / 0.2D1) + (1 - zeta) ** (0.3D1 / 0.2D1)) &
+  / pi / rs2 + 0.4D1 / 0.3D1 * (0.1D1 + 0.3D1 / 0.8D1 * dble(zeta ** &
+   2) + 0.3D1 / 0.128D3 * dble(zeta ** 4)) * sqrt(0.2D1) / pi / rs2) &
+   + (exp(-beta * rs2) - 0.1D1) * (0.2D1 / 0.3D1 * sqrt(0.2D1) * dble &
+  ((1 + zeta) ** (0.3D1 / 0.2D1) + (1 - zeta) ** (0.3D1 / 0.2D1)) / &
+   pi / rs2 ** 2 - 0.4D1 / 0.3D1 * (0.1D1 + 0.3D1 / 0.8D1 * dble(zeta  &
+   ** 2) + 0.3D1 / 0.128D3 * dble(zeta ** 4)) * sqrt(0.2D1) / pi /  &
+  rs2 ** 2) + (b0 + 0.2D1 * c0 * rs2 + 0.3D1 * d0 * rs2 ** 2) * log( &
+  0.1D1 + 0.1D1 / (e0 * rs2 + f0 * rs2 ** (0.3D1 / 0.2D1) + g0 * rs2 &
+   ** 2 + h0 * rs2 ** 3)) - (b0 * rs2 + c0 * rs2 ** 2 + d0 * rs2 **  &
+  3) / (e0 * rs2 + f0 * rs2 ** (0.3D1 / 0.2D1) + g0 * rs2 ** 2 + h0  &
+  * rs2 ** 3) ** 2 * (e0 + 0.3D1 / 0.2D1 * f0 * sqrt(rs2) + 0.2D1 *  &
+  g0 * rs2 + 0.3D1 * h0 * rs2 ** 2) / (0.1D1 + 0.1D1 / (e0 * rs2 + f0 &
+   * rs2 ** (0.3D1 / 0.2D1) + g0 * rs2 ** 2 + h0 * rs2 ** 3)) + (( &
+  b1 + 0.2D1 * c1 * rs2 + 0.3D1 * d1 * rs2 ** 2) * log(0.1D1 + 0.1D1  &
+  / (e1 * rs2 + f1 * rs2 ** (0.3D1 / 0.2D1) + g1 * rs2 ** 2 + h1 *  &
+  rs2 ** 3)) - (b1 * rs2 + c1 * rs2 ** 2 + d1 * rs2 ** 3) / (e1 * rs2 &
+   + f1 * rs2 ** (0.3D1 / 0.2D1) + g1 * rs2 ** 2 + h1 * rs2 ** 3) ** &
+   2 * (e1 + 0.3D1 / 0.2D1 * f1 * sqrt(rs2) + 0.2D1 * g1 * rs2 +  &
+  0.3D1 * h1 * rs2 ** 2) / (0.1D1 + 0.1D1 / (e1 * rs2 + f1 * rs2 ** ( &
+  0.3D1 / 0.2D1) + g1 * rs2 ** 2 + h1 * rs2 ** 3))) * dble(zeta ** 2)  &
+  + ((b2 + 0.2D1 * c2 * rs2 + 0.3D1 * d2 * rs2 ** 2) * log(0.1D1 +  &
+  0.1D1 / (e2 * rs2 + f2 * rs2 ** (0.3D1 / 0.2D1) + g2 * rs2 ** 2 + h2 &
+   * rs2 ** 3)) - (b2 * rs2 + c2 * rs2 ** 2 + d2 * rs2 ** 3) / (e2  &
+  * rs2 + f2 * rs2 ** (0.3D1 / 0.2D1) + g2 * rs2 ** 2 + h2 * rs2 **  &
+  3) ** 2 * (e2 + 0.3D1 / 0.2D1 * f2 * sqrt(rs2) + 0.2D1 * g2 * rs2  &
+  + 0.3D1 * h2 * rs2 ** 2) / (0.1D1 + 0.1D1 / (e2 * rs2 + f2 * rs2 ** &
+   (0.3D1 / 0.2D1) + g2 * rs2 ** 2 + h2 * rs2 ** 3))) * dble(zeta ** &
+   4)
+  deps2ddrs2=cg
+!
+! GGA-2D
+!
+  depsGGAdrs=ff*(-depscPBEdrs+deps2ddrs2*drs2ddrs3d)
+  depsGGAdt=dffdt*(-epscPBE+eps2d)+ff*  &
+   (-depscPBEdt+deps2ddrs2*drs2ddt)
+!
+  ec=rho*(ff*(-epscPBE+eps2d))
+!
+  decdn=ff*(-epscPBE+eps2d)+rho*depsGGAdrs*drsdn+ &
+      rho*depsGGAdt*dtdn
+!
+  decdgr=rho*depsGGAdt*dtdgr
+!
+  sc=ec
+  v1c=decdn
+  v2c=decdgr/gr
+!
+  RETURN
+END subroutine cpbe2d
+!
+!---------------------------------------------------------------
+subroutine sogga (rho, grho2, sx, v1x, v2x)
+  !-------------------------------------------------------------
+  !
+  ! SOGGA exchange
+  ! 
+  !
+ USE kinds
+ USE constants, ONLY : pi
+
+  implicit none
+
+  real(dp), intent(in)    :: rho, grho2
+  real(dp), intent(out)   :: sx, v1x, v2x
+  ! input: charge and squared gradient
+  ! output: energy
+  ! output: potential
+
+  ! local variables
+  real(dp)                :: grho, rho43, xs, xs2, dxs2_drho, dxs2_dgrho2
+  real(dp)                :: CX, denom, C1, C2, Fso, Fpbe, ex, Fx, dFx_dxs2, dex_drho
+
+  real(dp), parameter     :: one = 1.0_dp, two=2.0_dp, three = 3.0_dp,                &
+  &                          four = 4.0_dp, eight = 8.0_dp,             &
+  &                          f13 = one/three, f23 = two/three, f43 = four/three,      &
+  &                          f34=three/four, f83 = eight/three, f12 = one/two
+
+  real(dp), parameter     :: mu=0.12346d0, kapa=0.552d0
+  !
+  !_____________________________________________________________________
+
+
+  CX    =  f34 * (three/pi)**f13            ! Cx LDA
+  denom =  four * (three*pi**two)**f23
+  C1    =  mu / denom
+  C2    =  mu / (kapa * denom)
+
+
+  grho  = sqrt(grho2)
+  rho43 = rho**f43
+  xs    = grho / rho43
+  xs2   = xs * xs
+
+  dxs2_drho  = -f83 * xs2 / rho
+  dxs2_dgrho2 = one /rho**f83
+
+  ex        = - CX * rho43
+  dex_drho  = - f43 * CX * rho**f13
+
+  Fso       = kapa * (one - exp(-C2*xs2))
+  Fpbe      = C1 * xs2 / (one + C2*xs2)
+
+  Fx        =   f12 * (Fpbe + Fso)
+  dFx_dxs2  =   f12 * (C1 / ((one + C2*xs2)**2) + C1*exp(-C2*xs2))
+
+  !
+  !   Energy
+ !
+  sx = Fx * ex
+  !
+  !   Potential
+  !
+  v1x = dex_drho * Fx  +  ex * dFx_dxs2 * dxs2_drho
+  v2x = two * ex * dFx_dxs2 * dxs2_dgrho2
+
+end subroutine sogga
+!
+!
 !     ==================================================================
 subroutine hcth(rho,grho,sx,v1x,v2x)
   !     ==================================================================
@@ -804,7 +1244,7 @@ subroutine hcth(rho,grho,sx,v1x,v2x)
   !     v1x : d(sx)/drho  (eq. dfdra = dfdrb in original)
   !     v2x : 1/gr*d(sx)/d(gr) (eq. 0.5 * dfdza = 0.5 * dfdzb in original)
   !--------------------------------------------------------------------------
-  USE kinds
+  USE kinds, ONLY : DP
   USE constants, ONLY: pi
   implicit none
   real(DP) :: rho, grho, sx, v1x, v2x
@@ -910,7 +1350,7 @@ subroutine hcth(rho,grho,sx,v1x,v2x)
 end subroutine hcth
 !-------------------------------------------------------------------=
 subroutine pwcorr(r,c,g,dg)
-  USE kinds
+  USE kinds, ONLY : DP
   implicit none
   real(DP) :: r, g, dg, c(6)
   real(DP) :: r12, r32, r2, rb, drb, sb
@@ -975,7 +1415,7 @@ subroutine wcx (rho, grho, sx, v1x, v2x)
   ! Wu-Cohen exchange (without Slater exchange):
   ! Z. Wu and R. E. Cohen, PRB 73, 235116 (2006)
   !
-  USE kinds
+  USE kinds, ONLY : DP
   USE constants, ONLY : pi
   implicit none
   real(DP) :: rho, grho, sx, v1x, v2x
@@ -1100,10 +1540,10 @@ end function dpz
       V2XA=0.0D0
       V1XB=0.0D0
       V2XB=0.0D0
-      IF(ABS(RHOA).GT.SMALL) THEN
+      IF(RHOA.GT.SMALL.AND.GRHOAA.GT.SMALL) THEN
         CALL pbexsr(2.D0*RHOA, 4.D0*GRHOAA, SXA, V1XA, V2XA, OMEGA)
       ENDIF
-      IF(ABS(RHOB).GT.SMALL) THEN
+      IF(RHOB.GT.SMALL.AND.GRHOBB.GT.SMALL) THEN
         CALL pbexsr(2.D0*RHOB, 4.D0*GRHOBB, SXB, V1XB, V2XB, OMEGA)
       ENDIF
       sx = 0.5D0*(SXA+SXB)
@@ -1119,7 +1559,7 @@ end function dpz
 !-----------------------------------------------------------------------
 !
 !      INCLUDE 'cnst.inc'
-      use kinds
+      use kinds, ONLY : DP
 
       IMPLICIT REAL*8 (A-H,O-Z)
 
@@ -1141,8 +1581,8 @@ end function dpz
       S2    = AA*RR*RR*US*US
 
       S = SQRT(S2)
-      IF(S.GT.10.D0) THEN
-        S = 10.D0
+      IF(S.GT.8.3D0) THEN
+        S = 8.572844D0 - 18.796223D0/S2
       ENDIF
       CALL wpbe_analy_erfc_approx_grad(RHO,S,OMEGA,FX,D1X,D2X)
       sx = EX*FX        ! - EX

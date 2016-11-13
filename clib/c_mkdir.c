@@ -54,16 +54,64 @@ int F77_FUNC_(c_mkdir_int,C_MKDIR_INT)( const int * dirname , const int * length
 
    retval = mkdir( ldir , mode ) ;
 
-   if ( retval == -1  && errno != EEXIST )
+   if ( retval == -1  && errno != EEXIST ) {
      fprintf( stderr , "mkdir fail: [%d] %s\n" , errno , strerror( errno ) ) ;
+     }
+   else {
+     retval = 0 ;
+     }
+
 
    free( ldir ) ;
 
    return retval ;
 
-} /* c_mkdir */
+} /* end of c_mkdir */
 
-/* call from fortran as
+int c_mkdir_safe( const char * dirname )
+{
+   int i, retval = -1 ;
+
+   mode_t mode = 0777 ;
+   retval = mkdir( dirname , mode ) ;
+
+   if ( retval == -1  && errno != EEXIST ) {
+     fprintf( stderr , "mkdir fail: [%d] %s\n" , errno , strerror( errno ) ) ;
+     }
+   else {
+     retval = 0 ;
+     }
+   return retval ;
+}
+
+int F77_FUNC_(c_chdir_int,C_CHDIR_INT)( const int * dirname , const int * length )
+{
+
+   int i, retval = -1 ;
+
+   char * ldir = ( char * ) xcmalloc( (*length) + 1 ) ;
+
+   for( i = 0; i < * length; i++ ) ldir[ i ] = (char)dirname[ i ];
+
+   ldir[*length] = '\0' ;       /* memset() in xcmalloc() already do this */
+
+   retval = chdir( ldir ) ;
+
+   if ( retval == -1  && errno != EEXIST ) {
+     fprintf( stderr , "chdir fail: [%d] %s\n" , errno , strerror( errno ) ) ;
+     }
+   else {
+     retval = 0 ;
+     }
+
+
+   free( ldir ) ;
+
+   return retval ;
+
+} /* end of c_chdir */
+
+/* c_rename: call from fortran as
    ios = c_remame ( integer old-file-name(:), integer old-file-name, &
                     integer new-file-name(:), integer new-file-name )
    renames file old-file-name into new-file-name (don't try this on open files!)
@@ -96,5 +144,32 @@ int F77_FUNC_(c_rename_int,C_RENAME_INT)( const int * oldname, const int * oldle
    return retval ;
 
 } /* c_rename */
+
+int F77_FUNC_(c_link_int,C_LINK_INT)( const int * oldname, const int * oldlength ,
+                                  const int * newname, const int * newlength )
+{
+
+   int i, retval = -1 ;
+
+   char * oldname_ = ( char * ) xcmalloc( (*oldlength) + 1 ) ;
+   char * newname_ = ( char * ) xcmalloc( (*newlength) + 1 ) ;
+
+   for( i = 0; i < * oldlength; i++ ) oldname_[ i ] = (char)oldname[ i ];
+   for( i = 0; i < * newlength; i++ ) newname_[ i ] = (char)newname[ i ];
+
+   oldname_[*oldlength] = '\0' ;
+   newname_[*newlength] = '\0' ;
+
+   retval = symlink( oldname_, newname_ ) ;
+
+   if ( retval == -1 )
+     fprintf( stderr , "ln fail: [%d] %s\n" , errno , strerror( errno ) ) ;
+
+   free( oldname_ ) ;
+   free( newname_ ) ;
+
+   return retval ;
+
+} /* c_link */
 
 /* EOF */

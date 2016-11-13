@@ -76,6 +76,12 @@ MODULE constants
   REAL(DP), PARAMETER :: eV_to_kelvin = ELECTRONVOLT_SI / K_BOLTZMANN_SI
   REAL(DP), PARAMETER :: ry_to_kelvin = RYDBERG_SI / K_BOLTZMANN_SI
   !
+  ! .. Unit conversion factors: Energy to wavelength
+  !
+  REAL(DP), PARAMETER :: EVTONM = 1E+9_DP * H_PLANCK_SI * C_SI / &
+                                  &ELECTRONVOLT_SI
+  REAL(DP), PARAMETER :: RYTONM = 1E+9_DP * H_PLANCK_SI * C_SI / RYDBERG_SI
+  !
   !  Speed of light in atomic units
   !
   REAL(DP), PARAMETER :: C_AU             = C_SI / BOHR_RADIUS_SI * AU_SEC
@@ -98,14 +104,14 @@ MODULE constants
   !
   !!!!!! COMPATIBIILITY
   !
-  REAL(DP), PARAMETER :: amconv = AMU_RY
-  REAL(DP), PARAMETER :: uakbar = RY_KBAR
   REAL(DP), PARAMETER :: bohr_radius_cm = bohr_radius_si * 100.0_DP
   REAL(DP), PARAMETER :: BOHR_RADIUS_ANGS = bohr_radius_cm * 1.0E8_DP
   REAL(DP), PARAMETER :: ANGSTROM_AU = 1.0_DP/BOHR_RADIUS_ANGS
   REAL(DP), PARAMETER :: DIP_DEBYE = AU_DEBYE
   REAL(DP), PARAMETER :: AU_TERAHERTZ  = AU_PS
   REAL(DP), PARAMETER :: AU_TO_OHMCMM1 = 46000.0_DP ! (ohm cm)^-1
+  REAL(DP), PARAMETER :: RY_TO_THZ = 1.0_DP / AU_TERAHERTZ / FPI
+  REAL(DP), PARAMETER :: RY_TO_CMM1 = 1.E+10_DP * RY_TO_THZ / C_SI
   !
 
 END MODULE constants

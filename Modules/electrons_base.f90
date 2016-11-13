@@ -26,6 +26,14 @@
       INTEGER :: nbsp       = 0    !  total number of electronic states 
                                    !  (nupdwn(1)+nupdwn(2))
       INTEGER :: nbspx      = 0    !  array dimension nbspx >= nbsp
+      !
+      INTEGER :: nupdwn_bgrp(2)  = 0    !  number of states with spin up (1) and down (2) in this band group
+      INTEGER :: iupdwn_bgrp(2)  = 0    !  first state with spin (1) and down (2) in this band group
+      INTEGER :: nudx_bgrp       = 0    !  max (nupdw_bgrp(1),nupdw_bgrp(2)) in this band group
+      INTEGER :: nbsp_bgrp       = 0    !  total number of electronic states 
+                                        !  (nupdwn_bgrp(1)+nupdwn_bgrp(2)) in this band group
+      INTEGER :: nbspx_bgrp      = 0    !  array dimension nbspx_bgrp >= nbsp_bgrp local to the band group
+      INTEGER :: i2gupdwn_bgrp(2)= 0    !  global index of the first local band
 
       LOGICAL :: telectrons_base_initval = .FALSE.
       LOGICAL :: keep_occ = .FALSE.  ! if .true. when reading restart file keep 
@@ -34,6 +42,10 @@
       REAL(DP), ALLOCATABLE :: f(:)   ! occupation numbers ( at gamma )
       REAL(DP) :: qbac = 0.0_DP       ! background neutralizing charge
       INTEGER, ALLOCATABLE :: ispin(:) ! spin of each state
+
+      REAL(DP), ALLOCATABLE :: f_bgrp(:)     ! occupation numbers ( at gamma )
+      INTEGER, ALLOCATABLE  :: ispin_bgrp(:) ! spin of each state
+      INTEGER, ALLOCATABLE :: ibgrp_g2l(:)    ! local index of the i-th global band index
 !
 !------------------------------------------------------------------------------!
   CONTAINS
@@ -45,7 +57,6 @@
 
       USE constants,         ONLY   : eps8
       USE io_global,         ONLY   : stdout
-      USE control_flags,     ONLY   : iprsta
 
       REAL(DP),         INTENT(IN) :: zv_ (:), tot_charge_
       REAL(DP),         INTENT(IN) :: f_inp(:,:)
@@ -153,6 +164,31 @@
             neldw = SUM ( f_inp ( :, 2 ) )
             nelec = nelup + neldw 
          END IF
+         !
+         ! consistency check
+         !
+         IF( nspin == 1 ) THEN
+           IF( f_inp( 1, 1 ) <= 0.0_DP )  &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+         ELSE
+           IF( f_inp( 1, 1 ) < 0.0_DP )  &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+           IF( f_inp( 1, 2 ) < 0.0_DP )  &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+           IF( ( f_inp( 1, 1 ) + f_inp( 1, 2 ) ) == 0.0_DP )  &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+         END IF
+         DO i = 2, nbnd
+           IF( nspin == 1 ) THEN
+             IF( f_inp( i, 1 ) > 0.0_DP .AND. f_inp( i-1, 1 ) <= 0.0_DP )  &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+           ELSE
+             IF( f_inp( i, 1 ) > 0.0_DP .AND. f_inp( i-1, 1 ) <= 0.0_DP ) &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+             IF( f_inp( i, 2 ) > 0.0_DP .AND. f_inp( i-1, 2 ) <= 0.0_DP ) &
+               CALL errore(' electrons_base_initval ',' Zero or negative occupation are not allowed ', 1 )
+           END IF
+         END DO
          !
          ! count bands
          !
@@ -277,7 +313,7 @@
       END IF
 
       IF( nupdwn(1) < nupdwn(2) ) &
-        CALL errore(' electrons_base_initval ',' nupdwn(1) should be greather or equal nupdwn(2) ', 1 )
+        CALL errore(' electrons_base_initval ',' nupdwn(1) should be greater or equal nupdwn(2) ', 1 )
 
       IF( nbnd < nupdwn(1) ) &
         CALL errore(' electrons_base_initval ',' inconsistent nbnd, should be .GE. than  nupdwn(1) ', 1 )
@@ -291,7 +327,6 @@
       IF( nbsp < INT( nelec * nspin / 2.0_DP ) ) &
         CALL errore(' electrons_base_initval ',' too many electrons ', 1 )
 
-
       telectrons_base_initval = .TRUE.
 
       RETURN
@@ -302,48 +337,55 @@
 !
     subroutine set_nelup_neldw ( tot_magnetization_, nelec_, nelup_, neldw_ )
       !
-      USE kinds, only : DP
+      USE kinds,     ONLY : DP
+      USE constants, ONLY : eps8
       !
-      REAL (KIND=DP), intent(IN)    :: tot_magnetization_
-      REAL (KIND=DP), intent(IN)    :: nelec_
-      REAL (KIND=DP), intent(INOUT) :: nelup_, neldw_
+      REAL (KIND=DP), intent(IN)  :: tot_magnetization_
+      REAL (KIND=DP), intent(IN)  :: nelec_
+      REAL (KIND=DP), intent(OUT) :: nelup_, neldw_
+      LOGICAL :: integer_charge, integer_magnetization
       !
-      REAL (KIND=DP)                :: nelup_loc, neldw_loc
+      integer_charge = ( ABS (nelec_ - NINT(nelec_)) < eps8 )
       !
-      IF( nelup_ > 0.0_DP .AND. neldw_ > 0.0_DP ) THEN
-        nelup_loc= nelup_
-        neldw_loc= neldw_
-      ELSE IF( nelup_ > 0.0_DP .AND. neldw_ == 0.0_DP ) THEN
-        nelup_loc= nelup_
-        neldw_loc= nelec_ - nelup_
-      ELSE IF( nelup_ == 0.0_DP .AND. neldw_ > 0.0_DP ) THEN
-        neldw_loc= neldw_
-        nelup_loc= nelec_ - neldw_
-      ELSE IF ( tot_magnetization_ < 0 ) THEN
+      IF ( tot_magnetization_ < 0 ) THEN
          ! default when tot_magnetization is unspecified
-         nelup_loc = INT( nelec_ + 1 ) / 2
-         neldw_loc = nelec_ - nelup_loc
+         IF ( integer_charge) THEN
+            nelup_ = INT( nelec_ + 1 ) / 2
+            neldw_ = nelec_ - nelup_
+         ELSE
+            nelup_ = nelec_ / 2
+            neldw_ = nelup_
+         END IF
       ELSE
          ! tot_magnetization specified in input
          !
-         ! ... various checks
          if ( (tot_magnetization_ > 0) .and. (nspin==1) ) &
                  CALL errore(' set_nelup_neldw  ', &
                  'tot_magnetization is inconsistent with nspin=1 ', 2 )
-         ! odd  tot_magnetization requires an odd  number of electrons
-         ! even tot_magnetization requires an even number of electrons
-         if ( ((MOD(NINT(tot_magnetization_),2) == 0) .and. (MOD(NINT(nelec_),2)==1)) .or.   &
-              ((MOD(NINT(tot_magnetization_),2) == 1) .and. (MOD(NINT(nelec_),2)==0))      ) &
-              CALL errore(' set_nelup_neldw ',                          &
-             'tot_magnetization is inconsistent with total number of electrons ', 2 )
-         !
-         ! ... setting nelup/neldw
-         nelup_loc = ( INT(nelec_) + tot_magnetization_ ) / 2
-         neldw_loc = ( INT(nelec_) - tot_magnetization_ ) / 2
+         integer_magnetization = ( ABS( tot_magnetization_ - &
+                                   NINT(tot_magnetization_) ) < eps8 )
+         IF ( integer_charge .AND. integer_magnetization) THEN
+            !
+            ! odd  tot_magnetization requires an odd  number of electrons
+            ! even tot_magnetization requires an even number of electrons
+            !
+            if ( ((MOD(NINT(tot_magnetization_),2) == 0) .and. &
+                  (MOD(NINT(nelec_),2)==1))               .or. &
+                 ((MOD(NINT(tot_magnetization_),2) == 1) .and. &
+                  (MOD(NINT(nelec_),2)==0))      ) &
+              CALL infomsg(' set_nelup_neldw ',                          &
+             'BEWARE: non-integer number of up and down electrons!' )
+            !
+            ! ... setting nelup/neldw
+            !
+            nelup_ = ( INT(nelec_) + tot_magnetization_ ) / 2
+            neldw_ = ( INT(nelec_) - tot_magnetization_ ) / 2
+         ELSE
+            !
+            nelup_ = ( nelec_ + tot_magnetization_ ) / 2
+            neldw_ = ( nelec_ - tot_magnetization_ ) / 2
+         END IF
       END IF
-
-      nelup_ = nelup_loc
-      neldw_ = neldw_loc
 
       return
     end subroutine set_nelup_neldw
@@ -354,134 +396,70 @@
     SUBROUTINE deallocate_elct()
       IF( ALLOCATED( f ) ) DEALLOCATE( f )
       IF( ALLOCATED( ispin ) ) DEALLOCATE( ispin )
+      IF( ALLOCATED( f_bgrp ) ) DEALLOCATE( f_bgrp )
+      IF( ALLOCATED( ispin_bgrp ) ) DEALLOCATE( ispin_bgrp )
+      IF( ALLOCATED( ibgrp_g2l ) ) DEALLOCATE( ibgrp_g2l )
       telectrons_base_initval = .FALSE.
       RETURN
     END SUBROUTINE deallocate_elct
 
+!----------------------------------------------------------------------------
+
+    SUBROUTINE distribute_bands( nbgrp, my_bgrp_id )
+      INTEGER, INTENT(IN) :: nbgrp, my_bgrp_id
+      INTEGER, EXTERNAL :: ldim_block, gind_block
+      INTEGER :: iss, n1, n2, m1, m2, ilocal, iglobal
+      !
+      IF( .NOT. telectrons_base_initval ) &
+        CALL errore( ' distribute_bands ', ' electrons_base_initval not yet called ', 1 )
+
+      nupdwn_bgrp  = nupdwn
+      iupdwn_bgrp  = iupdwn
+      nudx_bgrp    = nudx
+      nbsp_bgrp    = nbsp
+      nbspx_bgrp   = nbspx
+      i2gupdwn_bgrp= 1
+
+      DO iss = 1, nspin
+         nupdwn_bgrp( iss )  = ldim_block( nupdwn( iss ), nbgrp, my_bgrp_id )
+         i2gupdwn_bgrp( iss ) = gind_block( 1, nupdwn( iss ), nbgrp, my_bgrp_id )
+      END DO
+      !
+      iupdwn_bgrp(1) = 1
+      IF( nspin > 1 ) THEN
+         iupdwn_bgrp(2) = iupdwn_bgrp(1) + nupdwn_bgrp( 1 )
+      END IF
+      nudx_bgrp = nupdwn_bgrp( 1 )
+      nbsp_bgrp = nupdwn_bgrp( 1 ) + nupdwn_bgrp ( 2 )
+      nbspx_bgrp = nbsp_bgrp
+      IF( MOD( nbspx_bgrp, 2 ) /= 0 ) nbspx_bgrp = nbspx_bgrp + 1
+
+      ALLOCATE( f_bgrp     ( nbspx_bgrp ) )
+      ALLOCATE( ispin_bgrp ( nbspx_bgrp ) )
+      ALLOCATE( ibgrp_g2l ( nbspx ) )
+      f_bgrp = 0.0
+      ispin_bgrp = 0
+      ibgrp_g2l = 0
+      !
+      DO iss = 1, nspin
+         n1 = iupdwn_bgrp(iss)
+         n2 = n1 + nupdwn_bgrp(iss) - 1
+         m1 = iupdwn(iss)+i2gupdwn_bgrp(iss) - 1
+         m2 = m1 + nupdwn_bgrp(iss) - 1
+         f_bgrp(n1:n2) = f(m1:m2)
+         ispin_bgrp(n1:n2) = ispin(m1:m2)
+         ilocal = n1
+         DO iglobal = m1, m2
+            ibgrp_g2l( iglobal ) = ilocal
+            ilocal = ilocal + 1
+         END DO
+      END DO
+      
+      RETURN
+
+    END SUBROUTINE distribute_bands
+
 
 !------------------------------------------------------------------------------!
   END MODULE electrons_base
-!------------------------------------------------------------------------------!
-
-
-
-!------------------------------------------------------------------------------!
-  MODULE electrons_nose
-!------------------------------------------------------------------------------!
-
-      USE kinds, ONLY: DP
-!
-      IMPLICIT NONE
-      SAVE
-
-      REAL(DP) :: fnosee   = 0.0_DP   !  frequency of the thermostat ( in THz )
-      REAL(DP) :: qne      = 0.0_DP   !  mass of teh termostat
-      REAL(DP) :: ekincw   = 0.0_DP   !  kinetic energy to be kept constant
-
-      REAL(DP) :: xnhe0   = 0.0_DP  
-      REAL(DP) :: xnhep   = 0.0_DP
-      REAL(DP) :: xnhem   = 0.0_DP
-      REAL(DP) :: vnhe    = 0.0_DP
-      
-!
-!------------------------------------------------------------------------------!
-  CONTAINS
-!------------------------------------------------------------------------------!
-
-  subroutine electrons_nose_init( ekincw_ , fnosee_ )
-     USE constants, ONLY: pi, au_terahertz
-     REAL(DP), INTENT(IN) :: ekincw_, fnosee_
-     ! set thermostat parameter for electrons
-     qne     = 0.0_DP
-     ekincw  = ekincw_
-     fnosee  = fnosee_
-     xnhe0   = 0.0_DP
-     xnhep   = 0.0_DP
-     xnhem   = 0.0_DP
-     vnhe    = 0.0_DP
-     if( fnosee > 0.0_DP ) qne = 4.0_DP * ekincw / ( fnosee * ( 2.0_DP * pi ) * au_terahertz )**2
-    return
-  end subroutine electrons_nose_init
-
-
-  function electrons_nose_nrg( xnhe0, vnhe, qne, ekincw )
-    !  compute energy term for nose thermostat
-    implicit none
-    real(dp) :: electrons_nose_nrg
-    real(dp), intent(in) :: xnhe0, vnhe, qne, ekincw
-      !
-      electrons_nose_nrg = 0.5_DP * qne * vnhe * vnhe + 2.0_DP * ekincw * xnhe0
-      !
-    return
-  end function electrons_nose_nrg
-
-  subroutine electrons_nose_shiftvar( xnhep, xnhe0, xnhem )
-    !  shift values of nose variables to start a new step
-    implicit none
-    real(dp), intent(out) :: xnhem
-    real(dp), intent(inout) :: xnhe0
-    real(dp), intent(in) :: xnhep
-      !
-      xnhem = xnhe0
-      xnhe0 = xnhep
-      !
-    return
-  end subroutine electrons_nose_shiftvar
-
-  subroutine electrons_nosevel( vnhe, xnhe0, xnhem, delt )
-    implicit none
-    real(dp), intent(inout) :: vnhe
-    real(dp), intent(in) :: xnhe0, xnhem, delt 
-    vnhe=2.0_DP*(xnhe0-xnhem)/delt-vnhe
-    return
-  end subroutine electrons_nosevel
-
-  subroutine electrons_noseupd( xnhep, xnhe0, xnhem, delt, qne, ekinc, ekincw, vnhe )
-    implicit none
-    real(dp), intent(out) :: xnhep, vnhe
-    real(dp), intent(in) :: xnhe0, xnhem, delt, qne, ekinc, ekincw
-    xnhep = 2.0_DP * xnhe0 - xnhem + 2.0_DP * ( delt**2 / qne ) * ( ekinc - ekincw )
-    vnhe  = ( xnhep - xnhem ) / ( 2.0_DP * delt )
-    return
-  end subroutine electrons_noseupd
-
-
-  SUBROUTINE electrons_nose_info()
-
-      use constants,     only: au_terahertz, pi
-      use time_step,     only: delt
-      USE io_global,     ONLY: stdout
-      USE control_flags, ONLY: tnosee
-
-      IMPLICIT NONE
-
-      INTEGER   :: nsvar
-      REAL(DP) :: wnosee
-
-      IF( tnosee ) THEN
-        !
-        IF( fnosee <= 0.0_DP) &
-          CALL errore(' electrons_nose_info ', ' fnosee less than zero ', 1)
-        IF( delt <= 0.0_DP) &
-          CALL errore(' electrons_nose_info ', ' delt less than zero ', 1)
-
-        wnosee = fnosee * ( 2.0_DP * pi ) * au_terahertz
-        nsvar  = ( 2.0_DP * pi ) / ( wnosee * delt )
-
-        WRITE( stdout,563) ekincw, nsvar, fnosee, qne
-      END IF
-
- 563  format( //, &
-     &       3X,'electrons dynamics with nose` temperature control:', /, &
-     &       3X,'Kinetic energy required   = ', f10.5, ' (a.u.) ', /, &
-     &       3X,'time steps per nose osc.  = ', i5, /, &
-     &       3X,'nose` frequency           = ', f10.3, ' (THz) ', /, &
-     &       3X,'nose` mass(es)            = ', 20(1X,f10.3),//)
-
-
-    RETURN
-  END SUBROUTINE electrons_nose_info
-
-!------------------------------------------------------------------------------!
-  END MODULE electrons_nose
 !------------------------------------------------------------------------------!

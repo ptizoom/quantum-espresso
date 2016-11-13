@@ -1,80 +1,137 @@
 !
-! Copyright (C) 2002 FPMD group
+! Copyright (C) 2010 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
 ! or http://www.gnu.org/copyleft/gpl.txt .
 !
+!=----------------------------------------------------------------------------=!
+   MODULE gvect
+!=----------------------------------------------------------------------------=!
 
-!=----------------------------------------------------------------------------=!
-   MODULE gvecw
-!=----------------------------------------------------------------------------=!
+     ! ... variables describing the reciprocal lattice vectors
+     ! ... G vectors with |G|^2 < ecutrho, cut-off for charge density
+     ! ... With gamma tricks, G-vectors are divided into two half-spheres,
+     ! ... G> and G<, containing G and -G (G=0 is in G>)
+     ! ... This is referred to as the "dense" (or "hard", or "thick") grid
+
      USE kinds, ONLY: DP
 
      IMPLICIT NONE
      SAVE
 
-     ! ...   G vectors less than the wave function cut-off ( ecutwfc )
-     INTEGER :: ngw  = 0  ! local number of G vectors
-     INTEGER :: ngwt = 0  ! in parallel execution global number of G vectors,
-                       ! in serial execution this is equal to ngw
-     INTEGER :: ngwl = 0  ! number of G-vector shells up to ngw
-     INTEGER :: ngwx = 0  ! maximum local number of G vectors
-     INTEGER :: ng0  = 0  ! first G-vector with nonzero modulus
-                       ! needed in the parallel case (G=0 is on one node only!)
+     INTEGER :: ngm  = 0  ! local  number of G vectors (on this processor)
+                          ! with gamma tricks, only vectors in G>
+     INTEGER :: ngm_g= 0  ! global number of G vectors (summed on all procs)
+                          ! in serial execution, ngm_g = ngm
+     INTEGER :: ngl = 0   ! number of G-vector shells
+     INTEGER :: ngmx = 0  ! local number of G vectors, maximum across all procs
 
-     REAL(DP) :: ecutw = 0.0_DP
-     REAL(DP) :: gcutw = 0.0_DP
+     REAL(DP) :: ecutrho = 0.0_DP ! energy cut-off for charge density 
+     REAL(DP) :: gcutm = 0.0_DP   ! ecutrho/(2 pi/a)^2, cut-off for |G|^2
 
-     !   values for costant cut-off computations
+     ! nl  = fft index for G-vectors (with gamma tricks, only for G>)
+     ! nlm = as above, for G< (used only with gamma tricks)
 
-     REAL(DP) :: ecfix = 0.0_DP     ! value of the constant cut-off
-     REAL(DP) :: ecutz = 0.0_DP     ! height of the penalty function (above ecfix)
-     REAL(DP) :: ecsig = 0.0_DP     ! spread of the penalty function around ecfix
-     LOGICAL   :: tecfix = .FALSE.  ! .TRUE. if constant cut-off is in use
+     INTEGER, ALLOCATABLE :: nl(:), nlm(:)
 
-     ! augmented cut-off for k-point calculation
+     INTEGER :: gstart = 2 ! index of the first G vector whose module is > 0
+                           ! Needed in parallel execution: gstart=2 for the
+                           ! proc that holds G=0, gstart=1 for all others
 
-     REAL(DP) :: ekcut = 0.0_DP
-     REAL(DP) :: gkcut = 0.0_DP
-    
-     ! array of G vectors module plus penalty function for constant cut-off 
-     ! simulation.
+     !     G^2 in increasing order (in units of tpiba2=(2pi/a)^2)
      !
-     ! ggp = g + ( agg / tpiba**2 ) * ( 1 + erf( ( tpiba2 * g - e0gg ) / sgg ) )
+     REAL(DP), ALLOCATABLE, TARGET :: gg(:) 
 
-     REAL(DP), ALLOCATABLE, TARGET :: ggp(:)
+     !     gl(i) = i-th shell of G^2 (in units of tpiba2)
+     !     igtongl(n) = shell index for n-th G-vector
+     !
+     REAL(DP), POINTER :: gl(:) 
+     INTEGER, ALLOCATABLE, TARGET :: igtongl(:) 
+     !
+     !     G-vectors cartesian components ( in units tpiba =(2pi/a)  )
+     !
+     REAL(DP), ALLOCATABLE, TARGET :: g(:,:) 
 
+     !     mill = miller index of G vectors (local to each processor)
+     !            G(:) = mill(1)*bg(:,1)+mill(2)*bg(:,2)+mill(3)*bg(:,3) 
+     !            where bg are the reciprocal lattice basis vectors 
+     !
+     INTEGER, ALLOCATABLE, TARGET :: mill(:,:)
+     
+     !     ig_l2g  = converts a local G-vector index into the global index
+     !               ("l2g" means local to global): ig_l2g(i) = index of i-th
+     !               local G-vector in the global array of G-vectors
+     !
+     INTEGER, ALLOCATABLE, TARGET :: ig_l2g(:)
+     !
+     !     sortedig_l2g = array obtained by sorting ig_l2g
+     !
+     INTEGER, ALLOCATABLE, TARGET :: sortedig_l2g(:)
+     !
+     !     mill_g  = miller index of all G vectors
+     !
+     INTEGER, ALLOCATABLE, TARGET :: mill_g(:,:)
+     !
+     ! the phases e^{-iG*tau_s} used to calculate structure factors
+     !
+     COMPLEX(DP), ALLOCATABLE :: eigts1(:,:), eigts2(:,:), eigts3(:,:)
+     !
    CONTAINS
 
-     SUBROUTINE deallocate_gvecw
-       IF( ALLOCATED( ggp ) ) DEALLOCATE( ggp )
-     END SUBROUTINE deallocate_gvecw
+     SUBROUTINE gvect_init( ngm_ , comm )
+       !
+       ! Set local and global dimensions, allocate arrays
+       !
+       USE mp, ONLY: mp_max, mp_sum
+       IMPLICIT NONE
+       INTEGER, INTENT(IN) :: ngm_
+       INTEGER, INTENT(IN) :: comm  ! communicator of the group on which g-vecs are distributed
+       !
+       ngm = ngm_
+       !
+       !  calculate maximum over all processors
+       !
+       ngmx = ngm
+       CALL mp_max( ngmx, comm )
+       !
+       !  calculate sum over all processors
+       !
+       ngm_g = ngm
+       CALL mp_sum( ngm_g, comm )
+       !
+       !  allocate arrays - only those that are always kept until the end
+       !
+       ALLOCATE( gg(ngm) )
+       ALLOCATE( g(3, ngm) )
+       ALLOCATE( mill(3, ngm) )
+       ALLOCATE( nl (ngm) )
+       ALLOCATE( nlm(ngm) )
+       ALLOCATE( ig_l2g(ngm) )
+       ALLOCATE( igtongl(ngm) )
+       !
+       RETURN 
+       !
+     END SUBROUTINE gvect_init
+
+     SUBROUTINE deallocate_gvect()
+       ! IF( ASSOCIATED( gl ) ) DEALLOCATE( gl )
+       IF( ALLOCATED( gg ) ) DEALLOCATE( gg )
+       IF( ALLOCATED( g ) )  DEALLOCATE( g )
+       IF( ALLOCATED( mill_g ) ) DEALLOCATE( mill_g )
+       IF( ALLOCATED( mill ) ) DEALLOCATE( mill )
+       IF( ALLOCATED( igtongl ) ) DEALLOCATE( igtongl )
+       IF( ALLOCATED( ig_l2g ) ) DEALLOCATE( ig_l2g )
+       IF( ALLOCATED( sortedig_l2g ) ) DEALLOCATE( sortedig_l2g )
+       IF( ALLOCATED( eigts1 ) ) DEALLOCATE( eigts1 )
+       IF( ALLOCATED( eigts2 ) ) DEALLOCATE( eigts2 )
+       IF( ALLOCATED( eigts3 ) ) DEALLOCATE( eigts3 )
+       IF( ALLOCATED( nl ) ) DEALLOCATE( nl )
+       IF( ALLOCATED( nlm ) ) DEALLOCATE( nlm )
+     END SUBROUTINE deallocate_gvect
 
 !=----------------------------------------------------------------------------=!
-   END MODULE gvecw
-!=----------------------------------------------------------------------------=!
-
-!=----------------------------------------------------------------------------=!
-   MODULE gvecp
-!=----------------------------------------------------------------------------=!
-     USE kinds, ONLY: DP
-
-     IMPLICIT NONE
-     SAVE
-
-     ! ...   G vectors less than the potential cut-off ( ecutrho )
-     INTEGER :: ngm  = 0  ! local number of G vectors
-     INTEGER :: ngmt = 0  ! in parallel execution global number of G vectors,
-                       ! in serial execution this is equal to ngm
-     INTEGER :: ngml = 0  ! number of G-vector shells up to ngw
-     INTEGER :: ngmx = 0  ! maximum local number of G vectors
-
-     REAL(DP) :: ecutp = 0.0_DP
-     REAL(DP) :: gcutp = 0.0_DP
-
-!=----------------------------------------------------------------------------=!
-   END MODULE gvecp
+   END MODULE gvect
 !=----------------------------------------------------------------------------=!
 
 !=----------------------------------------------------------------------------=!
@@ -85,241 +142,61 @@
      IMPLICIT NONE
      SAVE
 
-     ! ...   G vectors less than the smooth grid cut-off ( ? )
-     INTEGER :: ngs  = 0  ! local number of G vectors
-     INTEGER :: ngst = 0  ! in parallel execution global number of G vectors,
-                       ! in serial execution this is equal to ngw
-     INTEGER :: ngsl = 0  ! number of G-vector shells up to ngw
-     INTEGER :: ngsx = 0  ! maximum local number of G vectors
+     ! ... G vectors with |G|^2 < 4*ecutwfc, cut-off for wavefunctions
+     ! ... ("smooth" grid). Gamma tricks and units as for the "dense" grid
+     !
+     INTEGER :: ngms = 0  ! local  number of smooth vectors (on this processor)
+     INTEGER :: ngms_g=0  ! global number of smooth vectors (summed on procs) 
+                          ! in serial execution this is equal to ngms
+     INTEGER :: ngsx = 0  ! local number of smooth vectors, max across procs
 
-     INTEGER, ALLOCATABLE :: nps(:), nms(:)
+     ! nl  = fft index for smooth vectors (with gamma tricks, only for G>)
+     ! nlm = as above, for G< (used only with gamma tricks)
 
-     REAL(DP) :: ecuts = 0.0_DP
-     REAL(DP) :: gcuts = 0.0_DP
+     INTEGER, ALLOCATABLE :: nls(:), nlsm(:)
 
-     REAL(DP) :: dual = 0.0_DP
-     LOGICAL   :: doublegrid = .FALSE.
+     REAL(DP) :: ecuts = 0.0_DP   ! energy cut-off = 4*ecutwfc
+     REAL(DP) :: gcutms= 0.0_DP   ! ecuts/(2 pi/a)^2, cut-off for |G|^2
+
+     REAL(DP) :: dual = 0.0_DP    ! ecutrho=dual*ecutwfc
+     LOGICAL  :: doublegrid = .FALSE. ! true if smooth and dense grid differ
+                                      ! doublegrid = (dual > 4)
 
    CONTAINS
 
+     SUBROUTINE gvecs_init( ngs_ , comm )
+       USE mp, ONLY: mp_max, mp_sum
+       IMPLICIT NONE
+       INTEGER, INTENT(IN) :: ngs_
+       INTEGER, INTENT(IN) :: comm  ! communicator of the group on which g-vecs are distributed
+       !
+       ngms = ngs_
+       !
+       !  calculate maximum over all processors
+       !
+       ngsx = ngms
+       CALL mp_max( ngsx, comm )
+       !
+       !  calculate sum over all processors
+       !
+       ngms_g = ngms
+       CALL mp_sum( ngms_g, comm )
+       !
+       !  allocate arrays 
+       !
+       ALLOCATE( nls (ngms) )
+       ALLOCATE( nlsm(ngms) )
+       !
+       RETURN 
+       !
+     END SUBROUTINE gvecs_init
+
      SUBROUTINE deallocate_gvecs()
-       IF( ALLOCATED( nps ) ) DEALLOCATE( nps )
-       IF( ALLOCATED( nms ) ) DEALLOCATE( nms )
+       IF( ALLOCATED( nls ) ) DEALLOCATE( nls )
+       IF( ALLOCATED( nlsm ) ) DEALLOCATE( nlsm )
      END SUBROUTINE deallocate_gvecs
 
 !=----------------------------------------------------------------------------=!
    END MODULE gvecs
 !=----------------------------------------------------------------------------=!
 
-!=----------------------------------------------------------------------------=!
-   MODULE gvecb
-!=----------------------------------------------------------------------------=!
-     USE kinds, ONLY: DP
-
-     IMPLICIT NONE
-     SAVE
-
-     ! ...   G vectors less than the box grid cut-off ( ? )
-     INTEGER :: ngb  = 0  ! local number of G vectors
-     INTEGER :: ngbt = 0  ! in parallel execution global number of G vectors,
-                       ! in serial execution this is equal to ngw
-     INTEGER :: ngbl = 0  ! number of G-vector shells up to ngw
-     INTEGER :: ngbx = 0  ! maximum local number of G vectors
-
-     REAL(DP), ALLOCATABLE :: gb(:), gxb(:,:), glb(:)
-     INTEGER, ALLOCATABLE :: npb(:), nmb(:), iglb(:)
-     INTEGER, ALLOCATABLE :: mill_b(:,:)
-
-     REAL(DP) :: ecutb = 0.0_DP
-     REAL(DP) :: gcutb = 0.0_DP
-
-   CONTAINS
-
-     SUBROUTINE gvecb_set( ecut, tpibab )
-       IMPLICIT NONE
-       REAL(DP), INTENT(IN) :: ecut, tpibab
-         ecutb = ecut
-         gcutb = ecut / tpibab / tpibab
-       RETURN
-     END SUBROUTINE gvecb_set
-
-     SUBROUTINE deallocate_gvecb()
-       IF( ALLOCATED( gb ) ) DEALLOCATE( gb )
-       IF( ALLOCATED( gxb ) ) DEALLOCATE( gxb )
-       IF( ALLOCATED( glb ) ) DEALLOCATE( glb )
-       IF( ALLOCATED( npb ) ) DEALLOCATE( npb )
-       IF( ALLOCATED( nmb ) ) DEALLOCATE( nmb )
-       IF( ALLOCATED( iglb ) ) DEALLOCATE( iglb )
-       IF( ALLOCATED( mill_b ) ) DEALLOCATE( mill_b )
-     END SUBROUTINE deallocate_gvecb
-
-!=----------------------------------------------------------------------------=!
-   END MODULE gvecb
-!=----------------------------------------------------------------------------=!
-
-
-!=----------------------------------------------------------------------------=!
-   MODULE reciprocal_vectors
-!=----------------------------------------------------------------------------=!
-
-     USE kinds, ONLY: DP
-     USE gvecp
-     USE gvecb
-     USE gvecs
-     USE gvecw
-
-     IMPLICIT NONE
-     SAVE
-
-     ! ...   declare module-scope variables
-
-     LOGICAL :: gzero  = .TRUE.   ! .TRUE. if the first G vectors on this processor is
-                                  ! the null G vector ( i.e. |G| == 0 )
-     INTEGER :: gstart = 2        ! index of the first G vectors whose module is greather
-                                  ! than 0 . 
-                                  ! gstart = 2 when gzero == .TRUE., gstart = 1 otherwise 
-
-     !     G^2 in increasing order (in units of tpiba2=(2pi/a)^2)
-     !
-     REAL(DP), ALLOCATABLE, TARGET :: g(:) 
-
-     !     shells of G^2
-     !
-     REAL(DP), ALLOCATABLE, TARGET :: gl(:) 
-
-     !     G-vectors cartesian components ( units tpiba =(2pi/a)  )
-     !
-     REAL(DP), ALLOCATABLE, TARGET :: gx(:,:) 
-
-     !     g2_g    = all G^2 in increasing order, replicated on all procs
-     !
-     REAL(DP), ALLOCATABLE, TARGET :: g2_g(:)
-
-     !     mill_g  = miller index of G vecs (increasing order), replicated on all procs
-     !
-     INTEGER, ALLOCATABLE, TARGET :: mill_g(:,:)
-
-     !     mill_l  = miller index of G vecs local to the processors
-     !
-     INTEGER, ALLOCATABLE, TARGET :: mill_l(:,:)
-
-     !     ig_l2g  = "l2g" means local to global, this array convert a local
-     !               G-vector index into the global index, in other words
-     !               the index of the G-v. in the overall array of G-vectors
-     !
-     INTEGER, ALLOCATABLE, TARGET :: ig_l2g(:)
-
-     !     sortedig_l2g = array obtained by sorting ig_l2g
-     !
-     !
-     INTEGER, ALLOCATABLE, TARGET :: sortedig_l2g(:)
-
-     !     igl = index of the g-vector shells
-     !
-     INTEGER, ALLOCATABLE, TARGET :: igl(:)
-
-     !     bi  = base vector used to generate the reciprocal space
-     !
-     REAL(DP) :: bi1(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-     REAL(DP) :: bi2(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-     REAL(DP) :: bi3(3) = (/ 0.0_DP, 0.0_DP, 0.0_DP /)
-
-   CONTAINS
-
-     SUBROUTINE deallocate_recvecs
-       IF( ALLOCATED( g ) ) DEALLOCATE( g )
-       IF( ALLOCATED( gl ) ) DEALLOCATE( gl )
-       IF( ALLOCATED( gx ) ) DEALLOCATE( gx )
-       IF( ALLOCATED( g2_g ) ) DEALLOCATE( g2_g )
-       IF( ALLOCATED( mill_g ) ) DEALLOCATE( mill_g )
-       IF( ALLOCATED( mill_l ) ) DEALLOCATE( mill_l )
-       IF( ALLOCATED( ig_l2g ) ) DEALLOCATE( ig_l2g )
-       IF( ALLOCATED( sortedig_l2g ) ) DEALLOCATE( sortedig_l2g )
-       IF( ALLOCATED( igl ) ) DEALLOCATE( igl )
-       CALL deallocate_gvecw( )
-       CALL deallocate_gvecs( )
-       CALL deallocate_gvecb( )
-     END SUBROUTINE deallocate_recvecs
-
-!=----------------------------------------------------------------------------=!
-   END MODULE reciprocal_vectors
-!=----------------------------------------------------------------------------=!
-
-
-!=----------------------------------------------------------------------------=!
-   MODULE recvecs_indexes
-!=----------------------------------------------------------------------------=!
-
-     IMPLICIT NONE
-     SAVE
-
-     !     np      = fft index for G>
-     !     nm      = fft index for G<
-     !     in1p,in2p,in3p = G components in crystal axis
-
-
-     INTEGER, ALLOCATABLE :: np(:), nm(:), in1p(:), in2p(:), in3p(:)
-
-   CONTAINS
-
-     SUBROUTINE deallocate_recvecs_indexes
-       IF( ALLOCATED( np ) ) DEALLOCATE( np )
-       IF( ALLOCATED( nm ) ) DEALLOCATE( nm )
-       IF( ALLOCATED( in1p ) ) DEALLOCATE( in1p )
-       IF( ALLOCATED( in2p ) ) DEALLOCATE( in2p )
-       IF( ALLOCATED( in3p ) ) DEALLOCATE( in3p )
-      END SUBROUTINE deallocate_recvecs_indexes
-
-!=----------------------------------------------------------------------------=!
-   END MODULE recvecs_indexes
-!=----------------------------------------------------------------------------=!
-
-
-!=----------------------------------------------------------------------------=!
-   MODULE recvecs_subroutines
-!=----------------------------------------------------------------------------=!
-
-     IMPLICIT NONE
-     SAVE
-
-   CONTAINS
-
-     SUBROUTINE recvecs_init( ngm_ , ngw_ , ngs_ )
-       USE mp_global, ONLY: intra_image_comm
-       USE mp, ONLY: mp_max, mp_sum
-       USE gvecw, ONLY: ngw, ngwx, ngwt
-       USE gvecp, ONLY: ngm, ngmx, ngmt
-       USE gvecs, ONLY: ngs, ngsx, ngst
-
-       IMPLICIT NONE
-       INTEGER, INTENT(IN) :: ngm_ , ngw_ , ngs_
-
-       ngm = ngm_
-       ngw = ngw_
-       ngs = ngs_
-
-       !
-       !  calculate maxima over all processors
-       !
-       ngwx = ngw
-       ngmx = ngm
-       ngsx = ngs
-       CALL mp_max( ngwx, intra_image_comm )
-       CALL mp_max( ngmx, intra_image_comm )
-       CALL mp_max( ngsx, intra_image_comm )
-       !
-       !  calculate SUM over all processors
-       !
-       ngwt = ngw
-       ngmt = ngm
-       ngst = ngs
-       CALL mp_sum( ngwt, intra_image_comm )
-       CALL mp_sum( ngmt, intra_image_comm )
-       CALL mp_sum( ngst, intra_image_comm )
-
-       RETURN 
-     END SUBROUTINE recvecs_init
-
-!=----------------------------------------------------------------------------=!
-   END MODULE recvecs_subroutines
-!=----------------------------------------------------------------------------=!

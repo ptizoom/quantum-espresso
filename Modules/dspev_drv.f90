@@ -144,7 +144,7 @@ CONTAINS
               SCALEF = SCALEF + DABS( A(K,I) )
            END DO
 
-#if defined __PARA
+#if defined __MPI
            CALL reduce_base_real( 1, scalef, comm, -1 )
 #endif
 
@@ -185,7 +185,7 @@ CONTAINS
                UL(kl)    = A(kl,I)
              END DO
 
-#if defined __PARA
+#if defined __MPI
              vtmp( l + 1 ) = sigma
              vtmp( l + 2 ) = f
              CALL reduce_base_real_to( L + 2, vtmp, u, comm, -1 )
@@ -229,7 +229,7 @@ CONTAINS
 
              KAPPA = 0.5_DP * ONE_OVER_H * ddot( l, vtmp, 1, u, 1 )
 
-#if defined __PARA
+#if defined __MPI
              vtmp( l + 1 ) = kappa
              CALL reduce_base_real_to( L + 1, vtmp, p, comm, -1 )
              kappa = p( l + 1 )
@@ -249,7 +249,7 @@ CONTAINS
              G = A(is(l),I)
            END IF
 
-#if defined __PARA
+#if defined __MPI
            CALL bcast_real( g, 1, ri( L ), comm )
 #endif
            E(I) = G
@@ -286,7 +286,7 @@ CONTAINS
             END IF
            
 
-#if defined __PARA
+#if defined __MPI
             CALL reduce_base_real_to( L, p, vtmp, comm, -1 )
 #else
             vtmp(1:l) = p(1:l)
@@ -310,7 +310,7 @@ CONTAINS
         END IF
       END DO
 
-#if defined __PARA
+#if defined __MPI
       CALL reduce_base_real_to( n, u, d, comm, -1 )
 #else
       D(1:N) = U(1:N)
@@ -481,7 +481,7 @@ CONTAINS
              e(l)=g
              e(m)=0.0_DP
            end if
-#if defined __PARA
+#if defined __MPI
            CALL bcast_real( cv, 2*(m-l), 0, comm )
            CALL bcast_real( d(l), m-l+1, 0, comm )
            CALL bcast_real( e(l), m-l+1, 0, comm )
@@ -650,6 +650,10 @@ CONTAINS
 
   SUBROUTINE pdsyevd_drv( tv, n, nb, s, lds, w, ortho_cntx )
      USE kinds,     ONLY : DP
+     USE mp_global,   ONLY: nproc_bgrp, me_bgrp, intra_bgrp_comm,root_bgrp,ortho_comm
+#ifdef __ELPA
+     USE elpa1
+#endif
      IMPLICIT NONE
 
      LOGICAL, INTENT(IN)  :: tv  
@@ -670,7 +674,11 @@ CONTAINS
      INTEGER,  ALLOCATABLE :: iwork(:)
      INTEGER     :: LWORK, LIWORK, info
      CHARACTER   :: jobv
-     !
+     INTEGER     :: i
+#ifdef __ELPA
+     INTEGER     :: nprow,npcol,my_prow, my_pcol,mpi_comm_rows, mpi_comm_cols
+#endif 
+
      IF( SIZE( s, 1 ) /= lds ) &
         CALL errore( ' pdsyevd_drv ', ' wrong matrix leading dimension ', 1 )
      !
@@ -690,6 +698,13 @@ CONTAINS
      itmp = 0
      rtmp = 0.0_DP
 
+#ifdef __ELPA
+     CALL BLACS_Gridinfo(ortho_cntx,nprow, npcol, my_prow,my_pcol)
+     call GET_ELPA_ROW_COL_COMMS(ortho_comm, my_prow, my_pcol,mpi_comm_rows, mpi_comm_cols)
+     CALL SOLVE_EVP_REAL(n,  n,   s, lds,    w,  vv, lds     ,nb  ,mpi_comm_rows, mpi_comm_cols)
+     s = vv
+     IF( ALLOCATED( vv ) ) DEALLOCATE( vv )
+#else
      CALL PDSYEVD( jobv, 'L', n, s, 1, 1, desch, w, vv, 1, 1, desch, rtmp, lwork, itmp, liwork, info )
 
      IF( info /= 0 ) CALL errore( ' pdsyevd_drv ', ' PDSYEVD ', ABS( info ) )
@@ -706,9 +721,29 @@ CONTAINS
 
      IF( tv ) s = vv
 
+     IF( ALLOCATED( vv ) ) DEALLOCATE( vv )
      DEALLOCATE( work )
      DEALLOCATE( iwork )
-     IF( ALLOCATED( vv ) ) DEALLOCATE( vv )
+#endif 
+
+!#ifdef __ELPA   ! uncomment only if you want to printout eigenv* for debug
+!                ! purposes
+!     ALLOCATE ( work (n) ) 
+!     CALL PDLAPRNT( N, N, s, 1, 1, desch, 0, 0, 's', 99, WORK )
+!     DO i=1,N
+!        WRITE(88,*)i,w(i)
+!     END DO
+!     DEALLOCATE( work )
+!#else
+!     ALLOCATE ( work (n) ) 
+!     write(*,*)n
+!     CALL PDLAPRNT( N, N, s, 1, 1, desch, 0, 0, 's', 100, WORK )
+!     DO i=1,N
+!        WRITE(200,*)i,w(i)
+!     END DO
+!     DEALLOCATE( work )
+!#endif
+
      RETURN
   END SUBROUTINE pdsyevd_drv
 

@@ -163,10 +163,6 @@ CONTAINS
     ! convert from "our" conventions to Vanderbilt conventions
     call dftname_cp (nint(exfact), upf%dft)
     call set_dft_from_name( upf%dft )
-#if !defined (EXX)
-    IF ( dft_is_hybrid() ) &
-         CALL errore( 'readvan', 'HYBRID XC not implemented', 1 )
-#endif
     IF ( dft_is_meta() ) &
          CALL errore( 'readvan ', 'META-GGA not implemented', 1 )
     !
@@ -453,7 +449,7 @@ CONTAINS
 800 format(4x,'|',i5,i11,5x,f10.2,f12.2,15x,'|')
     if (iver(1) >= 3 .and. nang > 0) then
        write(fmt,900) 2*nang-1, 40-8*(2*nang-2)
-900    format('(4x,''|  rinner ='',',i1,'f8.4,',i2,'x,''|'')')
+900    format('(4x,"|  rinner =",',i1,'f8.4,',i2,'x,"|")')
        WRITE( stdout,fmt)  (upf%rinner(lp),lp=1,2*nang-1)
     end if
     WRITE( stdout,1000)
@@ -675,7 +671,7 @@ CONTAINS
     ! See also upf2internals
     !
     write( upf%dft, "('INDEX:',4i1)") iexch,icorr,igcx,igcc
-    call set_dft_from_indices(iexch,icorr,igcx,igcc)
+    call set_dft_from_indices(iexch,icorr,igcx,igcc, 0) ! Cannot read nonlocal in this format
 
     read( iunps, '(2e17.11,i5)') &
          upf%zp, etotps, lmax

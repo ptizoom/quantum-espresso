@@ -27,7 +27,10 @@ SUBROUTINE errore( calling_routine, message, ierr )
   USE io_global, ONLY : stdout
   USE io_files,  ONLY : crashunit, crash_file
   USE parallel_include
-  !
+#if defined(__PTRACE) && defined(__INTEL)
+  USE ifcore,    ONLY : tracebackqq
+#endif
+ !
   IMPLICIT NONE
   !
   CHARACTER(LEN=*), INTENT(IN) :: calling_routine, message
@@ -37,27 +40,29 @@ SUBROUTINE errore( calling_routine, message, ierr )
     ! the error flag
   INTEGER                      :: mpime, mpierr
     ! the task id  
+  CHARACTER(LEN=6) :: cerr
   !
   !
   IF ( ierr <= 0 ) RETURN
   !
   ! ... the error message is written un the "*" unit
   !
+  WRITE( cerr, FMT = '(I6)' ) ierr
   WRITE( UNIT = *, FMT = '(/,1X,78("%"))' )
-  WRITE( UNIT = *, &
-         FMT = '(5X,"from ",A," : error #",I10)' ) calling_routine, ierr
-  WRITE( UNIT = *, FMT = '(5X,A)' ) message
+  WRITE( UNIT = *, FMT = '(5X,"Error in routine ",A," (",A,"):")' ) &
+        TRIM(calling_routine), TRIM(ADJUSTL(cerr))
+  WRITE( UNIT = *, FMT = '(5X,A)' ) TRIM(message)
   WRITE( UNIT = *, FMT = '(1X,78("%"),/)' )
   !
-#if defined (__PARA) && defined (__AIX)
+#if defined (__MPI) && defined (__AIX)
   !
   ! ... in the case of ibm machines it is also written on the "0" unit
   ! ... which is automatically connected to stderr
   !
   WRITE( UNIT = 0, FMT = '(/,1X,78("%"))')
-  WRITE( UNIT = 0, &
-         FMT = '(5X,"from ",A," : error #",I10)' ) calling_routine, ierr
-  WRITE( UNIT = 0, FMT = '(5X,A)' ) message
+  WRITE( UNIT = 0, FMT = '(5X,"Error in routine ",A," (",A,"):")' ) &
+        TRIM(calling_routine), TRIM(ADJUSTL(cerr))
+  WRITE( UNIT = 0, FMT = '(5X,A)' ) TRIM(message)
   WRITE( UNIT = 0, FMT = '(1X,78("%"),/)' )
   !
 #endif
@@ -66,7 +71,16 @@ SUBROUTINE errore( calling_routine, message, ierr )
   !
   CALL flush_unit( stdout )
   !
-#if defined (__PARA) && defined (__MPI)
+#ifdef __PTRACE
+#ifdef __INTEL
+  call tracebackqq(user_exit_code=-1)
+#else
+    WRITE( UNIT = 0, FMT = '(5X,A)' ) "Printing strace..."
+    CALL ptrace()
+#endif
+#endif 
+!
+#if defined (__MPI)
   !
   mpime = 0
   !

@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2004-2007 Quantum ESPRESSO group
+! Copyright (C) 2004-2012 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -13,7 +13,7 @@ function atomic_number(atm)
   character(len=*) :: atm
   integer :: atomic_number
 
-  character(len=2) :: elements(103), atom
+  character(len=2) :: elements(109), atom
   data elements/' H',                              'He', &
                 'Li','Be',' B',' C',' N',' O',' F','Ne', &
                 'Na','Mg','Al','Si',' P',' S','Cl','Ar', &
@@ -29,7 +29,8 @@ function atomic_number(atm)
                           'Ir','Pt','Au','Hg',           &
                           'Tl','Pb','Bi','Po','At','Rn', &
                 'Fr','Ra','Ac','Th','Pa',' U','Np','Pu', &
-                'Am','Cm','Bk','Cf','Es','Fm','Md','No', 'Lr' /
+                'Am','Cm','Bk','Cf','Es','Fm','Md','No', &
+                'Lr','Rf','Db','Sg','Bh','Hs','Mt' /
   character(len=1), external :: capital, lowercase
   logical, external :: isnumeric
   integer :: n
@@ -59,7 +60,7 @@ function atomic_number(atm)
      atom(2:2)=lowercase(atm(2:2))
   end if
       
-  do n=1, 103
+  do n=1, 109
      if ( atom == elements(n) ) then
         atomic_number=n
         return
@@ -78,7 +79,7 @@ function atom_name(atomic_number)
   integer :: atomic_number
   character(len=2) :: atom_name
 
-  character(len=2) :: elements(103)
+  character(len=2) :: elements(109)
   data elements/' H',                              'He', &
                 'Li','Be',' B',' C',' N',' O',' F','Ne', &
                 'Na','Mg','Al','Si',' P',' S','Cl','Ar', &
@@ -94,10 +95,11 @@ function atom_name(atomic_number)
                           'Ir','Pt','Au','Hg',           &
                           'Tl','Pb','Bi','Po','At','Rn', &
                 'Fr','Ra','Ac','Th','Pa',' U','Np','Pu', &
-                'Am','Cm','Bk','Cf','Es','Fm','Md','No', 'Lr' /
+                'Am','Cm','Bk','Cf','Es','Fm','Md','No', &
+                'Lr','Rf','Db','Sg','Bh','Hs','Mt' /
 
-  if (atomic_number < 1 .or. atomic_number > 103) then
-     call errore('atom_name','invalid atomic number',1000+atomic_number)
+  if (atomic_number < 1 .or. atomic_number > 109) then
+     call errore('atom_name','invalid atomic number',abs(atomic_number))
   else
      atom_name=elements(atomic_number)
   end if
@@ -114,7 +116,7 @@ function atom_weight(atomic_number)
   integer :: atomic_number
   real(DP) :: atom_weight
 
-  real(DP) :: weights(103)
+  real(DP) :: weights(109)
   data weights/ 1.00794_DP,                           4.00260_DP, &
                 6.941_DP,9.01218_DP,10.811_DP,12.0107_DP,14.00674_DP, &
                 15.9994_DP,18.99840_DP,20.1797_DP, &
@@ -139,10 +141,11 @@ function atom_weight(atomic_number)
                 223._DP,226._DP,227._DP,232.0381_DP,231.03588_DP, &
                 238.0289_DP,237._DP,244._DP, &
                 243._DP,247._DP,247._DP,251._DP,252._DP,257._DP,  &
-                258._DP,259._DP, 262._DP /
+                258._DP,259._DP,262._DP,261._DP,262._DP,266._DP,264._DP, &
+                277._DP,268._DP  /
 
-  if (atomic_number < 1 .or. atomic_number > 103) then
-     call errore('atom_name','invalid atomic number',1000+atomic_number)
+  if (atomic_number < 1 .or. atomic_number > 109) then
+     call errore('atom_weight','invalid atomic number',abs(atomic_number))
   else
      atom_weight=weights(atomic_number)
   end if

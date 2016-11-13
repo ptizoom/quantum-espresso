@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>1.2 People</TITLE>
+<META NAME="description" CONTENT="1.2 People">
+<META NAME="keywords" CONTENT="user_guide">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="user_guide.css">
+
+<LINK REL="next" HREF="node5.html">
+<LINK REL="previous" HREF="node3.html">
+<LINK REL="up" HREF="node2.html">
+<LINK REL="next" HREF="node5.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html145"
+  HREF="node5.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html141"
+  HREF="node2.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html135"
+  HREF="node3.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html143"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html146"
+  HREF="node5.html">1.3 Terms of use</A>
+<B> Up:</B> <A NAME="tex2html142"
+  HREF="node2.html">1 Introduction</A>
+<B> Previous:</B> <A NAME="tex2html136"
+  HREF="node3.html">1.1 What can PWscf</A>
+ &nbsp; <B>  <A NAME="tex2html144"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00022000000000000000">
+1.2 People</A>
+</H2>
+
+<P>
+The <TT>PWscf</TT> package (which included <TT>PHonon</TT> 
+and <TT>PostProc</TT> in earlier releases)
+was originally developed by Stefano Baroni, Stefano
+de Gironcoli, Andrea Dal Corso (SISSA), Paolo Giannozzi (Univ. Udine), and many others.
+We quote in particular:
+
+<UL>
+<LI>Matteo Cococcioni (Univ. Minnesota) for DFT+U implementation;
+</LI>
+<LI>David Vanderbilt's group at Rutgers for Berry's phase
+  calculations;
+</LI>
+<LI>Ralph Gebauer (ICTP, Trieste) and Adriano Mosca Conte
+  (SISSA, Trieste) for noncollinear magnetism;
+</LI>
+<LI>Andrea Dal Corso for spin-orbit interactions;
+</LI>
+<LI>Carlo Sbraccia (Princeton) for improvements to structural
+  optimization and to many other parts;
+</LI>
+<LI>Paolo Umari (Univ. Padua) for finite electric fields;
+</LI>
+<LI>Renata Wentzcovitch and collaborators (Univ. Minnesota)
+  for variable-cell molecular dynamics;
+</LI>
+<LI>Lorenzo Paulatto (Univ.Paris VI) for PAW implementation, 
+  built upon previous work by Guido Fratesi (Univ.Milano Bicocca)
+  and Riccardo Mazzarello (ETHZ-USI Lugano);
+</LI>
+<LI>Ismaila Dabo (INRIA, Palaiseau) for electrostatics with
+  free boundary conditions;
+</LI>
+<LI>Norbert Nemec and Mike Towler (U.Cambridge) for interface with 
+  <TT>CASINO</TT>;
+</LI>
+<LI>Alexander Smogunov (CEA) for extended and noncollinear DFT+U
+  implementation;
+</LI>
+<LI>Burak Himmetoglou (Univ. Minnesota) for DFT+U+J implementation;
+</LI>
+<LI>Andrei Malashevich (Univ. Berkeley) for calculation of orbital
+   magnetization;
+</LI>
+<LI>Gabriele Sclauzero (IRRMA Lausanne) for DFT+U
+   with on-site occupations obtained from pseudopotential projectors.
+</LI>
+</UL>
+
+<P>
+Other relevant contributions to <TT>PWscf</TT>:
+
+<UL>
+<LI>Yves Ferro (Univ. Provence) contributed SOGGA and M06L functionls
+</LI>
+<LI>Minoru Otani (AIST), Yoshio Miura (Tohoku U.), 
+  Nicephore Bonet (MIT), Nicola Marzari (Univ. Oxford), 
+  Brandon Wood (LLNL), Tadashi Ogitsu (LLNL), contributed
+  Effective Screening Method (PRB 73, 115407 [2006])
+</LI>
+<LI>Brian Kolb and Timo Thonhauser (Wake Forest University)
+  implemented the vdW-DF and vdW-DF2 functionals, with support from
+  Riccardo Sabatini and Stefano de Gironcoli (SISSA and DEMOCRITOS);
+</LI>
+<LI>Hannu-Pekka Komsa (CSEA/Lausanne) contributed
+  the HSE functional;
+</LI>
+<LI>Dispersions interaction in the framework of DFT-D were
+  contributed by Daniel Forrer (Padua Univ.) and Michele Pavone
+  (Naples Univ. Federico II);
+</LI>
+<LI>Filippo Spiga (ICHEC) contributed the
+  mixed MPI-OpenMP parallelization;
+</LI>
+<LI>The initial BlueGene porting was done by Costas Bekas and
+  Alessandro Curioni (IBM Zurich).
+</LI>
+</UL>
+
+<P>
+This guide was mostly written by Paolo Giannozzi.
+Mike Towler
+wrote the <TT>PWscf</TT> to <TT>CASINO</TT> subsection.
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html145"
+  HREF="node5.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html141"
+  HREF="node2.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html135"
+  HREF="node3.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html143"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html146"
+  HREF="node5.html">1.3 Terms of use</A>
+<B> Up:</B> <A NAME="tex2html142"
+  HREF="node2.html">1 Introduction</A>
+<B> Previous:</B> <A NAME="tex2html136"
+  HREF="node3.html">1.1 What can PWscf</A>
+ &nbsp; <B>  <A NAME="tex2html144"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+Layla Martin-Samos Colomer
+2012-11-21
+</ADDRESS>
+</BODY>
+</HTML>

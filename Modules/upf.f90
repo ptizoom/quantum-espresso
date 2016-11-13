@@ -7,8 +7,8 @@
 !=----------------------------------------------------------------------------=!
       MODULE upf_module
 !=----------------------------------------------------------------------------=!
-!  this module handles reading and writing of unified pseudopotential format (UPF)
-!  it can manage v2 read/write and v1 read only.
+!  this module handles reading of unified pseudopotential format (UPF)
+!  in either v1 or v2 format
 !
 ! A macro to trim both from left and right
 #define TRIM(a) trim(adjustl(a))
@@ -19,17 +19,21 @@
       !
       USE read_upf_v1_module
       USE read_upf_v2_module
-      USE write_upf_v2_module
       !
       IMPLICIT NONE
       PUBLIC
+      !PRIVATE
+      !PUBLIC :: read_upf, pseudo_upf, deallocate_pseudo_upf
       !
       CONTAINS
 
 !------------------------------------------------+
 SUBROUTINE read_upf(upf, grid, ierr, unit, filename)             !
    !---------------------------------------------+
-   ! Read pseudopotential in UPF format version 2, uses iotk
+   ! Read pseudopotential in UPF format (either v.1 or v.2)
+   ! ierr = -1 : read UPF v.1 
+   ! ierr =  0 : read UPF v.2 
+   ! ierr =  1 : not an UPF file, or error while reading
    !
    USE radial_grids, ONLY: radial_grid_type, deallocate_radial_grid
    USE read_upf_v1_module,ONLY: read_upf_v1
@@ -65,48 +69,12 @@ SUBROUTINE read_upf(upf, grid, ierr, unit, filename)             !
       CALL deallocate_pseudo_upf( upf )
       CALL deallocate_radial_grid( grid )
       CALL read_upf_v1( u, upf, grid, ierr )
+      IF(ierr==0) ierr=-1
    ENDIF
 
    RETURN
 
 END SUBROUTINE read_upf
-
-!------------------------------------------------+
-SUBROUTINE write_upf(upf, conf, unit, filename)             !
-   !---------------------------------------------+
-   ! Write pseudopotential in UPF format version 2, uses iotk
-   !
-   IMPLICIT NONE
-   TYPE(pseudo_upf),INTENT(IN)            :: upf       ! the pseudo data
-   TYPE(pseudo_config),OPTIONAL,INTENT(IN):: conf      ! the pseudo GENERATION data
-   INTEGER,INTENT(IN),OPTIONAL            :: unit      ! i/o unit
-   CHARACTER(len=*),INTENT(IN),OPTIONAL   :: filename  ! i/o filename
-   !
-   INTEGER :: u, ierr ! i/o unit and error handler
-
-   ierr = 0
-
-   IF(.not. present(unit)) THEN
-      IF (.not. present(filename)) &
-         CALL errore('read_upf_v2',&
-         'You have to specify at least one between filename and unit',1)
-      CALL iotk_free_unit(u)
-   ELSE
-      u = unit
-   ENDIF
-   !
-   IF(present(filename)) &
-      open (unit = u, file = filename, status = 'unknown', form = &
-      'formatted', iostat = ierr)
-   IF(ierr>0) CALL errore('write_upf', 'Cannot open file: '//TRIM(filename),1)
-   !
-   CALL write_upf_v2( u, upf, conf )
-   !
-   IF(ierr>0) &
-      CALL errore('write_upf','Errore while writing pseudopotential file',1)
-
-END SUBROUTINE write_upf
-
 
 !=----------------------------------------------------------------------------=!
       END MODULE upf_module

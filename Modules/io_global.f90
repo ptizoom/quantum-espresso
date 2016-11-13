@@ -14,8 +14,9 @@ MODULE io_global
   PRIVATE
   SAVE
   !
-  PUBLIC :: io_global_start, io_global_getionode, io_global_getmeta
+  PUBLIC :: io_global_start, meta_io_global_start, io_global_getionode, io_global_getmeta
   PUBLIC :: stdout, ionode, ionode_id, meta_ionode, meta_ionode_id
+  PUBLIC :: xmlinputunit, xmloutputunit, xmltmpunit
   !
   INTEGER :: stdout = 6            ! unit connected to standard output
   INTEGER :: ionode_id = 0         ! index of the i/o node
@@ -23,6 +24,9 @@ MODULE io_global
   INTEGER :: meta_ionode_id = 0    ! index of the i/o node for meta-codes
   LOGICAL :: meta_ionode = .TRUE.  ! identifies the i/o node for meta-codes
   LOGICAL :: first = .TRUE.
+  INTEGER :: xmlinputunit          ! unit connected to the xml input
+  INTEGER :: xmloutputunit = 51    ! unit connected to the xml output
+  INTEGER :: xmltmpunit    = 52    ! unit connected to the temp xml output
   !    
   CONTAINS
      !
@@ -38,23 +42,48 @@ MODULE io_global
        IF ( mpime == ionode_set ) THEN
           !
           ionode      = .TRUE.
-          meta_ionode = .TRUE.
           !
        ELSE
           !
           ionode      = .FALSE.
-          meta_ionode = .FALSE.
           !
        END IF
        !
        ionode_id      = ionode_set
-       meta_ionode_id = ionode_set
        !
        first = .FALSE.
        !
        RETURN
        !
      END SUBROUTINE io_global_start
+     !
+     !-----------------------------------------------------------------------
+     SUBROUTINE meta_io_global_start( mpime, ionode_set )
+       !-----------------------------------------------------------------------
+       !
+       IMPLICIT NONE
+       !
+       INTEGER, INTENT(IN) :: mpime, ionode_set
+       !
+       !
+       IF ( mpime == ionode_set ) THEN
+          !
+          meta_ionode      = .TRUE.
+          !
+       ELSE
+          !
+          meta_ionode      = .FALSE.
+          !
+       END IF
+       !
+       meta_ionode_id      = ionode_set
+       !
+       first = .FALSE.
+       !
+       RETURN
+       !
+     END SUBROUTINE meta_io_global_start
+     !
      !
      !
      !-----------------------------------------------------------------------
@@ -79,20 +108,26 @@ MODULE io_global
      !  
      !  
      !-----------------------------------------------------------------------
-     SUBROUTINE io_global_getmeta( ionode_out, ionode_id_out )
+     SUBROUTINE io_global_getmeta( myrank, root )
        !-----------------------------------------------------------------------
+       !
+       ! ... writes in module variables meta_ionode_id and meta_ionode
        !
        IMPLICIT NONE
        !
-       LOGICAL, INTENT(OUT) :: ionode_out
-       INTEGER, INTENT(OUT) :: ionode_id_out
+       INTEGER, INTENT(IN) :: myrank, root
        !
        !
-       IF ( first ) &
-          CALL errore( ' io_global_getmeta ', ' meta_ionode not yet defined ', 1 )
+       IF(myrank == root) THEN
        !
-       ionode_out    = meta_ionode
-       ionode_id_out = meta_ionode_id
+         meta_ionode   = .true.
+       !
+       ELSE
+         meta_ionode = .false.
+       !
+       ENDIF 
+       !
+       meta_ionode_id = root
        !
        RETURN
        !

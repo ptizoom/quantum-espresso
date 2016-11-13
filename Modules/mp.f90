@@ -19,7 +19,7 @@
       !
       IMPLICIT NONE
 
-      PUBLIC :: mp_start, mp_end, mp_env, &
+      PUBLIC :: mp_start, mp_end, &
         mp_bcast, mp_sum, mp_max, mp_min, mp_rank, mp_size, &
         mp_gather, mp_get, mp_put, mp_barrier, mp_report, mp_group_free, &
         mp_root_sum, mp_comm_free, mp_comm_create, mp_comm_group, &
@@ -30,14 +30,15 @@
           mp_bcast_z, mp_bcast_zv, &
           mp_bcast_iv, mp_bcast_rv, mp_bcast_cv, mp_bcast_l, mp_bcast_rm, &
           mp_bcast_cm, mp_bcast_im, mp_bcast_it, mp_bcast_rt, mp_bcast_lv, &
-          mp_bcast_lm, mp_bcast_r4d, mp_bcast_r5d, mp_bcast_ct,  mp_bcast_c4d
+          mp_bcast_lm, mp_bcast_r4d, mp_bcast_r5d, mp_bcast_ct,  mp_bcast_c4d,&
+          mp_bcast_c5d
       END INTERFACE
 
       INTERFACE mp_sum
         MODULE PROCEDURE mp_sum_i1, mp_sum_iv, mp_sum_im, mp_sum_it, &
           mp_sum_r1, mp_sum_rv, mp_sum_rm, mp_sum_rt, mp_sum_r4d, &
           mp_sum_c1, mp_sum_cv, mp_sum_cm, mp_sum_ct, mp_sum_c4d, &
-          mp_sum_c5d, mp_sum_c6d, mp_sum_rmm, mp_sum_cmm
+          mp_sum_c5d, mp_sum_c6d, mp_sum_rmm, mp_sum_cmm, mp_sum_r5d
       END INTERFACE
 
       INTERFACE mp_root_sum
@@ -67,9 +68,9 @@
       INTERFACE mp_alltoall
         MODULE PROCEDURE mp_alltoall_c3d, mp_alltoall_i3d
       END INTERFACE
-
-      INTEGER, ALLOCATABLE, PRIVATE, SAVE :: mp_call_count(:)
-      INTEGER, ALLOCATABLE, PRIVATE, SAVE :: mp_call_sizex(:)
+      INTERFACE mp_circular_shift_left
+        MODULE PROCEDURE mp_circular_shift_left_d2d_int,mp_circular_shift_left_d2d_double,mp_circular_shift_left_d2d_complex
+      END INTERFACE
 
 
       CHARACTER(LEN=80), PRIVATE :: err_msg = ' '
@@ -132,36 +133,33 @@
 !
 !------------------------------------------------------------------------------!
 !..mp_start
-      SUBROUTINE mp_start
+      SUBROUTINE mp_start(numtask, taskid, groupid)
 
 ! ...
         IMPLICIT NONE
-        INTEGER :: ierr, taskid
+        INTEGER, INTENT (OUT) :: numtask, taskid, groupid
+        INTEGER :: ierr
 ! ...
         ierr = 0
+        numtask = 1
         taskid = 0
-
-        ALLOCATE( mp_call_count( 1000 ) )
-        mp_call_count = 0
-        ALLOCATE( mp_call_sizex( 1000 ) )
-        mp_call_sizex = 0
+        groupid = 0
 
 #  if defined(__MPI)
-        CALL MPI_INIT(ierr)
+        CALL mpi_init(ierr)
         IF (ierr/=0) CALL mp_stop( 8003 )
-#  endif
-
+        CALL mpi_comm_rank(mpi_comm_world,taskid,ierr)
+        IF (ierr/=0) CALL mp_stop( 8005 )
 #if defined __HPM
-
         !   initialize the IBM Harware performance monitor
-
-#  if defined(__MPI)
-        CALL mpi_comm_rank( mpi_comm_world, taskid, ierr)
-#  endif
         CALL f_hpminit( taskid, 'profiling' )
 #endif
-! ...
+        CALL mpi_comm_size(mpi_comm_world,numtask,ierr)
+        groupid = mpi_comm_world
+        IF (ierr/=0) CALL mp_stop( 8006 )
+#  endif
 
+        RETURN
       END SUBROUTINE mp_start
 !
 !------------------------------------------------------------------------------!
@@ -173,9 +171,6 @@
 
         ierr = 0
         taskid = 0
-
-        IF ( ALLOCATED ( mp_call_count ) ) DEALLOCATE( mp_call_count )
-        IF ( ALLOCATED ( mp_call_sizex ) ) DEALLOCATE( mp_call_sizex )
 
 #if defined __HPM
 
@@ -193,32 +188,6 @@
 #endif
         RETURN
       END SUBROUTINE mp_end
-!
-!------------------------------------------------------------------------------!
-!..mp_env
-
-      SUBROUTINE mp_env(numtask, taskid, groupid)
-        IMPLICIT NONE
-        INTEGER, INTENT (OUT) :: numtask, taskid, groupid
-        INTEGER :: ierr
-
-        ierr = 0
-        numtask = 1
-        taskid = 0
-        groupid = 0
-
-#if defined(__MPI)
-
-        CALL mpi_comm_rank(mpi_comm_world,taskid,ierr)
-        IF (ierr/=0) CALL mp_stop( 8005 )
-        CALL mpi_comm_size(mpi_comm_world,numtask,ierr)
-        groupid = mpi_comm_world
-        IF (ierr/=0) CALL mp_stop( 8006 )
-
-#endif
-
-        RETURN
-      END SUBROUTINE mp_env
 
 !------------------------------------------------------------------------------!
 !..mp_group
@@ -327,8 +296,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL BCAST_INTEGER( msg, msglen, source, group )
-        mp_call_count( 1 ) = mp_call_count( 1 ) + 1
-        mp_call_sizex( 1 ) = MAX( mp_call_sizex( 1 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_i1
 !
@@ -345,8 +312,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL BCAST_INTEGER( msg, msglen, source, group )
-        mp_call_count( 2 ) = mp_call_count( 2 ) + 1
-        mp_call_sizex( 2 ) = MAX( mp_call_sizex( 2 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_iv
 !
@@ -363,8 +328,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL BCAST_INTEGER( msg, msglen, source, group )
-        mp_call_count( 3 ) = mp_call_count( 3 ) + 1
-        mp_call_sizex( 3 ) = MAX( mp_call_sizex( 3 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_im
 !
@@ -384,8 +347,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL BCAST_INTEGER( msg, msglen, source, group )
-        mp_call_count( 4 ) = mp_call_count( 4 ) + 1
-        mp_call_sizex( 4 ) = MAX( mp_call_sizex( 4 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_it
 !
@@ -402,8 +363,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, msglen, source, group )
-        mp_call_count( 5 ) = mp_call_count( 5 ) + 1
-        mp_call_sizex( 5 ) = MAX( mp_call_sizex( 5 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_r1
 !
@@ -422,8 +381,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, msglen, source, group )
-        mp_call_count( 6 ) = mp_call_count( 6 ) + 1
-        mp_call_sizex( 6 ) = MAX( mp_call_sizex( 6 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_rv
 !
@@ -441,8 +398,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, msglen, source, group )
-        mp_call_count( 7 ) = mp_call_count( 7 ) + 1
-        mp_call_sizex( 7 ) = MAX( mp_call_sizex( 7 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_rm
 !
@@ -462,8 +417,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, msglen, source, group )
-        mp_call_count( 8 ) = mp_call_count( 8 ) + 1
-        mp_call_sizex( 8 ) = MAX( mp_call_sizex( 8 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_rt
 !
@@ -483,8 +436,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, msglen, source, group )
-        mp_call_count( 9 ) = mp_call_count( 9 ) + 1
-        mp_call_sizex( 9 ) = MAX( mp_call_sizex( 9 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_r4d
 
@@ -505,8 +456,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, msglen, source, group )
-        mp_call_count( 10 ) = mp_call_count( 10 ) + 1
-        mp_call_sizex( 10 ) = MAX( mp_call_sizex( 10 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_r5d
 
@@ -524,8 +473,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, 2 * msglen, source, group )
-        mp_call_count( 11 ) = mp_call_count( 11 ) + 1
-        mp_call_sizex( 11 ) = MAX( mp_call_sizex( 11 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_c1
 !
@@ -542,8 +489,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, 2 * msglen, source, group )
-        mp_call_count( 12 ) = mp_call_count( 12 ) + 1
-        mp_call_sizex( 12 ) = MAX( mp_call_sizex( 12 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_cv
 !
@@ -560,8 +505,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, 2 * msglen, source, group )
-        mp_call_count( 13 ) = mp_call_count( 13 ) + 1
-        mp_call_sizex( 13 ) = MAX( mp_call_sizex( 13 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_cm
 !
@@ -578,8 +521,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, 2 * msglen, source, group )
-        mp_call_count( 14 ) = mp_call_count( 14 ) + 1
-        mp_call_sizex( 14 ) = MAX( mp_call_sizex( 14 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_ct
 
@@ -597,10 +538,23 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_real( msg, 2 * msglen, source, group )
-        mp_call_count( 15 ) = mp_call_count( 15 ) + 1
-        mp_call_sizex( 15 ) = MAX( mp_call_sizex( 15 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_c4d
+
+      SUBROUTINE mp_bcast_c5d(msg,source,gid)
+        IMPLICIT NONE
+        COMPLEX (DP) :: msg(:,:,:,:,:)
+        INTEGER :: source
+        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER :: group
+        INTEGER :: msglen
+#if defined(__MPI)
+        msglen = size(msg)
+        group = mpi_comm_world
+        IF( PRESENT( gid ) ) group = gid
+        CALL bcast_real( msg, 2 * msglen, source, group )
+#endif
+      END SUBROUTINE mp_bcast_c5d
 
 !
 !------------------------------------------------------------------------------!
@@ -617,8 +571,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_logical( msg, msglen, source, group )
-        mp_call_count( 16 ) = mp_call_count( 16 ) + 1
-        mp_call_sizex( 16 ) = MAX( mp_call_sizex( 16 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_l
 !
@@ -638,8 +590,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_logical( msg, msglen, source, group )
-        mp_call_count( 17 ) = mp_call_count( 17 ) + 1
-        mp_call_sizex( 17 ) = MAX( mp_call_sizex( 17 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_lv
 
@@ -659,8 +609,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL bcast_logical( msg, msglen, source, group )
-        mp_call_count( 18 ) = mp_call_count( 18 ) + 1
-        mp_call_sizex( 18 ) = MAX( mp_call_sizex( 18 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_lm
 
@@ -693,8 +641,6 @@
         END DO
         DEALLOCATE (imsg, STAT=ierr)
         IF (ierr/=0) CALL mp_stop( 8016 )
-        mp_call_count( 19 ) = mp_call_count( 19 ) + 1
-        mp_call_sizex( 19 ) = MAX( mp_call_sizex( 19 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_z
 !
@@ -732,8 +678,6 @@
         END DO
         DEALLOCATE (imsg, STAT=ierr)
         IF (ierr/=0) CALL mp_stop( 8018 )
-        mp_call_count( 20 ) = mp_call_count( 20 ) + 1
-        mp_call_sizex( 20 ) = MAX( mp_call_sizex( 20 ), msglen )
 #endif
       END SUBROUTINE mp_bcast_zv
 !
@@ -785,8 +729,6 @@
         IF (ierr/=0) CALL mp_stop( 8022 )
 #endif
 
-        mp_call_count( 21 ) = mp_call_count( 21 ) + 1
-        mp_call_sizex( 21 ) = MAX( mp_call_sizex( 21 ), msglen )
 
         RETURN
       END SUBROUTINE mp_get_i1
@@ -837,8 +779,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8026 )
 #endif
-        mp_call_count( 22 ) = mp_call_count( 22 ) + 1
-        mp_call_sizex( 22 ) = MAX( mp_call_sizex( 22 ), msglen )
         RETURN
       END SUBROUTINE mp_get_iv
 
@@ -886,8 +826,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8030 )
 #endif
-        mp_call_count( 23 ) = mp_call_count( 23 ) + 1
-        mp_call_sizex( 23 ) = MAX( mp_call_sizex( 23 ), msglen )
         RETURN
       END SUBROUTINE mp_get_r1
 
@@ -937,8 +875,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8030 )
 #endif
-        mp_call_count( 23 ) = mp_call_count( 23 ) + 1
-        mp_call_sizex( 23 ) = MAX( mp_call_sizex( 23 ), msglen )
         RETURN
       END SUBROUTINE mp_get_rv
 
@@ -988,8 +924,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8034 )
 #endif
-        mp_call_count( 24 ) = mp_call_count( 24 ) + 1
-        mp_call_sizex( 24 ) = MAX( mp_call_sizex( 24 ), msglen )
         RETURN
       END SUBROUTINE mp_get_rm
 
@@ -1040,8 +974,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8038 )
 #endif
-        mp_call_count( 25 ) = mp_call_count( 25 ) + 1
-        mp_call_sizex( 25 ) = MAX( mp_call_sizex( 25 ), msglen )
         RETURN
       END SUBROUTINE mp_get_cv
 !------------------------------------------------------------------------------!
@@ -1092,8 +1024,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8042 )
 #endif
-        mp_call_count( 26 ) = mp_call_count( 26 ) + 1
-        mp_call_sizex( 26 ) = MAX( mp_call_sizex( 26 ), msglen )
         RETURN
       END SUBROUTINE mp_put_i1
 
@@ -1140,8 +1070,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8046 )
 #endif
-        mp_call_count( 27 ) = mp_call_count( 27 ) + 1
-        mp_call_sizex( 27 ) = MAX( mp_call_sizex( 27 ), msglen )
         RETURN
       END SUBROUTINE mp_put_iv
 
@@ -1188,8 +1116,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8050 )
 #endif
-        mp_call_count( 28 ) = mp_call_count( 28 ) + 1
-        mp_call_sizex( 28 ) = MAX( mp_call_sizex( 28 ), msglen )
         RETURN
       END SUBROUTINE mp_put_rv
 
@@ -1236,8 +1162,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8054 )
 #endif
-        mp_call_count( 29 ) = mp_call_count( 29 ) + 1
-        mp_call_sizex( 29 ) = MAX( mp_call_sizex( 29 ), msglen )
         RETURN
       END SUBROUTINE mp_put_rm
 
@@ -1285,8 +1209,6 @@
         CALL MPI_BARRIER(group, IERR)
         IF (ierr/=0) CALL mp_stop( 8058 )
 #endif
-        mp_call_count( 30 ) = mp_call_count( 30 ) + 1
-        mp_call_sizex( 30 ) = MAX( mp_call_sizex( 30 ), msglen )
         RETURN
       END SUBROUTINE mp_put_cv
 
@@ -1320,8 +1242,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_integer( msglen, msg, group, -1 )
-        mp_call_count( 31 ) = mp_call_count( 31 ) + 1
-        mp_call_sizex( 31 ) = MAX( mp_call_sizex( 31 ), msglen )
 #endif
       END SUBROUTINE mp_sum_i1
 !
@@ -1337,8 +1257,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = size(msg)
         CALL reduce_base_integer( msglen, msg, group, -1 )
-        mp_call_count( 32 ) = mp_call_count( 32 ) + 1
-        mp_call_sizex( 32 ) = MAX( mp_call_sizex( 32 ), msglen )
 #endif
       END SUBROUTINE mp_sum_iv
 !
@@ -1355,8 +1273,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = size(msg)
         CALL reduce_base_integer( msglen, msg, group, -1 )
-        mp_call_count( 33 ) = mp_call_count( 33 ) + 1
-        mp_call_sizex( 33 ) = MAX( mp_call_sizex( 33 ), msglen )
 #endif
       END SUBROUTINE mp_sum_im
 !
@@ -1373,8 +1289,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = size(msg)
         CALL reduce_base_integer( msglen, msg, group, -1 )
-        mp_call_count( 34 ) = mp_call_count( 34 ) + 1
-        mp_call_sizex( 34 ) = MAX( mp_call_sizex( 34 ), msglen )
 #endif
       END SUBROUTINE mp_sum_it
 
@@ -1391,8 +1305,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( msglen, msg, group, -1 )
-        mp_call_count( 35 ) = mp_call_count( 35 ) + 1
-        mp_call_sizex( 35 ) = MAX( mp_call_sizex( 35 ), msglen )
 #endif
       END SUBROUTINE mp_sum_r1
 
@@ -1410,8 +1322,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( msglen, msg, group, -1 )
-        mp_call_count( 36 ) = mp_call_count( 36 ) + 1
-        mp_call_sizex( 36 ) = MAX( mp_call_sizex( 36 ), msglen )
 #endif
       END SUBROUTINE mp_sum_rv
 !
@@ -1429,8 +1339,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( msglen, msg, group, -1 )
-        mp_call_count( 37 ) = mp_call_count( 37 ) + 1
-        mp_call_sizex( 37 ) = MAX( mp_call_sizex( 37 ), msglen )
 #endif
       END SUBROUTINE mp_sum_rm
 
@@ -1459,8 +1367,6 @@
 
         CALL reduce_base_real_to( msglen, msg, res, group, root )
 
-        mp_call_count( 38 ) = mp_call_count( 38 ) + 1
-        mp_call_sizex( 38 ) = MAX( mp_call_sizex( 38 ), msglen )
 
 #else
 
@@ -1496,8 +1402,6 @@
 
         CALL reduce_base_real_to( 2 * msglen, msg, res, group, root )
 
-        mp_call_count( 39 ) = mp_call_count( 39 ) + 1
-        mp_call_sizex( 39 ) = MAX( mp_call_sizex( 39 ), msglen )
 
 #else
 
@@ -1550,8 +1454,6 @@
            !
         END IF
 
-        mp_call_count( 40 ) = mp_call_count( 40 ) + 1
-        mp_call_sizex( 40 ) = MAX( mp_call_sizex( 40 ), msglen )
 
 #else
         res = msg
@@ -1575,8 +1477,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( msglen, msg, group, -1 )
-        mp_call_count( 41 ) = mp_call_count( 41 ) + 1
-        mp_call_sizex( 41 ) = MAX( mp_call_sizex( 41 ), msglen )
 #endif
       END SUBROUTINE mp_sum_rt
 
@@ -1596,8 +1496,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( msglen, msg, group, -1 )
-        mp_call_count( 42 ) = mp_call_count( 42 ) + 1
-        mp_call_sizex( 42 ) = MAX( mp_call_sizex( 42 ), msglen )
 #endif
       END SUBROUTINE mp_sum_r4d
 
@@ -1617,8 +1515,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 43 ) = mp_call_count( 43 ) + 1
-        mp_call_sizex( 43 ) = MAX( mp_call_sizex( 43 ), msglen )
 #endif
       END SUBROUTINE mp_sum_c1
 !
@@ -1635,8 +1531,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 44 ) = mp_call_count( 44 ) + 1
-        mp_call_sizex( 44 ) = MAX( mp_call_sizex( 44 ), msglen )
 #endif
       END SUBROUTINE mp_sum_cv
 !
@@ -1653,8 +1547,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 45 ) = mp_call_count( 45 ) + 1
-        mp_call_sizex( 45 ) = MAX( mp_call_sizex( 45 ), msglen )
 #endif
       END SUBROUTINE mp_sum_cm
 !
@@ -1673,8 +1565,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real_to( 2 * msglen, msg, res, group, -1 )
-        mp_call_count( 46 ) = mp_call_count( 46 ) + 1
-        mp_call_sizex( 46 ) = MAX( mp_call_sizex( 46 ), msglen )
 #else
         res = msg
 #endif
@@ -1697,8 +1587,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 47 ) = mp_call_count( 47 ) + 1
-        mp_call_sizex( 47 ) = MAX( mp_call_sizex( 47 ), msglen )
 #endif
       END SUBROUTINE mp_sum_ct
 
@@ -1718,8 +1606,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 48 ) = mp_call_count( 48 ) + 1
-        mp_call_sizex( 48 ) = MAX( mp_call_sizex( 48 ), msglen )
 #endif
       END SUBROUTINE mp_sum_c4d
 !
@@ -1738,10 +1624,27 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 49 ) = mp_call_count( 49 ) + 1
-        mp_call_sizex( 49 ) = MAX( mp_call_sizex( 49 ), msglen )
 #endif
       END SUBROUTINE mp_sum_c5d
+
+!------------------------------------------------------------------------------!
+!
+! Carlo Cavazzoni
+!
+      SUBROUTINE mp_sum_r5d(msg,gid)
+        IMPLICIT NONE
+        REAL (DP), INTENT (INOUT) :: msg(:,:,:,:,:)
+        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER :: group
+        INTEGER :: msglen
+#if defined(__MPI)
+        msglen = size(msg)
+        group = mpi_comm_world
+        IF( PRESENT( gid ) ) group = gid
+        CALL reduce_base_real( msglen, msg, group, -1 )
+#endif
+      END SUBROUTINE mp_sum_r5d
+
 
 
 !
@@ -1760,8 +1663,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL reduce_base_real( 2 * msglen, msg, group, -1 )
-        mp_call_count( 50 ) = mp_call_count( 50 ) + 1
-        mp_call_sizex( 50 ) = MAX( mp_call_sizex( 50 ), msglen )
 #endif
       END SUBROUTINE mp_sum_c6d
 
@@ -1779,8 +1680,6 @@
         group = mpi_comm_world
         IF( PRESENT( gid ) ) group = gid
         CALL parallel_max_integer( msglen, msg, group, -1 )
-        mp_call_count( 51 ) = mp_call_count( 51 ) + 1
-        mp_call_sizex( 51 ) = MAX( mp_call_sizex( 51 ), msglen )
 #endif
       END SUBROUTINE mp_max_i
 !
@@ -1800,8 +1699,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = size(msg)
         CALL parallel_max_integer( msglen, msg, group, -1 )
-        mp_call_count( 52 ) = mp_call_count( 52 ) + 1
-        mp_call_sizex( 52 ) = MAX( mp_call_sizex( 52 ), msglen )
 #endif
       END SUBROUTINE mp_max_iv
 !
@@ -1818,8 +1715,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = 1
         CALL parallel_max_real( msglen, msg, group, -1 )
-        mp_call_count( 53 ) = mp_call_count( 53 ) + 1
-        mp_call_sizex( 53 ) = MAX( mp_call_sizex( 53 ), msglen )
 #endif
       END SUBROUTINE mp_max_r
 !
@@ -1835,8 +1730,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = size(msg)
         CALL parallel_max_real( msglen, msg, group, -1 )
-        mp_call_count( 54 ) = mp_call_count( 54 ) + 1
-        mp_call_sizex( 54 ) = MAX( mp_call_sizex( 54 ), msglen )
 #endif
       END SUBROUTINE mp_max_rv
 !------------------------------------------------------------------------------!
@@ -1851,8 +1744,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = 1
         CALL parallel_min_integer( msglen, msg, group, -1 )
-        mp_call_count( 55 ) = mp_call_count( 55 ) + 1
-        mp_call_sizex( 55 ) = MAX( mp_call_sizex( 55 ), msglen )
 #endif
       END SUBROUTINE mp_min_i
 !------------------------------------------------------------------------------!
@@ -1867,8 +1758,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = SIZE(msg)
         CALL parallel_min_integer( msglen, msg, group, -1 )
-        mp_call_count( 56 ) = mp_call_count( 56 ) + 1
-        mp_call_sizex( 56 ) = MAX( mp_call_sizex( 56 ), msglen )
 #endif
       END SUBROUTINE mp_min_iv
 !------------------------------------------------------------------------------!
@@ -1883,8 +1772,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = 1
         CALL parallel_min_real( msglen, msg, group, -1 )
-        mp_call_count( 57 ) = mp_call_count( 57 ) + 1
-        mp_call_sizex( 57 ) = MAX( mp_call_sizex( 57 ), msglen )
 #endif
       END SUBROUTINE mp_min_r
 !
@@ -1900,8 +1787,6 @@
         IF( PRESENT( gid ) ) group = gid
         msglen = size(msg)
         CALL parallel_min_real( msglen, msg, group, -1 )
-        mp_call_count( 58 ) = mp_call_count( 58 ) + 1
-        mp_call_sizex( 58 ) = MAX( mp_call_sizex( 58 ), msglen )
 #endif
       END SUBROUTINE mp_min_rv
 
@@ -1970,15 +1855,8 @@
 #if defined(__MPI)
 #  if defined (__MP_STAT)
         WRITE( stdout, 20 )
-        DO i = 1, SIZE( mp_call_count )
-           IF( mp_call_count( i ) > 0 ) THEN
-              WRITE( stdout, 30 ) i, mp_call_count( i ),  mp_call_sizex( i )
-           END IF
-        END DO
 #  endif
-10      FORMAT(3X,'Message Passing, maximum message size (bytes) : ',I15)
-20      FORMAT(3X,'Sub.   calls   maxsize')
-30      FORMAT(3X,I4,I8,I10)
+20      FORMAT(3X,'please use an MPI profiler to analisy communications ')
 #else
         WRITE( stdout, *)
 #endif
@@ -2308,7 +2186,133 @@ SUBROUTINE mp_alltoall_i3d( sndbuf, rcvbuf, gid )
    RETURN
 END SUBROUTINE mp_alltoall_i3d
 
+SUBROUTINE mp_circular_shift_left_d2d_int( buf, itag, gid )
+   IMPLICIT NONE
+   INTEGER :: buf
+   INTEGER, INTENT(IN) :: itag
+   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
 
+#if defined (__MPI)
+
+   INTEGER :: istatus( mpi_status_size )
+   !
+   group = mpi_comm_world
+   IF( PRESENT( gid ) ) group = gid
+   !
+   CALL mpi_comm_size( group, npe, ierr )
+   IF (ierr/=0) CALL mp_stop( 8100 )
+   CALL mpi_comm_rank( group, mype, ierr )
+   IF (ierr/=0) CALL mp_stop( 8101 )
+   !
+   sour = mype + 1
+   IF( sour == npe ) sour = 0
+   dest = mype - 1
+   IF( dest == -1 ) dest = npe - 1
+   !
+   CALL MPI_Sendrecv_replace( buf, 1, MPI_INTEGER, &
+        dest, itag, sour, itag, group, istatus, ierr)
+   !
+   IF (ierr/=0) CALL mp_stop( 8102 )
+   !
+#else
+   ! do nothing
+#endif
+   RETURN
+END SUBROUTINE mp_circular_shift_left_d2d_int
+
+
+
+SUBROUTINE mp_circular_shift_left_d2d_double( buf, itag, gid )
+   IMPLICIT NONE
+   REAL(DP) :: buf( :, : )
+   INTEGER, INTENT(IN) :: itag
+   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
+
+#if defined (__MPI)
+
+   INTEGER :: istatus( mpi_status_size )
+   !
+   group = mpi_comm_world
+   IF( PRESENT( gid ) ) group = gid
+   !
+   CALL mpi_comm_size( group, npe, ierr )
+   IF (ierr/=0) CALL mp_stop( 8100 )
+   CALL mpi_comm_rank( group, mype, ierr )
+   IF (ierr/=0) CALL mp_stop( 8101 )
+   !
+   sour = mype + 1
+   IF( sour == npe ) sour = 0
+   dest = mype - 1
+   IF( dest == -1 ) dest = npe - 1
+   !
+   CALL MPI_Sendrecv_replace( buf, SIZE(buf), MPI_DOUBLE_PRECISION, &
+        dest, itag, sour, itag, group, istatus, ierr)
+   !
+   IF (ierr/=0) CALL mp_stop( 8102 )
+   !
+#else
+   ! do nothing
+#endif
+   RETURN
+END SUBROUTINE mp_circular_shift_left_d2d_double
+
+SUBROUTINE mp_circular_shift_left_d2d_complex( buf, itag, gid )
+   IMPLICIT NONE
+   COMPLEX(DP) :: buf( :, : )
+   INTEGER, INTENT(IN) :: itag
+   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
+
+#if defined (__MPI)
+
+   INTEGER :: istatus( mpi_status_size )
+   !
+   group = mpi_comm_world
+   IF( PRESENT( gid ) ) group = gid
+   !
+   CALL mpi_comm_size( group, npe, ierr )
+   IF (ierr/=0) CALL mp_stop( 8100 )
+   CALL mpi_comm_rank( group, mype, ierr )
+   IF (ierr/=0) CALL mp_stop( 8101 )
+   !
+   sour = mype + 1
+   IF( sour == npe ) sour = 0
+   dest = mype - 1
+   IF( dest == -1 ) dest = npe - 1
+   !
+   CALL MPI_Sendrecv_replace( buf, SIZE(buf), MPI_DOUBLE_COMPLEX, &
+        dest, itag, sour, itag, group, istatus, ierr)
+   !
+   IF (ierr/=0) CALL mp_stop( 8102 )
+   !
+#else
+   ! do nothing
+#endif
+   RETURN
+END SUBROUTINE mp_circular_shift_left_d2d_complex
+
+
+      FUNCTION mp_get_comm_null( )
+        IMPLICIT NONE
+        INTEGER :: mp_get_comm_null
+#if defined(__MPI)
+           mp_get_comm_null = MPI_COMM_NULL
+#else
+           mp_get_comm_null = 0
+#endif
+      END FUNCTION mp_get_comm_null
+
+      FUNCTION mp_get_comm_self( )
+        IMPLICIT NONE
+        INTEGER :: mp_get_comm_self
+#if defined(__MPI)
+           mp_get_comm_self = MPI_COMM_SELF
+#else
+           mp_get_comm_self = 0
+#endif
+      END FUNCTION mp_get_comm_self
 
 !------------------------------------------------------------------------------!
     END MODULE mp

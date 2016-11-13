@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2007 Quantum ESPRESSO group
+! Copyright (C) 2002-2011 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -33,16 +33,17 @@ MODULE control_flags
   END TYPE convergence_criteria
   !
   PUBLIC :: tbeg, nomore, nbeg, isave, iprint, tv0rd, nv0rd, tzeroc, tzerop, &
-            newnfi, tnewnfi, tfor, tpre, tzeroe, tsde, tsdp, tsdc, taurdr,   &
+            tfor, tpre, tzeroe, tsde, tsdp, tsdc, taurdr,                    &
             ndr, ndw, tortho, ortho_eps, ortho_max, tstress, tprnfor,        &
             timing, memchk, tprnsfac, tcarpar,                               &
             trane,dt_old,ampre, tranp, amprp, tdipole, t_diis, t_diis_simple,&
             t_diis_rot, tnosee, tnosep, tnoseh, tcp, tcap, tdamp, tdampions, &
             tconvthrs, tolp, convergence_criteria, tionstep, nstepe,         &
-            tsteepdesc, tatomicwfc, tscreen, gamma_only, force_pairing
+            tsteepdesc, tatomicwfc, tscreen, gamma_only, force_pairing,      &
+            lecrpa, tddfpt, smallmem
   !
   PUBLIC :: fix_dependencies, check_flags
-  PUBLIC :: tksw, trhor, thdyn, iprsta, trhow
+  PUBLIC :: tksw, trhor, thdyn, trhow
   PUBLIC :: twfcollect, printwfc
   PUBLIC :: lkpoint_dir
   PUBLIC :: program_name
@@ -50,7 +51,7 @@ MODULE control_flags
   ! ...   declare execution control variables
   !
   CHARACTER(LEN=4) :: program_name = ' '  !  used to control execution flow 
-                                          !  inside module: 'FPMD' or 'CP90'
+                                          !  inside module: 'PW' or 'CP'
   !
   LOGICAL :: trhor     = .FALSE. ! read rho from unit 47 (only cp, seldom used)
   LOGICAL :: trhow     = .FALSE. ! CP code, write rho to restart dir
@@ -70,7 +71,6 @@ MODULE control_flags
   LOGICAL :: tzeroc        = .FALSE. ! set to zero the cell geometry velocities
   LOGICAL :: tstress       = .FALSE. ! print stress to standard output
   LOGICAL :: tortho        = .FALSE. ! use iterative orthogonalization
-  LOGICAL :: tconjgrad     = .FALSE. ! use conjugate gradient electronic minimization
   LOGICAL :: timing        = .FALSE. ! print out timing information
   LOGICAL :: memchk        = .FALSE. ! check for memory leakage
   LOGICAL :: tprnsfac      = .FALSE. ! print out structure factor
@@ -83,6 +83,9 @@ MODULE control_flags
   LOGICAL :: lkpoint_dir   = .TRUE.  ! save each k point in a different directory
   INTEGER :: printwfc      = -1      ! Print wave functions, temporarely used only by ensemble-dft
   LOGICAL :: force_pairing = .FALSE. ! Force pairing
+  LOGICAL :: lecrpa        = .FALSE. ! RPA correlation energy request
+  LOGICAL :: tddfpt        = .FALSE. ! use tddfpt specific tweaks to ph.x routines
+  LOGICAL :: smallmem      = .FALSE. ! the memory per task is small
   !
   TYPE (convergence_criteria) :: tconvthrs
                               !  thresholds used to check GS convergence
@@ -107,14 +110,10 @@ MODULE control_flags
   INTEGER :: iprint =10 ! print output every iprint step
   INTEGER :: isave  = 0 ! write restart to ndr unit every isave step
   INTEGER :: nv0rd  = 0 !
-  INTEGER :: iprsta = 0 ! output verbosity (increasing from 0 to infinity)
   !
   ! ... .TRUE. if only gamma point is used
   !
   LOGICAL :: gamma_only = .TRUE.
-  !
-  LOGICAL :: tnewnfi = .FALSE.
-  INTEGER :: newnfi  = 0
   !
   ! This variable is used whenever a timestep change is requested
   !
@@ -182,10 +181,15 @@ MODULE control_flags
     lneb    =.FALSE., &! if .TRUE. the calc. is NEB dynamics
     lsmd    =.FALSE., &! if .TRUE. the calc. is string dynamics
     lwf     =.FALSE., &! if .TRUE. the calc. is with wannier functions
+    !=================================================================
+    !  Lingzhu Kong 
+    lwfnscf =.FALSE., &
+    lwfpbe0 =.FALSE., &! if .TRUE. the calc. is with wannier functions and with PBE0 functional
+    lwfpbe0nscf=.FALSE.,&
+    !=================================================================
     lbands  =.FALSE., &! if .TRUE. the calc. is band structure
     lconstrain=.FALSE.,&! if .TRUE. the calc. is constraint
     ldamped =.FALSE., &! if .TRUE. the calc. is a damped dynamics
-    lcoarsegrained=.FALSE., &! if .TRUE. a coarse-grained phase-space is used
     llondon =.FALSE., & ! if .TRUE. compute semi-empirical dispersion correction
     restart =.FALSE.   ! if .TRUE. restart from results of a preceding run
   !
@@ -199,8 +203,18 @@ MODULE control_flags
   REAL(DP), PUBLIC  :: &
     mixing_beta,      &! the mixing parameter
     tr2                ! the convergence threshold for potential
+
   LOGICAL, PUBLIC :: &
     conv_elec          ! if .TRUE. electron convergence has been reached
+  ! next 3 variables used for EXX calculations
+  LOGICAL, PUBLIC :: &
+    adapt_thr       ! if .TRUE. an adaptive convergence threshold is used
+                       ! for the scf cycle in an EXX calculation.
+  REAL(DP), PUBLIC  :: &
+    tr2_init,         &! initial value of tr2 for adaptive thresholds
+    tr2_multi          ! the dexx multiplier for adaptive thresholds
+                       ! tr2 = tr2_multi * dexx after each V_exx update 
+  LOGICAL, PUBLIC :: scf_must_converge
   !
   ! ... pw diagonalization
   !
@@ -239,11 +253,7 @@ MODULE control_flags
   ! ... system's symmetries
   !
   LOGICAL, PUBLIC :: &
-    nosym = .FALSE.,  &! if .TRUE. no symmetry is used
-    nosym_evc = .FALSE., &! if .TRUE. symmetry is used only to symmetrize 
-                       ! k points
-    noinv = .FALSE.,&  ! if .TRUE. q=>-q symmetry not used in k-point generation
-    nofrac= .FALSE.    ! if .TRUE. fractionary transations are not allowed
+    noinv = .FALSE.    ! if .TRUE. q=>-q symmetry not used in k-point generation
   !
   ! ... phonon calculation
   !
@@ -254,8 +264,8 @@ MODULE control_flags
   !
   INTEGER, PUBLIC :: &
     io_level = 1       ! variable controlling the amount of I/O to file
-  INTEGER, PUBLIC :: &
-    iverbosity         ! type of printing ( 0 few, 1 all )
+  INTEGER, PUBLIC :: & ! variable controlling the amount of I/O to output
+    iverbosity = 0     ! -1 minimal, 0 low, 1 medium, 2 high, 3 debug
   !
   ! ... miscellany
   !
@@ -277,23 +287,11 @@ MODULE control_flags
   !
   INTEGER, PUBLIC :: iesr = 1
   !
-  ! ... Parameter for plotting Vh average
+  ! ... Real-sapce algorithms
   !
-  LOGICAL,          PUBLIC :: tvhmean = .FALSE.
-                              !  if TRUE save Vh average to file Vh_mean.out
-  REAL(DP),         PUBLIC :: vhrmin = 0.0_DP
-                              !  starting "radius" for plotting
-  REAL(DP),         PUBLIC :: vhrmax = 1.0_DP
-                              !  maximum "radius" for plotting
-  CHARACTER(LEN=1), PUBLIC :: vhasse = 'Z'
-                              !  averaging axis
-
-  LOGICAL,          PUBLIC :: tprojwfc = .FALSE.
-                              !  in CP controls the printing of wave function projections
-                              !  on atomic states
   LOGICAL,          PUBLIC :: tqr=.FALSE. ! if true the Q are in real space
 
-  !LOGICAL,          PUBLIC :: real_space=.false. ! if true, the beta functions are treated in real space
+  !LOGICAL,          PUBLIC :: real_space=.false. ! beta functions in real space
   !
   ! ... External Forces on Ions
   !

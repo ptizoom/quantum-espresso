@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2012 Quantum ESPRESSO group
+! Copyright (C) 2001-2014 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -12,13 +12,32 @@ subroutine slater (rs, ex, vx)
   !        Slater exchange with alpha=2/3
   !
   USE kinds, ONLY : DP
+#ifdef __LIBXC
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
   implicit none
-  real(DP) :: rs, ex, vx
-  real(DP), parameter  :: f= -0.687247939924714d0, alpha = 2.0d0/3.0d0
+  real(dp), intent(in) :: rs
+  real(dp), intent(out):: ex, vx
+#ifdef __LIBXC  
+  real(dp):: rho 
+  real(dp), parameter :: pi34 = 0.6203504908994d0 ! pi34=(3/4pi)^(1/3)
+  integer :: func_id = 1  ! Slater Exchange
+  integer :: size = 1
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+  
+  rho = (pi34/rs)**3
+  call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+  call xc_f90_lda_exc_vxc(xc_func, size, rho ,ex, vx)  
+  call xc_f90_func_end(xc_func)  
+#else
+  real(dp), parameter  :: f= -0.687247939924714d0, alpha = 2.0d0/3.0d0
   ! f = -9/8*(3/2pi)^(2/3)
   !
   ex = f * alpha / rs
   vx = 4.d0 / 3.d0 * f * alpha / rs
+#endif
   !
   return
 end subroutine slater
@@ -127,10 +146,30 @@ subroutine pz (rs, iflag, ec, vc)
   !     iflag=2: G. Ortiz and P. Ballone, PRB 50, 1391 (1994)
   !
   USE kinds, ONLY : DP
+#ifdef __LIBXC
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
   implicit none
-  real(DP) :: rs, ec, vc
-  integer :: iflag
-  !
+  real(dp), intent(in) :: rs
+  real(dp), intent(out):: ec, vc
+  integer, intent(in)  :: iflag
+#ifdef __LIBXC
+  real(dp):: rho 
+  real(dp), parameter :: pi34 = 0.6203504908994d0 ! pi34=(3/4pi)^(1/3)
+  integer :: func_id = 9   ! Perdew & Zunger
+    integer :: size = 1
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+
+  if (iflag.eq.1)  func_id = 9   ! Perdew & Zunger
+  if (iflag.eq.2)  func_id = 11  ! Ortiz & Ballone (PZ)
+
+  rho = (pi34/rs)**3
+  call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+  call xc_f90_lda_exc_vxc(xc_func, size, rho, ec, vc)  
+  call xc_f90_func_end(xc_func)  
+#else
   real(DP) :: a (2), b (2), c (2), d (2), gc (2), b1 (2), b2 (2)
   real(DP) :: lnrs, rs12, ox, dox
   !
@@ -156,6 +195,7 @@ subroutine pz (rs, iflag, ec, vc)
      ec = gc (iflag) / ox
      vc = ec * dox / ox
   endif
+#endif
   !
   return
 end subroutine pz
@@ -311,10 +351,30 @@ subroutine pw (rs, iflag, ec, vc)
   !     iflag=2: G. Ortiz and P. Ballone, PRB 50, 1391 (1994)
   !
   USE kinds, ONLY : DP
+#ifdef __LIBXC
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
   implicit none
-  real(DP) :: rs, ec, vc
-  integer :: iflag
-  !
+  real(dp), intent(in) :: rs
+  real(dp), intent(out):: ec, vc
+  integer, intent(in) :: iflag 
+#ifdef __LIBXC
+  real(dp):: rho 
+  real(dp), parameter :: pi34 = 0.6203504908994d0 ! pi34=(3/4pi)^(1/3)
+  integer :: func_id = 12   ! Perdew & Zunger
+  integer :: size = 1
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+
+  if (iflag.eq.1)  func_id = 12  ! Perdew & Wang
+  if (iflag.eq.2)  func_id = 14  ! Ortiz & Ballone (PW)
+
+  rho =  (pi34/rs)**3
+  call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+  call xc_f90_lda_exc_vxc(xc_func,size , rho, ec, vc)
+  call xc_f90_func_end(xc_func)  
+#else
   real(DP) :: a, b1, b2, c0, c1, c2, c3, d0, d1
   parameter (a = 0.031091d0, b1 = 7.5957d0, b2 = 3.5876d0, c0 = a, &
        c1 = 0.046644d0, c2 = 0.00664d0, c3 = 0.01043d0, d0 = 0.4335d0, &
@@ -352,7 +412,7 @@ subroutine pw (rs, iflag, ec, vc)
           * olog - 2.d0 / 3.d0 * a * (1.d0 + a1 (iflag) * rs) * dom / &
           (om * (om + 1.d0) )
   endif
-  !
+#endif
   return
 end subroutine pw
 !
@@ -414,6 +474,39 @@ subroutine gl (rs, ec, vc)
   !
   return
 end subroutine gl
+!
+!-----------------------------------------------------------------------
+subroutine becke86b(rho, grho, sx, v1x, v2x)
+  !-----------------------------------------------------------------------
+  ! Becke 1986 gradient correction to exchange
+  ! A.D. Becke, J. Chem. Phys. 85 (1986) 7184
+  !
+  USE kinds, ONLY : DP
+  implicit none
+  real(DP) :: rho, grho, sx, v1x, v2x
+  real(DP) :: arho, agrho, beta, gamma
+  parameter (beta = 0.00375_dp, gamma=0.007_dp)
+  real(dp) :: sgp1, sgp1_45, sgp1_95
+  real(dp) :: rdg2_43, rdg2_73, rdg2_83, rdg2_4, rdg4_5
+
+  arho = 0.5d0 * rho 
+  agrho = 0.25d0 * grho 
+
+  rdg2_43 = agrho / arho**(4d0/3d0)
+  rdg2_73 = rdg2_43 / arho
+  rdg2_83 = rdg2_43 * rdg2_43 / agrho
+  rdg2_4 = rdg2_43 * rdg2_83 / agrho
+  rdg4_5 = rdg2_73 * rdg2_83
+
+  sgp1 = 1d0 + gamma * rdg2_83
+  sgp1_45 = sgp1**(-4d0/5d0)
+  sgp1_95 = sgp1_45 / sgp1
+
+  sx = -2d0 * beta * agrho / arho**(4d0/3d0) * sgp1_45
+  v1x = -beta * (-4d0/3d0 * rdg2_73 * sgp1_45 + 32d0/15d0 * gamma * rdg4_5 * sgp1_95)
+  v2x = -beta * (sgp1_45 * rdg2_43 / agrho - 4d0/5d0 * gamma * rdg2_4 * sgp1_95)
+
+end subroutine becke86b
 !
 !-----------------------------------------------------------------------
 subroutine becke88 (rho, grho, sx, v1x, v2x)
@@ -527,6 +620,92 @@ subroutine rPW86 (rho, grho, sx, v1x, v2x)
 
 end subroutine rPW86
 
+subroutine PW86 (rho, grho, sx, v1x, v2x)
+  !-----------------------------------------------------------------------
+  ! Perdew-Wang 1986 exchange gradient correction: PRB 33, 8800 (1986) 
+  ! 
+  USE kinds
+  implicit none
+
+  real(DP), intent(in) :: rho, grho
+  real(DP), intent(out) :: sx, v1x, v2x
+  real(DP) :: s, s_2, s_3, s_4, s_5, s_6, fs, grad_rho, df_ds
+  real(DP) :: a, b, c, s_prefactor, Ax, four_thirds
+  parameter( a = 1.296_dp, b = 14_dp, c = 0.2_dp, s_prefactor = 6.18733545256027_dp, &
+       Ax = -0.738558766382022_dp, four_thirds = 4._dp/3._dp)
+
+  grad_rho = sqrt(grho)
+
+  s = grad_rho/(s_prefactor*rho**(four_thirds))
+
+  s_2 = s**2
+  s_3 = s_2 * s
+  s_4 = s_2**2
+  s_5 = s_3 * s_2
+  s_6 = s_2 * s_4
+
+  !! Calculation of energy
+  fs = (1 + a*s_2 + b*s_4 + c*s_6)**(1.d0/15.d0)
+  sx = Ax * rho**(four_thirds) * (fs-1d0)
+
+  !! Calculation of the potential
+  df_ds = (1.d0/(15.d0*fs**(14d0)))*(2*a*s + 4*b*s_3 + 6*c*s_5)
+
+  v1x = Ax*(four_thirds)*(rho**(1.d0/3.d0)*(fs-1d0) &
+       -grad_rho/(s_prefactor * rho)*df_ds)
+
+  v2x = Ax * df_ds/(s_prefactor*grad_rho)
+
+end subroutine PW86
+!
+!-----------------------------------------------------------------------
+subroutine cx13 (rho, grho, sx, v1x, v2x)
+  !-----------------------------------------------------------------------
+  ! The new exchange partner for a vdW-DF1-cx suggested
+  ! by K. Berland and P. Hyldgaard, see PRB 89, 035412 (2014), 
+  ! to test the plasmon nature of the vdW-DF1 inner functional.
+  !
+  USE kinds
+  implicit none
+  real(DP), intent(in) :: rho, grho
+  real(DP), intent(out) :: sx, v1x, v2x
+  real(DP) :: s, s_2, s_3, s_4, s_5, s_6, fs, fs_rPW86, df_rPW86_ds, grad_rho, df_ds
+  real(DP) :: alp, beta, a, b, c, s_prefactor, Ax, four_thirds, mu_LM
+  parameter( alp = 0.021789d0, beta=1.15d0,  a = 1.851d0, b = 17.33d0, c = 0.163d0, mu_LM = 0.09434d0, &
+       s_prefactor = 6.18733545256027d0, &
+       Ax = -0.738558766382022d0, four_thirds = 4.d0/3.d0)
+
+  grad_rho = sqrt(grho)
+
+  s = grad_rho/(s_prefactor*rho**(four_thirds))
+
+  s_2 = s*s
+  s_3 = s_2 * s
+  s_4 = s_2 * s_2
+  s_5 = s_3 * s_2
+  s_6 = s_2 * s_2 *s_2
+
+
+  !! Calculation of energy
+  fs_rPW86 = (1 + a*s_2 + b*s_4 + c*s_6)**(1.d0/15.d0)
+  fs = 1.d0/(1+alp*s_6) * (1 + mu_LM *s_2) &
+       +  alp*s_6/(beta+alp*s_6)*fs_rPW86
+
+  sx = Ax * rho**(four_thirds) * (fs -1.0D0)
+
+
+  !! Calculation of the potential
+  df_rPW86_ds = (1.d0/(15.d0*fs_rPW86**(14.0D0)))*(2*a*s + 4*b*s_3 + 6*c*s_5)
+
+  df_ds = 1.d0/(1+alp*s_6)**2*( 2.0d0*mu_LM*s*(1+alp*s_6) - 6.0d0*alp*s_5*( 1 + mu_LM*s_2))  &
+         + alp*s_6/(beta+alp*s_6)*df_rPW86_ds  &
+         + 6.0d0*alp*s_5*fs_rPW86/(beta+alp*s_6)*(1- alp*s_6/(beta + alp*s_6))
+
+  v1x = Ax*(four_thirds)*(rho**(1.d0/3.d0)*(fs -1.0D0) &
+       -grad_rho/(s_prefactor * rho)*df_ds)
+  v2x = Ax * df_ds/(s_prefactor*grad_rho)
+
+end subroutine cx13
 !
 !---------------------------------------------------------------
 subroutine c09x (rho, grho, sx, v1x, v2x)
@@ -594,7 +773,71 @@ subroutine c09x (rho, grho, sx, v1x, v2x)
   sx = sx * rho
   return
 end subroutine c09x
-
+!---------------------------------------------------------------
+subroutine b86b (rho, grho, iflag, sx, v1x, v2x)
+  !---------------------------------------------------------------
+  ! Becke exchange (without Slater exchange):
+  ! iflag=1: A. D. Becke, J. Chem. Phys. 85, 7184 (1986) (B86b)
+  ! iflag=2: J. Klimes, Phys. Rev. B 83, 195131 (2011). (OptB86b)
+  ! iflag=3: I. Hamada, Phys. Rev. B 89, 121103(R) (B86R)
+  !
+  ! Ikutaro Hamada - HAMADA.Ikutaro@nims.go.jp
+  ! National Institute for Materials Science
+  !
+  USE kinds, ONLY : DP
+  USE constants, ONLY : pi
+  implicit none
+  real(DP) :: rho, grho, sx, v1x, v2x
+  ! input: charge and squared gradient
+  ! output: energy
+  ! output: potential
+  integer :: iflag
+  ! local variables
+  real(DP) :: kf, agrho, s1, s2, ds, dsg, exunif, fx
+  ! (3*pi2*|rho|)^(1/3)
+  ! |grho|
+  ! |grho|/(2*kf*|rho|)
+  ! s^2
+  ! n*ds/dn
+  ! n*ds/d(gn)
+  ! exchange energy LDA part
+  ! exchange energy gradient part
+  real(DP) :: dxunif, dfx, f1, f2, f3, dfx1
+  ! numerical coefficients (NB: c2=(3 pi^2)^(1/3) )
+  real(DP) :: third, c1, c2, c5
+  parameter (third = 1.d0 / 3.d0, c1 = 0.75d0 / pi , &
+       c2 = 3.093667726280136d0, c5 = 4.d0 * third)
+  ! parameters of the functional
+  real(DP) :: k (3), mu(3)
+  data k / 0.5757d0, 1.0000d0, 0.711357d0/, &
+       mu/ 0.2449d0, 0.1234d0, 0.1234d0  /
+  !
+  agrho = sqrt (grho)
+  kf = c2 * rho**third
+  dsg = 0.5d0 / kf
+  s1 = agrho * dsg / rho
+  s2 = s1 * s1
+  ds = - c5 * s1
+  !
+  !   Energy
+  !
+  f1=mu(iflag)*s2
+  f2=1.d0+mu(iflag)*s2/k(iflag)
+  f3=f2**(4.d0/5.d0)
+  fx= f1/f3
+  exunif = - c1 * kf
+  sx = exunif * fx
+  !
+  !   Potential
+  !
+  dxunif = exunif * third
+  dfx1 = 1.d0+(1.d0/5.d0)*mu(iflag)*s2/k(iflag)
+  dfx = 2.d0* mu(iflag) * s1 * dfx1 / (f2 * f3)
+  v1x = sx + dxunif * fx + exunif * dfx * ds
+  v2x = exunif * dfx * dsg / agrho
+  sx = sx * rho
+  return
+end subroutine b86b
 !
 !-----------------------------------------------------------------------
 subroutine perdew86 (rho, grho, sc, v1c, v2c)
@@ -735,15 +978,51 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   ! iflag=2  "revised' PBE: Y. Zhang et al., PRL 80, 890 (1998)
   ! iflag=3  PBEsol: J.P.Perdew et al., PRL 100, 136406 (2008)
   ! iflag=4  PBEQ2D: L. Chiodo et al., PRL 108, 126402 (2012)
+  ! iflag=5  optB88: Klimes et al., J. Phys. Cond. Matter, 22, 022201 (2010)
+  ! iflag=6  optB86b: Klimes et al., Phys. Rev. B 83, 195131 (2011)
+  ! iflag=7  ev: Engel and Vosko, PRB 47, 13164 (1991)
   !
   USE kinds, ONLY : DP
   USE constants, ONLY : pi
+#ifdef __LIBXC
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
   implicit none
-  real(DP) :: rho, grho, sx, v1x, v2x
+  real(dp), intent(in) :: rho, grho
   ! input: charge and squared gradient
-  ! output: energy
-  ! output: potential
-  integer :: iflag
+  real(dp), intent(out):: sx, v1x, v2x
+  ! output: energy, potential
+  integer, intent(in) :: iflag
+#ifdef __LIBXC
+  ! local variables
+  integer :: func_id = -1 ! not set
+  integer :: size = 1
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+  real(dp) :: exc, ex_lda = 0.0d0 , vx_lda = 0.0d0
+
+  if (iflag.eq.1)  func_id = 101
+  if (iflag.eq.2)  func_id = 102
+  if (iflag.eq.3)  func_id = 116
+  if (iflag.eq.5)  func_id = 141
+  if (func_id==-1) call errore('pbex','case not implemented with libxc',iflag)
+
+  call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+  call xc_f90_gga_exc_vxc(xc_func, size, rho, grho, exc, v1x, v2x)  
+  call xc_f90_func_end(xc_func)  
+
+  ! remove Slater term for compatibility with QE  
+  call xc_f90_func_init(xc_func, xc_info, 1, XC_UNPOLARIZED)       
+  call xc_f90_lda_exc_vxc(xc_func, size, rho, ex_lda, vx_lda)  
+  call xc_f90_func_end(xc_func) 
+  exc = exc - ex_lda 
+  v1x = v1x - vx_lda 
+  
+  sx = exc * rho  ! e_x = rho * \epsilon_x
+  v2x = v2x*2.0_dp
+
+#else
   ! local variables
   real(DP) :: kf, agrho, s1, s2, ds, dsg, exunif, fx
   ! (3*pi2*|rho|)^(1/3)
@@ -757,17 +1036,20 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   real(DP) :: dxunif, dfx, f1, f2, f3, dfx1
   real(DP) :: p,  amu, ab, c, dfxdp, dfxds, upbe, uge, s, ak, aa
   ! numerical coefficients (NB: c2=(3 pi^2)^(1/3) )
-  real(DP), parameter :: third = 1.d0 / 3.d0, c1 = 0.75d0 / pi , &
-       c2 = 3.093667726280136d0, c5 = 4.d0 * third
+  real(DP), parameter :: third = 1._DP / 3._DP, c1 = 0.75_DP / pi , &
+       c2 = 3.093667726280136_DP, c5 = 4._DP * third, &
+       c6 = c2*2.51984210, c7=5._DP/6._DP, c8=0.8_DP ! (3pi^2)^(1/3)*2^(4/3)
   ! parameters of the functional
-  real(DP) :: k (4), mu(4)
-!           pbe        rpbe       pbesol                    pbeq2d
-  data k / 0.804d0,   1.2450D0,   0.804d0 ,                 0.804d0 /, &
-       mu/ 0.21951d0, 0.21951d0, 0.12345679012345679012d0,  0.12345679012345679/
-  !
+  real(DP) :: k (6), mu(6), ev(6)
+  !           pbe        rpbe        pbesol   pbeq2d      optB88  optB86b
+  data k / 0.804_DP,   1.2450D0,   0.804_DP , 0.804_DP ,    0.0 ,  0.0 /, &
+       mu/ 0.21951_DP, 0.21951_DP, 0.12345679012345679012_DP,             &
+                                   0.12345679012345679,     0.22 , 0.1234/, &
+       ev / 1.647127_DP, 0.980118_DP, 0.017399_DP, 1.523671_DP, 0.367229_DP, &
+                                   0.011282_DP /  ! a and b parameters of Engel and Vosko
   agrho = sqrt (grho)
   kf = c2 * rho**third
-  dsg = 0.5d0 / kf
+  dsg = 0.5_DP / kf
   s1 = agrho * dsg / rho
   s2 = s1 * s1
   ds = - c5 * s1
@@ -777,16 +1059,30 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   if ( iflag == 4) then
      p=s1*s1
      s=s1
-     ak=0.804d0
-     amu=10.d0/81.d0
-     ab=0.5217d0
-     c=2.d0
+     ak=0.804_DP
+     amu=10._DP/81._DP
+     ab=0.5217_DP
+     c=2._DP
      fx =  ak - ak / (1.0_dp + amu * p / ak)  + p**2 * (1 + p) &
            /(10**c + p**3) * (-1.0_dp - ak + ak / (1.0_dp + amu * p / ak) &
            + ab * p ** (-0.1d1/ 0.4D1))
+  elseif ( iflag == 5) then
+     ab=mu(iflag)*c7 ! mu/ab=1.2
+     p=s1*c6
+     c=log(p+sqrt(p*p+1)) ! asinh(p)
+     dfx1=1+ab*s1*c
+     fx =  mu(iflag)*s1*s1/dfx1
+  elseif ( iflag == 6) then
+     p=mu(iflag)*s1*s1
+     fx =  p / ( 1 + p )**c8
+  elseif ( iflag == 7) then
+     s=s2*s2
+     f1 =  1 + ev(1)*s2 + ev(2)*s + ev(3)*s*s2
+     f2 =  1 + ev(4)*s2 + ev(5)*s + ev(6)*s*s2
+     fx = f1 / f2 - 1
   else
      f1 = s2 * mu(iflag) / k (iflag)
-     f2 = 1.d0 + f1
+     f2 = 1._DP + f1
      f3 = k (iflag) / f2
      fx = k (iflag) - f3
   end if
@@ -806,16 +1102,24 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
       2) * dble(1 + p) / dble(10 ** c + p ** 3) * (-dble(1 / (1 + amu * &
       p / ak) ** 2 * amu) - dble(ab * p ** (-0.5d1 / 0.4D1)) / 0.4D1)
 
-      dfxds=dfxdp*2.d0*s
+      dfxds=dfxdp*2._DP*s
       dfx=dfxds
+  elseif (iflag == 5) then
+     dfx=2*fx/s1-fx/dfx1*(ab*c+ab*s1/sqrt(p*p+1)*c6)
+  elseif (iflag == 6) then
+     dfx=2*mu(iflag)*s1*fx*(1+(1-c8)*p)/(p*(1+p))
+  elseif (iflag == 7) then
+    dfx  =  ev(1) + 2*ev(2)*s2 + 3*ev(3)*s  
+    dfx1 =  ev(4) + 2*ev(5)*s2 + 3*ev(6)*s 
+    dfx  = 2 * s1 * ( dfx - f1*dfx1/f2 ) / f2
   else
-      dfx1 = f2 * f2
-      dfx = 2.d0 * mu(iflag) * s1 / dfx1
+     dfx1 = f2 * f2
+     dfx = 2._DP * mu(iflag) * s1 / dfx1
   end if
   v1x = sx + dxunif * fx + exunif * dfx * ds
   v2x = exunif * dfx * dsg / agrho
-
   sx = sx * rho
+#endif
   return
 end subroutine pbex
 !
@@ -895,9 +1199,40 @@ subroutine pbec (rho, grho, iflag, sc, v1c, v2c)
   ! iflag=3: L. Chiodo et al, PRL 108, 126402 (2012)  (PBEQ2D)
   !
   USE kinds, ONLY : DP
+#ifdef __LIBXC
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
   implicit none
   integer, intent(in) :: iflag
-  real(DP) :: rho, grho, sc, v1c, v2c
+  real(DP), intent(in) :: rho, grho
+  real(DP), intent(out):: sc, v1c, v2c
+#ifdef __LIBXC
+  ! local variables
+  integer :: func_id = -1 ! not set
+  integer :: size = 1
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+  real(dp) :: exc, ec_lda = 0.0d0 , vc_lda = 0.0d0
+
+  if (iflag.eq.1)  func_id = 130
+  if (iflag.eq.2)  func_id = 133
+  if (iflag.eq.3)  call errore('pbec','case not implemented with libxc',iflag)
+
+  call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)      
+  call xc_f90_gga_exc_vxc(xc_func, size, rho, grho, exc, v1c, v2c)       
+  call xc_f90_func_end(xc_func) 
+  ! remove PW correlation for compatibility with QE  
+  call xc_f90_func_init(xc_func, xc_info, 12, XC_UNPOLARIZED)    
+  call xc_f90_lda_exc_vxc(xc_func,size , rho, ec_lda, vc_lda)
+  call xc_f90_func_end(xc_func) 
+  exc = exc - ec_lda 
+  v1c = v1c - vc_lda
+  
+  sc = exc * rho  ! e_x = rho * \epsilon_x
+  v2c = v2c*2.0_dp
+
+#else
   real(DP), parameter :: ga = 0.031091d0
   real(DP) :: be (3)
 !             pbe           pbesol   pbeq2d
@@ -934,6 +1269,7 @@ subroutine pbec (rho, grho, iflag, sc, v1c, v2c)
      v1c=v1c+v1c2D
      v2c=v2c+v2c2D
   endif
+#endif
   !
   return
 end subroutine pbec
@@ -1164,7 +1500,7 @@ subroutine cpbe2d(rho,grho,sc,v1c,v2c)
 END subroutine cpbe2d
 !
 !---------------------------------------------------------------
-subroutine sogga (rho, grho2, sx, v1x, v2x)
+subroutine sogga (rho, grho, sx, v1x, v2x)
   !-------------------------------------------------------------
   !
   ! SOGGA exchange
@@ -1175,14 +1511,14 @@ subroutine sogga (rho, grho2, sx, v1x, v2x)
 
   implicit none
 
-  real(dp), intent(in)    :: rho, grho2
+  real(dp), intent(in)    :: rho, grho
   real(dp), intent(out)   :: sx, v1x, v2x
-  ! input: charge and squared gradient
+  ! input: charge and abs gradient
   ! output: energy
   ! output: potential
 
   ! local variables
-  real(dp)                :: grho, rho43, xs, xs2, dxs2_drho, dxs2_dgrho2
+  real(dp)                :: rho43, xs, xs2, dxs2_drho, dxs2_dgrho2
   real(dp)                :: CX, denom, C1, C2, Fso, Fpbe, ex, Fx, dFx_dxs2, dex_drho
 
   real(dp), parameter     :: one = 1.0_dp, two=2.0_dp, three = 3.0_dp,                &
@@ -1200,8 +1536,6 @@ subroutine sogga (rho, grho2, sx, v1x, v2x)
   C1    =  mu / denom
   C2    =  mu / (kapa * denom)
 
-
-  grho  = sqrt(grho2)
   rho43 = rho**f43
   xs    = grho / rho43
   xs2   = xs * xs
@@ -1598,6 +1932,184 @@ end function dpz
 !     ==--------------------------------------------------------------==
       RETURN
       END SUBROUTINE pbexsr
+!
+! gau-pbe in
+!
+!-----------------------------------------------------------------------
+      SUBROUTINE pbexgau_lsd(RHOA,RHOB,GRHOAA,GRHOBB,sx, &
+                            V1XA,V2XA,V1XB,V2XB,alpha_gau)
+!     ==--------------------------------------------------------------==
+      IMPLICIT REAL*8 (A-H,O-Z)
+      PARAMETER(SMALL=1.D-20)
+!     ==--------------------------------------------------------------==
+      SXA=0.0D0
+      SXB=0.0D0
+      V1XA=0.0D0
+      V2XA=0.0D0
+      V1XB=0.0D0
+      V2XB=0.0D0
+      IF(RHOA.GT.SMALL.AND.GRHOAA.GT.SMALL) THEN
+        CALL pbexgau(2.D0*RHOA, 4.D0*GRHOAA, SXA, V1XA, V2XA, &
+                                                   alpha_gau)
+      ENDIF
+      IF(RHOB.GT.SMALL.AND.GRHOBB.GT.SMALL) THEN
+        CALL pbexgau(2.D0*RHOB, 4.D0*GRHOBB, SXB, V1XB, V2XB, &
+                                                   alpha_gau)
+      ENDIF
+      sx = 0.5D0*(SXA+SXB)
+      V2XA = 2.D0*V2XA
+      V2XB = 2.D0*V2XB          ! I HOPE THIS WORKS JUST LIKE THIS
+
+!     ==--------------------------------------------------------------==
+      RETURN
+      END SUBROUTINE pbexgau_lsd
+!
+!-----------------------------------------------------------------------
+      SUBROUTINE pbexgau(RHO,GRHO,sxsr,v1xsr,v2xsr,alpha_gau)
+!-----------------------------------------------------------------------
+!
+      use kinds, ONLY : DP
+
+      IMPLICIT REAL*8 (A-H,O-Z)
+
+      PARAMETER(SMALL=1.D-20,SMAL2=1.D-08)
+      PARAMETER(US=0.161620459673995492D0,AX=-0.738558766382022406D0, &
+                UM=0.2195149727645171D0,UK=0.8040D0,UL=UM/UK)
+      REAL(DP), PARAMETER :: f1 = -1.10783814957303361_DP, alpha = 2.0_DP/3.0_DP
+!     ==--------------------------------------------------------------==
+
+      RS = RHO**(1.0_DP/3.0_DP)
+      VX = (4.0_DP/3.0_DP)*f1*alpha*RS
+      AA    = GRHO
+      RR    = 1.0_DP/(RHO*RS)
+      EX    = AX/RR
+! AX is 3/4/PI*(3*PI*PI)**(1/3). This is the same as -c1*c2 in pbex().
+      S2    = AA*RR*RR*US*US
+      S = SQRT(S2)
+      IF(S.GT.10.D0) THEN
+        S = 10.D0
+      ENDIF
+      CALL pbe_gauscheme(RHO,S,alpha_gau,FX,D1X,D2X)
+      sxsr = EX*FX        ! - EX
+      DSDN = -4.D0/3.D0*S/RHO
+      V1Xsr = VX*FX + (DSDN*D2X+D1X)*EX   ! - VX
+      DSDG = US*RR
+      V2Xsr = EX*1.D0/SQRT(AA)*DSDG*D2X
+
+! NOTE, here sx is the total energy density,
+! not just the gradient correction energy density as e.g. in pbex()
+! And the same goes for the potentials V1X, V2X
+
+!     ==--------------------------------------------------------------==
+      RETURN
+      END SUBROUTINE pbexgau
+!
+!-----------------------------------------------------------------------
+      SUBROUTINE pbe_gauscheme(rho,s,alpha_gau,Fx,dFxdr,dFxds)
+!--------------------------------------------------------------------
+
+      Implicit None
+      Real*8 rho,s,alpha_gau,Fx,dFxdr,dFxds
+!     input: charge and squared gradient and alpha_gau
+!     output: GGA enhancement factor of gau-PBE
+!     output: d(Fx)/d(s) , d(Fx)/d(rho)
+
+      Real*8 Kx, Nx
+!     PBE96 GGA enhancement factor
+!     GGA enhancement factor of Gaussian Function
+
+      Real*8 bx, cx, PI, sqrtpial, Prefac, term_PBE, Third, KsF
+      Real*8 d1sdr, d1Kxds, d1Kxdr, d1bxdr, d1bxds, d1bxdKx, &
+           d1Nxdbx,d1Nxdr, d1Nxds
+
+      Real*8, external :: qe_erf,TayExp
+
+      Real*8 Zero,One,Two,Three,Four,Five,Six,Seven,Eight,Nine,Ten
+
+      Save Zero,One,Two,Three,Four,Five,Six,Seven,Eight,Nine,Ten
+      Data Zero,One,Two,Three,Four,Five,Six,Seven,Eight,Nine,Ten &
+        / 0D0,1D0,2D0,3D0,4D0,5D0,6D0,7D0,8D0,9D0,10D0 /
+
+      Real*8 k , mu
+      Data k / 0.804d0 / , mu / 0.21951d0 /
+!     parameters of PBE functional
+
+      Third = One/Three
+      PI = ACos(-One)
+      KsF = (Three*PI*PI*rho)**Third
+      sqrtpial = sqrt(PI/alpha_gau)
+      Prefac = Two *sqrt(PI/alpha_gau) / Three
+
+!     PBE96 GGA enhancement factor part
+      term_PBE = One / (One + s*s*mu/k)
+      Kx =  One + k - k * term_PBE
+
+!     GGA enhancement factor of Gaussian Function part
+      bx = sqrt(Kx*alpha_gau) / KsF
+
+!      cx = exp(-One/Four/bx/bx) - One
+      If(Abs(One/bx/bx) .lt. 1.0D-4) then
+         cx = TayExp(-One/bx/bx)
+      else
+         cx = exp(-One/bx/bx) - One
+      endIf
+
+      Nx = bx * Prefac * ( sqrt(PI) * qe_erf(One/bx) + &
+       (bx - Two*bx*bx*bx)*cx - Two*bx )
+
+! for convergency
+      If(Abs(Nx) .lt. 1.0D-15)then
+        Nx = Zero
+      else if ((One - Abs(Nx)) .lt. 1.0D-15)then
+        Nx = One
+      else
+        Nx = Nx
+      endIf
+! for convergency end
+
+      Fx =  Kx * Nx
+
+!     1st derivatives
+      d1sdr = - Four / Three * s / rho
+
+      d1Kxds = Two * s * mu * term_PBE * term_PBE
+      d1Kxdr = d1Kxds * d1sdr
+      d1bxdKx = bx / (Two* Kx)
+
+      d1bxdr = - bx /(Three*rho) + d1Kxdr * d1bxdKx
+
+      d1bxds =  d1bxdKx * d1Kxds
+
+      d1Nxdbx =  Nx/bx - Prefac * bx * Three * &
+                  ( cx*(One + Two*bx*bx) + Two )
+
+      d1Nxdr = d1Nxdbx * d1bxdr
+      d1Nxds = d1Nxdbx * d1bxds
+
+      dFxdr = d1Kxdr * Nx + Kx * d1Nxdr
+      dFxds = d1Kxds * Nx + Kx * d1Nxds
+
+      RETURN
+      END SUBROUTINE pbe_gauscheme
+!
+      FUNCTION TayExp(X)
+      Real*8 TAYEXP,X
+      INTEGER NTERM,I
+      Real*8 SUMVAL,IVAL,COEF
+      PARAMETER (NTERM=16)
+
+      SUMVAL = X
+      IVAL = X
+      COEF = 1.0D0
+      DO 10 I = 2,NTERM
+         COEF = COEF * I
+         IVAL = IVAL * (X / COEF)
+         SUMVAL = SUMVAL + IVAL
+ 10         CONTINUE
+      TAYEXP = SUMVAL
+      RETURN
+      END FUNCTION TayExp
+! gau-pbe out
 !
 !-----------------------------------------------------------------------
       SUBROUTINE wpbe_analy_erfc_approx_grad(rho,s,omega,Fx_wpbe, &

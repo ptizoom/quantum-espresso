@@ -13,7 +13,7 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
   !
   !     ibrav is the structure index:
   !       1  cubic P (sc)                8  orthorhombic P
-  !       2  cubic F (fcc)               9  1-face (base) centered orthorhombic
+  !       2  cubic F (fcc)               9  1-face (C) centered orthorhombic
   !       3  cubic I (bcc)              10  all face centered orthorhombic
   !       4  hexagonal and trigonal P   11  body centered orthorhombic
   !       5  trigonal R, 3-fold axis c  12  monoclinic P (unique axis: c)
@@ -23,6 +23,8 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
   !       0  "free" structure          -12  monoclinic P (unique axis: b)
   !      -5  trigonal R, threefold axis along (111) 
   !      -9  alternate description for base centered orthorhombic
+  !     -13  one face (base) centered monoclinic (unique axis: b)
+  !      91  1-face (A) centered orthorombic
   !
   !     celldm are parameters which fix the shape of the unit cell
   !     omega is the unit-cell volume
@@ -144,6 +146,15 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
         a3(3)= a2(3)
      ELSE IF ( ibrav == -5) THEN
         !     threefold axis along (111)
+        ! Notice that in the cubic limit (alpha=90, celldm(4)=0, term1=term2=1)
+        ! does not yield the x,y,z axis, but an equivalent rotated triplet:
+        !    a/3 (-1,2,2), a/3 (2,-1,2), a/3 (2,2,-1)
+        ! If you prefer the x,y,z axis as cubic limit, you should modify the
+        ! definitions of a1(1) and a1(2) as follows:'
+        !    a1(1) = celldm(1)*(term1+2.0_dp*term2)/3.0_dp
+        !    a1(2) = celldm(1)*(term1-term2)/3.0_dp
+        ! (info by G. Pizzi and A. Cepellotti)
+        !
         a1(1) = celldm(1)*(term1-2.0_dp*term2)/3.0_dp
         a1(2) = celldm(1)*(term1+term2)/3.0_dp
         a1(3) = a1(2)
@@ -195,10 +206,12 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
      !
   else if ( ABS(ibrav) == 9) then
      !
-     !     One face (base) centered orthorhombic lattice
+     !     One face (base) centered orthorhombic lattice  (C type)
      !
-     if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)', ibrav)
-     if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)', ibrav)
+     if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)', &
+                                                                 ABS(ibrav))
+     if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)', &
+                                                                 ABS(ibrav))
      !
      IF ( ibrav == 9 ) THEN
         !   old PWscf description
@@ -214,6 +227,19 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
         a2(2) =-a1(2)
      END IF
      a3(3) = celldm(1) * celldm(3)
+     !
+  else if ( ibrav == 91 ) then
+     !
+     !     One face (base) centered orthorhombic lattice  (A type)
+     !
+     if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)', ibrav)
+     if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)', ibrav)
+     !
+     a1(1) = celldm(1)
+     a2(2) = celldm(1) * celldm(2) * 0.5_DP
+     a2(3) = - celldm(1) * celldm(3) * 0.5_DP
+     a3(2) = a2(2)
+     a3(3) = - a2(3)
      !
   else if (ibrav == 10) then
      !
@@ -264,9 +290,9 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
      !
      !     Simple monoclinic lattice, unique axis: b (more common)
      !
-     if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)', ibrav)
-     if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)', ibrav)
-     if (abs(celldm(5))>=1.d0) call errore ('latgen', 'wrong celldm(5)', ibrav)
+     if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)',-ibrav)
+     if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)',-ibrav)
+     if (abs(celldm(5))>=1.d0) call errore ('latgen', 'wrong celldm(5)',-ibrav)
      !
      sen=sqrt(1.d0-celldm(5)**2)
      a1(1)=celldm(1)
@@ -276,7 +302,7 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
      !
   else if (ibrav == 13) then
      !
-     !     One face centered monoclinic lattice
+     !     One face centered monoclinic lattice unique axis c
      !
      if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)', ibrav)
      if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)', ibrav)
@@ -289,6 +315,21 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
      a2(2) = celldm(1) * celldm(2) * sen
      a3(1) = a1(1)
      a3(3) =-a1(3)
+  else if (ibrav == -13) then
+     !
+     !     One face centered monoclinic lattice unique axis b
+     !
+     if (celldm (2) <= 0.d0) call errore ('latgen', 'wrong celldm(2)',-ibrav)
+     if (celldm (3) <= 0.d0) call errore ('latgen', 'wrong celldm(3)',-ibrav)
+     if (abs(celldm(5))>=1.d0) call errore ('latgen', 'wrong celldm(5)',-ibrav)
+     !
+     sen = sqrt( 1.d0 - celldm(5) ** 2 )
+     a1(1) = 0.5d0 * celldm(1) 
+     a1(2) =-a1(1) * celldm(2)
+     a2(1) = a1(1)
+     a2(2) =-a1(2)
+     a3(1) = celldm(1) * celldm(3) * celldm(5)
+     a3(3) = celldm(1) * celldm(3) * sen
      !
   else if (ibrav == 14) then
      !
@@ -321,7 +362,7 @@ subroutine latgen(ibrav,celldm,a1,a2,a3,omega)
   !
   !  calculate unit-cell volume omega
   !
-100 omega=0.d0
+  omega=0.d0
   s=1.d0
   i=1
   j=2

@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2003-2006 Quantum ESPRESSO group
+! Copyright (C) 2003-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -14,11 +14,38 @@ SUBROUTINE rdiaghg( n, m, h, s, ldh, e, v )
   ! ... Hv=eSv, with H symmetric matrix, S overlap matrix.
   ! ... On output both matrix are unchanged
   !
+  USE kinds,            ONLY : DP
+  !
+  IMPLICIT NONE
+  !
+  INTEGER, INTENT(IN) :: n, m, ldh
+  REAL(DP), INTENT(INOUT) :: h(ldh,n), s(ldh,n)
+  REAL(DP), INTENT(OUT) :: e(n)
+  REAL(DP), INTENT(OUT) :: v(ldh,m)
+  !
+#if defined(__CUDA) && defined(__MAGMA)
+  CALL rdiaghg_gpu( n, m, h, s, ldh, e, v )
+#else
+  CALL rdiaghg_compute( n, m, h, s, ldh, e, v )
+#endif
+  !
+  RETURN
+  !
+END SUBROUTINE rdiaghg
+
+!----------------------------------------------------------------------------
+SUBROUTINE rdiaghg_compute( n, m, h, s, ldh, e, v )
+  !----------------------------------------------------------------------------
+  !
+  ! ... calculates eigenvalues and eigenvectors of the generalized problem
+  ! ... Hv=eSv, with H symmetric matrix, S overlap matrix.
+  ! ... On output both matrix are unchanged
+  !
   ! ... LAPACK version - uses both DSYGV and DSYGVX
   !
   USE kinds,            ONLY : DP
   USE mp,               ONLY : mp_bcast
-  USE mp_global,        ONLY : me_bgrp, root_bgrp, intra_bgrp_comm
+  USE mp_bands,         ONLY : me_bgrp, root_bgrp, intra_bgrp_comm
   !
   IMPLICIT NONE
   !
@@ -169,7 +196,7 @@ SUBROUTINE rdiaghg( n, m, h, s, ldh, e, v )
   !
   RETURN
   !
-END SUBROUTINE rdiaghg
+END SUBROUTINE rdiaghg_compute
 !
 !----------------------------------------------------------------------------
 SUBROUTINE prdiaghg( n, h, s, ldh, e, v, desc )
@@ -183,10 +210,10 @@ SUBROUTINE prdiaghg( n, h, s, ldh, e, v, desc )
   !
   USE kinds,            ONLY : DP
   USE mp,               ONLY : mp_bcast
-  USE mp_global,        ONLY : root_bgrp, intra_bgrp_comm
+  USE mp_bands,         ONLY : root_bgrp, intra_bgrp_comm
   USE descriptors,      ONLY : la_descriptor
 #if defined __SCALAPACK
-  USE mp_global,        ONLY : ortho_cntx, me_blacs, np_ortho, me_ortho
+  USE mp_diag,          ONLY : ortho_cntx, me_blacs, np_ortho, me_ortho
   USE dspev_module,     ONLY : pdsyevd_drv
 #endif
   !

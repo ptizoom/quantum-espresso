@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2003 PWSCF group
+! Copyright (C) 2001-2014 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -25,7 +25,7 @@ SUBROUTINE make_pointlists
   USE io_global,  ONLY : stdout
   USE ions_base,  ONLY : nat, tau, ntyp => nsp, ityp
   USE cell_base,  ONLY : at, bg, alat
-  USE mp_global,  ONLY : me_pool
+  USE mp_bands,   ONLY : me_bgrp
   USE fft_base,   ONLY : dfftp
 
   USE noncollin_module, ONLY : factlist, pointlist, r_m
@@ -35,7 +35,7 @@ SUBROUTINE make_pointlists
   INTEGER idx0,idx,indproc,iat,ir,iat1
   INTEGER i,j,k,i0,j0,k0,ipol,nt,nt1
 
-  REAL(DP) :: posi(3),distance
+  REAL(DP) :: posi(3), distance
   REAL(DP), ALLOCATABLE :: tau0(:,:), distmin(:)
 
   WRITE( stdout,'(5x,"Generating pointlists ...")')
@@ -46,14 +46,12 @@ SUBROUTINE make_pointlists
 
   ! In the parallel case, find the index-offset to account for the planes
   ! treated by other procs
-
-  idx0 = 0
-#ifdef __MPI
-  DO indproc=1,me_pool
-     idx0 = idx0 + dfftp%nr1x*dfftp%nr2x*dfftp%npp(indproc)
-  ENDDO
-
+#if defined (__MPI)
+      idx0 = dfftp%nr1x*dfftp%nr2x * dfftp%ipp(me_bgrp+1)
+#else
+      idx0 = 0
 #endif
+
   ! Bring all the atomic positions on the first unit cell
 
   tau0=tau
@@ -67,9 +65,7 @@ SUBROUTINE make_pointlists
 
   ! Check the minimum distance between two atoms in the system
 
-
   distmin(:) = 1.d0
-
 
   DO iat = 1,nat
      nt = ityp(iat)
@@ -113,6 +109,7 @@ SUBROUTINE make_pointlists
                                         r_m(nt), r_m(nt) * alat, nt
      ENDIF
   ENDDO
+  DEALLOCATE(distmin)
 
   ! Now, set for every point in the fft grid an index corresponding
   ! to the atom whose integration sphere the grid point belong to.
@@ -122,49 +119,47 @@ SUBROUTINE make_pointlists
 
   pointlist(:) = 0
   factlist(:) = 0.d0
+  DO ir=1,dfftp%nr1x*dfftp%nr2x * dfftp%npl
 
-  DO iat = 1,nat
-     nt=ityp(iat)
-     DO ir=1,dfftp%nnr
-        idx = idx0 + ir - 1
+     idx = idx0 + ir - 1
+     k0  = idx/(dfftp%nr1x*dfftp%nr2x)
+     idx = idx - (dfftp%nr1x*dfftp%nr2x) * k0
+     j0  = idx / dfftp%nr1x
+     idx = idx - dfftp%nr1x*j0
+     i0  = idx
 
-        k0  = idx/(dfftp%nr1x*dfftp%nr2x)
-        idx = idx - (dfftp%nr1x*dfftp%nr2x) * k0
-        j0  = idx / dfftp%nr1x
-        idx = idx - dfftp%nr1x*j0
-        i0  = idx
+     DO i = i0-dfftp%nr1,i0+dfftp%nr1, dfftp%nr1
+        DO j = j0-dfftp%nr2, j0+dfftp%nr2, dfftp%nr2
+           DO k = k0-dfftp%nr3, k0+dfftp%nr3, dfftp%nr3
+              DO ipol=1,3
+                 posi(ipol) =  DBLE(i)/DBLE(dfftp%nr1) * at(ipol,1) &
+                             + DBLE(j)/DBLE(dfftp%nr2) * at(ipol,2) &
+                             + DBLE(k)/DBLE(dfftp%nr3) * at(ipol,3)
+              ENDDO
 
-        DO i = i0-dfftp%nr1,i0+dfftp%nr1, dfftp%nr1
-           DO j = j0-dfftp%nr2, j0+dfftp%nr2, dfftp%nr2
-              DO k = k0-dfftp%nr3, k0+dfftp%nr3, dfftp%nr3
-
-                 DO ipol=1,3
-                    posi(ipol) =  DBLE(i)/DBLE(dfftp%nr1) * at(ipol,1) &
-                                + DBLE(j)/DBLE(dfftp%nr2) * at(ipol,2) &
-                                + DBLE(k)/DBLE(dfftp%nr3) * at(ipol,3)
-
-                    posi(ipol) = posi(ipol) - tau0(ipol,iat)
-                 ENDDO
-
-                 distance = SQRT(posi(1)**2+posi(2)**2+posi(3)**2)
+              DO iat = 1,nat
+                 nt=ityp(iat)
+                 distance = SQRT( (posi(1)-tau0(1,iat))**2 + &
+                                  (posi(2)-tau0(2,iat))**2 + &
+                                  (posi(3)-tau0(3,iat))**2)
 
                  IF (distance.LE.r_m(nt)) THEN
                     factlist(ir) = 1.d0
                     pointlist(ir) = iat
+                    GO TO 10
                  ELSE IF (distance.LE.1.2*r_m(nt)) THEN
                     factlist(ir) = 1.d0 - (distance -r_m(nt))/(0.2d0*r_m(nt))
                     pointlist(ir) = iat
+                    GO TO 10
                  ENDIF
+              ENDDO
 
-              ENDDO         ! k
-           ENDDO            ! j
-        ENDDO               ! i
-
-     ENDDO                  ! ir
-
-  ENDDO                     ! ipol
+           ENDDO         ! k
+        ENDDO            ! j
+     ENDDO               ! i
+  10 CONTINUE
+  ENDDO                  ! ir
   DEALLOCATE(tau0)
-  DEALLOCATE(distmin)
  
 END SUBROUTINE make_pointlists
 

@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,7 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="user_guide.css">
@@ -25,26 +25,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html386"
+<A NAME="tex2html380"
   HREF="node20.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html382"
+<A NAME="tex2html376"
   HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html378"
+<A NAME="tex2html372"
   HREF="node18.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html384"
+<A NAME="tex2html378"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html387"
+<B> Next:</B> <A NAME="tex2html381"
   HREF="node20.html">About this document ...</A>
-<B> Up:</B> <A NAME="tex2html383"
+<B> Up:</B> <A NAME="tex2html377"
   HREF="node15.html">3 Parallelism</A>
-<B> Previous:</B> <A NAME="tex2html379"
+<B> Previous:</B> <A NAME="tex2html373"
   HREF="node18.html">3.3 Parallelization levels</A>
- &nbsp; <B>  <A NAME="tex2html385"
+ &nbsp; <B>  <A NAME="tex2html379"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -54,18 +54,20 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <UL>
 <LI><UL>
-<LI><A NAME="tex2html388"
+<LI><A NAME="tex2html382"
   HREF="node19.html#SECTION00044010000000000000">3.4.0.1 Trouble with input files</A>
-<LI><A NAME="tex2html389"
+<LI><A NAME="tex2html383"
   HREF="node19.html#SECTION00044020000000000000">3.4.0.2 Trouble with MKL and MPI parallelization</A>
-<LI><A NAME="tex2html390"
+<LI><A NAME="tex2html384"
   HREF="node19.html#SECTION00044030000000000000">3.4.0.3 Trouble with compilers and MPI libraries</A>
 </UL></UL>
 <!--End of Table of Child-Links-->
 <HR>
 
-<H2><A NAME="SECTION00044000000000000000">
-3.4 Tricks and problems</A>
+<H2><A NAME="SECTION00044000000000000000"></A>
+<A NAME="SubSec:badpara"></A>
+<BR>
+3.4 Tricks and problems
 </H2>
 
 <P>
@@ -76,10 +78,11 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 Some implementations of the MPI library have problems with input 
 redirection in parallel. This typically shows up under the form of
 mysterious errors when reading data. If this happens, use the option 
-<TT>-in</TT> (or <TT>-inp</TT> or <TT>-input</TT>), followed by the input file name. 
+<TT>-i</TT> (or <TT>-in</TT>, <TT>-inp</TT>, <TT>-input</TT>), 
+followed by the input file name. 
 Example:
 <PRE>
-   pw.x -in inputfile -npool 4 &gt; outputfile
+   pw.x -i inputfile -nk 4 &gt; outputfile
 </PRE> 
 Of course the 
 input file must be accessible by the processor that must read it
@@ -88,7 +91,7 @@ its contents to all other processors).
 
 <P>
 Apparently the LSF implementation of MPI libraries manages to ignore or to
-confuse even the <TT>-in/inp/input</TT> mechanism that is present in all
+confuse even the <TT>-i/in/inp/input</TT> mechanism that is present in all
 Q<SMALL>UANTUM </SMALL>ESPRESSO codes. In this case, use the <TT>-i</TT> option of <TT>mpirun.lsf</TT>
 to provide an input file.
 
@@ -145,31 +148,31 @@ compilers or of buggy or miscompiled MPI libraries.
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html386"
+<A NAME="tex2html380"
   HREF="node20.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html382"
+<A NAME="tex2html376"
   HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html378"
+<A NAME="tex2html372"
   HREF="node18.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html384"
+<A NAME="tex2html378"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html387"
+<B> Next:</B> <A NAME="tex2html381"
   HREF="node20.html">About this document ...</A>
-<B> Up:</B> <A NAME="tex2html383"
+<B> Up:</B> <A NAME="tex2html377"
   HREF="node15.html">3 Parallelism</A>
-<B> Previous:</B> <A NAME="tex2html379"
+<B> Previous:</B> <A NAME="tex2html373"
   HREF="node18.html">3.3 Parallelization levels</A>
- &nbsp; <B>  <A NAME="tex2html385"
+ &nbsp; <B>  <A NAME="tex2html379"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Layla Martin-Samos Colomer
-2012-11-21
+paolo giannozzi
+2015-03-08
 </ADDRESS>
 </BODY>
 </HTML>

@@ -38,15 +38,19 @@ MODULE dynamics_module
          delta_t       ! parameter used in thermalization
    INTEGER :: &
          nraise,      &! parameter used in thermalization
-         ndof          ! the number of degrees of freedom
+         ndof,        &! the number of degrees of freedom
+         num_accept=0  ! Number of the accepted proposal in Smart_MC
    LOGICAL :: &
-         tavel=.FALSE.,&! if true, starting velocities were read from input
          vel_defined,  &! if true, vel is used rather than tau_old to do the next step
          control_temp, &! if true a thermostat is used to control the temperature
-         refold_pos     ! if true the positions are refolded into the supercell
+         refold_pos,   &! if true the positions are refolded into the supercell
+         first_iter=.true. ! if this is the first ionic iteration
    CHARACTER(len=10) &
          thermostat    ! the thermostat used to control the temperature
-   !
+   ! tau_smart and force_smart is used for smart Monte Carlo to store the atomic position of the
+   ! previous step.
+   REAL(DP), ALLOCATABLE :: tau_smart(:,:), force_smart(:,:)
+   real(dp) :: etot_smart
    REAL(DP), ALLOCATABLE :: tau_old(:,:), tau_new(:,:), tau_ref(:,:)
    REAL(DP), ALLOCATABLE :: vel(:,:), acc(:,:), chi(:,:)
    REAL(DP), ALLOCATABLE :: mass(:)
@@ -120,8 +124,7 @@ CONTAINS
       USE cell_base,      ONLY : alat, omega
       USE ener,           ONLY : etot
       USE force_mod,      ONLY : force, lstres
-      USE control_flags,  ONLY : istep, nstep, conv_ions, lconstrain, &
-                                 lfixatom
+      USE control_flags,  ONLY : istep, nstep, conv_ions, lconstrain, tv0rd
       !
       USE constraints_module, ONLY : nconstr, check_constraint
       USE constraints_module, ONLY : remove_constr_force, remove_constr_vec
@@ -145,7 +148,7 @@ CONTAINS
       !
       ! ... the number of degrees of freedom
       !
-      IF ( any( if_pos(:,:) == 0 ) ) THEN
+      IF ( ANY( if_pos(:,:) == 0 ) ) THEN
          !
          ndof = 3*nat - count( if_pos(:,:) == 0 ) - nconstr
          !
@@ -155,13 +158,7 @@ CONTAINS
          !
       ENDIF
       !
-      vel(:,:)     = 0.D0
-      vel_defined  = .true. ! by default use vel==0 as starting point
-      ! not sure why the next 3 arrays were set to 0/0 ... maybe it
-      ! was just a check. The following should do the job.
-      tau_old(:,:) = 1.0D30
-      tau_new(:,:) = 1.0D30
-      acc(:,:)     = 1.0D30
+      vel_defined  = .true.
       temp_av      = 0.D0
       !
       CALL seqopn( 4, 'md', 'FORMATTED', file_exists )
@@ -227,15 +224,12 @@ CONTAINS
       !
       IF ( control_temp ) CALL apply_thermostat()
       !
-      IF ( lconstrain ) THEN
-         !
-         ! ... we first remove the component of the force along the
-         ! ... constraint gradient ( this constitutes the initial
-         ! ... guess for the calculation of the lagrange multipliers )
-         !
+      ! ... we first remove the component of the force along the
+      ! ... constraint gradient ( this constitutes the initial
+      ! ... guess for the calculation of the lagrange multipliers )
+      !
+      IF ( lconstrain ) &
          CALL remove_constr_force( nat, tau, if_pos, ityp, alat, force )
-         !
-      ENDIF
       !
       ! ... calculate accelerations in a.u. units / alat
       !
@@ -245,14 +239,11 @@ CONTAINS
       !
       IF (vel_defined) THEN
          !
-         IF ( lconstrain ) THEN
-            !
-            ! ... remove the component of the velocity along the
-            ! ... constraint gradient
-            !
+         ! ... remove the component of the velocity along the
+         ! ... constraint gradient
+         !
+         IF ( lconstrain ) &
             CALL remove_constr_vec( nat, tau, if_pos, ityp, alat, vel )
-            !
-         ENDIF
          !
          tau_new(:,:) = tau(:,:) + vel(:,:) * dt + 0.5_DP * acc(:,:) * dt**2
          tau_old(:,:) = tau(:,:) - vel(:,:) * dt + 0.5_DP * acc(:,:) * dt**2
@@ -263,7 +254,7 @@ CONTAINS
          !
       ENDIF
       !
-      IF ( all( if_pos(:,:) == 1 ) ) THEN
+      IF ( .NOT. ANY( if_pos(:,:) == 0 ) ) THEN
          !
          ! ... if no atom has been fixed  we compute the displacement of the
          ! ... center of mass and we subtract it from the displaced positions
@@ -378,9 +369,6 @@ CONTAINS
       !
       tau(:,:) = tau_new(:,:)
       !
-      !!!IF ( nat == 2 ) &
-      !!!   PRINT *, "DISTANCE = ", dnrm2( 3, ( tau(:,1) - tau(:,2) ), 1 ) * ALAT
-      !
 #if ! defined (__REDUCE_OUTPUT)
       !
       CALL output_tau( .false., .false. )
@@ -398,7 +386,7 @@ CONTAINS
               ((kstress(1,1)+kstress(2,2)+kstress(3,3))/3.d0*ry_kbar), &
               (kstress(i,1)*ry_kbar,kstress(i,2)*ry_kbar,kstress(i,3)*ry_kbar, i=1,3)
       !
-      IF ( .not.( lconstrain .or. lfixatom ) ) THEN
+      IF ( .not.( lconstrain .or. ANY( if_pos(:,:) == 0 ) ) ) THEN
          !
          ! ... total linear momentum must be zero if all atoms move
          !
@@ -498,7 +486,7 @@ CONTAINS
             !
          ENDDO
          !
-         IF ( tavel ) THEN ! initial velocities available from input file
+         IF ( tv0rd ) THEN ! initial velocities available from input file
             !
             vel(:,:) = vel(:,:) / alat
             !
@@ -684,16 +672,6 @@ CONTAINS
             !
          ENDIF
          !
-         !IF ( thermostat == 'langevin' ) THEN
-         !   !
-         !   ! ... vel is used already multiplied by the time step
-         !   !
-         !   vel(:,:) = dt*vel(:,:)
-         !   !
-         !   RETURN
-         !   !
-         !END IF
-         !
          IF ( invsym ) THEN
             !
             ! ... if there is inversion symmetry, equivalent atoms have
@@ -718,18 +696,12 @@ CONTAINS
             !
             ml(:) = 0.D0
             !
-            IF ( .not. lfixatom ) THEN
+            IF ( .NOT. ANY( if_pos(:,:) == 0 ) ) THEN
                !
-               total_mass = 0.D0
-               !
+               total_mass = SUM ( mass(1:nat) )
                DO na = 1, nat
-                  !
-                  total_mass = total_mass + mass(na)
-                  !
                   ml(:) = ml(:) + mass(na)*vel(:,na)
-                  !
                ENDDO
-               !
                ml(:) = ml(:) / total_mass
                !
             ENDIF
@@ -849,9 +821,11 @@ CONTAINS
       !
       istep = istep + 1
       !
-      IF ( istep == 1 ) &
+      IF ( istep == 1 ) THEN
          WRITE( UNIT = stdout, &
                 FMT = '(/,5X,"Damped Dynamics Calculation")' )
+         conv_ions = .FALSE.
+      END IF
       !
       ! ... check if convergence for structural minimization is achieved
       !
@@ -906,7 +880,7 @@ CONTAINS
       !
       tau_new(:,:) = tau(:,:) + step(:,:)*min( norm_step, step_max / alat )
       !
-      IF ( all( if_pos(:,:) == 1 ) ) THEN
+      IF ( .NOT. ANY( if_pos(:,:) == 0 ) ) THEN
          !
          ! ... if no atom has been fixed  we compute the displacement of the
          ! ... center of mass and we subtract it from the displaced positions
@@ -1064,7 +1038,7 @@ CONTAINS
       !
       tau_new(:,:) = tau(:,:) + ( dt*force(:,:) + chi(:,:) ) / alat
       !
-      IF ( all( if_pos(:,:) == 1 ) ) THEN
+      IF ( .NOT. ANY( if_pos(:,:) == 0 ) ) THEN
          !
          ! ... here we compute the displacement of the center of mass and we
          ! ... subtract it from the displaced positions
@@ -1507,4 +1481,114 @@ CONTAINS
       !
    END SUBROUTINE thermalize
    !
+
+   !-----------------------------------------------------------------------
+   subroutine smart_MC()
+      !-----------------------------------------------------------------------
+      ! Routine to apply smart_MC
+      ! Implemented by Xiaochuan Ge, Jul., 2013
+      !
+      ! At this moment works only with langevin dynamics !!
+      ! For the formula see R.J.Rossky, JCP, 69, 4628(1978)
+      
+     USE ions_base,      ONLY : nat, ityp, tau, if_pos,atm
+     USE cell_base,      ONLY : alat
+     USE ener,           ONLY : etot
+     USE force_mod,      ONLY : force
+     USE control_flags,  ONLY : istep, nstep, conv_ions, lconstrain, llang
+     USE constraints_module, ONLY : remove_constr_force, check_constraint
+     USE random_numbers, ONLY : randy
+     use io_files,      only : prefix     
+     use io_global,      only : ionode
+     USE constants, ONLY : bohr_radius_angs
+
+     implicit none
+     
+     logical :: accept
+     real(dp) :: kt,sigma2,&
+                 T_ij,T_ji,boltzman_ji,& ! boltzman_ji=exp[-(etot_new-etot_old)/kt]
+                 temp,p_smc                  ! *_smart means *_old, the quantity of the
+                                        ! previous step
+                                    
+     integer :: ia, ip
+
+     if(.not. llang) call errore( ' smart_MC ', "At this moment, smart_MC works&
+      &only with langevin." )
+
+      IF ( lconstrain ) THEN
+         ! ... we first remove the component of the force along the
+         ! ... constraint gradient ( this constitutes the initial
+         ! ... guess for the calculation of the lagrange multipliers )
+         CALL remove_constr_force( nat, tau, if_pos, ityp, alat, force )
+      ENDIF
+
+     if(first_iter) then ! For the first iteration
+       allocate(tau_smart(3,nat))
+       allocate(force_smart(3,nat))
+       tau_smart=tau
+       etot_smart=etot
+       force_smart=force
+       first_iter=.false.
+       return
+     endif
+
+     kt = temperature / ry_to_kelvin
+     sigma2 =  2.D0*dt*kt 
+
+     T_ij=0.0d0
+     T_ji=0.0d0
+     do ia=1,nat
+       do ip = 1, 3
+         T_ij=T_ij+((tau(ip,ia)-tau_smart(ip,ia))*alat-dt*force_smart(ip,ia))**2
+         T_ji=T_ji+((tau_smart(ip,ia)-tau(ip,ia))*alat-dt*force(ip,ia))**2
+       enddo
+     enddo
+     T_ij=exp(-T_ij/(2*sigma2))
+     T_ji=exp(-T_ji/(2*sigma2))
+ 
+     boltzman_ji=exp(-(etot-etot_smart)/kt)
+
+     p_smc=T_ji*boltzman_ji/T_ij
+
+     write(stdout, '(5x,"The old energy is:",3x,F17.8," Ry")') etot_smart
+     write(stdout, '(5x,"The new energy is:",3x,F17.8," Ry")') etot
+     write(stdout, '(5x,"The possibility to accept this step is:",3x,F10.7/)') p_smc
+     write(stdout, '(5x,"Nervously waiting for the fate ..."/)')
+     
+     ! Decide if accept the new config
+     temp = randy()
+     write(stdout, '(5x,"The fate says:",5x,F10.7)') temp
+     if(temp .le. p_smc) then
+       write(stdout, '(5x,"The new config is accepted")')
+       num_accept=num_accept+1
+       tau_smart=tau
+       etot_smart=etot
+       force_smart=force
+     else
+       write(stdout, '(5x,"The new config is not accepted")')
+       tau=tau_smart
+       etot=etot_smart
+       force=force_smart
+     endif
+
+     write (stdout, '(5x,"The current acceptance is :",3x,F10.6)') dble(num_accept)/istep
+
+     ! Print the trajectory
+#ifdef __MPI  
+     if(ionode) then
+#endif
+     OPEN(117,file="trajectory-"//trim(prefix)//".xyz",status="unknown",position='APPEND')
+     write(117,'(I5)') nat
+     write(117,'("# Step: ",I5,5x,"Total energy: ",F17.8,5x,"Ry")') istep-1, etot
+     do ia = 1, nat
+       WRITE( 117, '(A3,3X,3F14.9)') atm(ityp(ia)),tau(:,ia)*alat*bohr_radius_angs
+     enddo
+     close(117)
+#ifdef __MPI  
+     endif
+#endif
+
+     return
+   end subroutine smart_MC
+   
 END MODULE dynamics_module

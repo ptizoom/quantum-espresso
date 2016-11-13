@@ -13,15 +13,15 @@
    <blockquote>
 <h3>TABLE OF CONTENTS</h3>
 <blockquote>
-<p><a href="#id4164268">INTRODUCTION</a></p>
-<p><a href="#id4164277">&amp;PROJWFC</a><blockquote>
-<a href="#id4164453">prefix</a> | <a href="#id4164467">outdir</a> | <a href="#id4164482">ngauss</a> | <a href="#id4164499">degauss</a> | <a href="#id4164518">Emin</a> | <a href="#id4164523">Emax</a> | <a href="#id4164538">DeltaE</a> | <a href="#id4164549">lsym</a> | <a href="#id4164564">filpdos</a> | <a href="#id4164579">filproj</a> | <a href="#id4164594">lwrite_overlaps</a> | <a href="#id4164610">lbinary_data</a> | <a href="#id4164625">kresolveddos</a> | <a href="#id4164641">tdosinboxes</a> | <a href="#id4164658">n_proj_boxes</a> | <a href="#id4164673">irmin</a> | <a href="#id4164688">irmax</a> | <a href="#id4164703">plotboxes</a>
+<p><a href="#idm1680">INTRODUCTION</a></p>
+<p><a href="#idm560">&amp;PROJWFC</a><blockquote>
+<a href="#idp20400">prefix</a> | <a href="#idp22160">outdir</a> | <a href="#idp24128">ngauss</a> | <a href="#idp26144">degauss</a> | <a href="#idp28464">Emin</a> | <a href="#idp29120">Emax</a> | <a href="#idp30848">DeltaE</a> | <a href="#idp32208">lsym</a> | <a href="#idp34000">filpdos</a> | <a href="#idp35808">filproj</a> | <a href="#idp37616">lwrite_overlaps</a> | <a href="#idp39488">lbinary_data</a> | <a href="#idp41312">kresolveddos</a> | <a href="#idp43232">tdosinboxes</a> | <a href="#idp45280">n_proj_boxes</a> | <a href="#idp47008">irmin</a> | <a href="#idp48800">irmax</a> | <a href="#idp50592">plotboxes</a>
 </blockquote></p>
-<p><a href="#id4164720">Notes</a><blockquote><a href="#id4164725">Format of output files</a></blockquote><blockquote><a href="#id4164766">Orbital Order</a></blockquote><blockquote><a href="#id4164780">Defining boxes for the Local DOS(E)</a></blockquote><blockquote><a href="#id4164794">Important notices</a></blockquote></p>
+<p><a href="#idp52656">Notes</a><blockquote><a href="#idp53184">Format of output files</a></blockquote><blockquote><a href="#idp58176">Orbital Order</a></blockquote><blockquote><a href="#idp59888">Defining boxes for the Local DOS(E)</a></blockquote><blockquote><a href="#idp61536">Important notices</a></blockquote></p>
 </blockquote>
 </blockquote>
    <blockquote>
-<a name="id4164268"><h3>INTRODUCTION</h3></a><blockquote><pre>
+<a name="idm1680"><h3>INTRODUCTION</h3></a><blockquote><pre>
 Purpose of projwfc.x:
     projects wavefunctions onto orthogonalized atomic wavefunctions,
     calculates Lowdin charges, spilling parameter, projected DOS
@@ -37,10 +37,10 @@ Structure of the input data:
    /
    </pre></blockquote>
 </blockquote>
-   <a name="id4164277"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm560"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: PROJWFC</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="id4164453"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp20400"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">prefix</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -56,21 +56,25 @@ Prefix of input file produced by pw.x
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164467"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp22160"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">outdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
 <tr>
 <td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
-<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> './'
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; ">
+value of the ESPRESSO_TMPDIR environment variable if set;
+current directory ('./') otherwise
          </td>
 </tr>
-<tr><td align="left" valign="top" colspan="2"><blockquote><pre> directory containing the input file
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+directory containing the input data,
+i.e. the same as in pw.x
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164482"><a name="ngauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp24128"><a name="ngauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ngauss</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -89,7 +93,7 @@ Type of gaussian broadening:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164499"><a name="degauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp26144"><a name="degauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">degauss</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -106,7 +110,7 @@ Type of gaussian broadening:
       <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="id4164518"><a name="Emin">Emin, </a></a><a name="id4164523"><a name="Emax">Emax</a></a>
+<a name="idp28464"><a name="Emin">Emin, </a></a><a name="idp29120"><a name="Emax">Emax</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
@@ -119,7 +123,7 @@ Type of gaussian broadening:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-      <a name="id4164538"><a name="DeltaE"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp30848"><a name="DeltaE"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">DeltaE</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -128,7 +132,7 @@ Type of gaussian broadening:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164549"><a name="lsym"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp32208"><a name="lsym"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lsym</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -143,7 +147,7 @@ if true the projections are symmetrized
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164564"><a name="filpdos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp34000"><a name="filpdos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">filpdos</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -157,7 +161,7 @@ if true the projections are symmetrized
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164579"><a name="filproj"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp35808"><a name="filproj"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">filproj</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -172,7 +176,7 @@ file containing the projections
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164594"><a name="lwrite_overlaps"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp37616"><a name="lwrite_overlaps"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lwrite_overlaps</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -188,7 +192,7 @@ prior to orthogonalization is written to the atomic_proj datafile.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164610"><a name="lbinary_data"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp39488"><a name="lbinary_data"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lbinary_data</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -203,7 +207,7 @@ if .true., the atomic_proj datafile is written in binary fmt.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164625"><a name="kresolveddos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp41312"><a name="kresolveddos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">kresolveddos</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -220,7 +224,7 @@ In this case all k-point weights are set to unity
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164641"><a name="tdosinboxes"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp43232"><a name="tdosinboxes"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tdosinboxes</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -241,7 +245,7 @@ from irmin(j,n) to irmax(j,n) for j=1,2,3
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164658"><a name="n_proj_boxes"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp45280"><a name="n_proj_boxes"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">n_proj_boxes</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -256,7 +260,7 @@ number of boxes where the local DOS is computed
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164673"><a name="irmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp47008"><a name="irmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">irmin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -271,7 +275,7 @@ first point to be included in the box
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164688"><a name="irmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp48800"><a name="irmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">irmax</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -286,7 +290,7 @@ last point to be included in the box
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id4164703"><a name="plotboxes"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp50592"><a name="plotboxes"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">plotboxes</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -307,9 +311,9 @@ inside the box volume and 0 outside
    </td></tr></tbody></table></td></tr>
 </table></a>
    <blockquote>
-<a name="id4164720"><h3>Notes</h3></a>
+<a name="idp52656"><h3>Notes</h3></a>
       <blockquote>
-<a name="id4164725"><h4>Format of output files</h4></a>
+<a name="idp53184"><h4>Format of output files</h4></a>
          <blockquote><pre>
 Projections are written to standard output,
 and also to file filproj if given as input.
@@ -364,7 +368,7 @@ All DOS(E) are in states/eV plotted vs E in eV
          </pre></blockquote>
       </blockquote>
       <blockquote>
-<a name="id4164766"><h4>Orbital Order</h4></a>
+<a name="idp58176"><h4>Orbital Order</h4></a>
          <blockquote><pre>
 Order of m-components for each l in the output:
 
@@ -387,7 +391,7 @@ for l=2:
          </pre></blockquote>
       </blockquote>
       <blockquote>
-<a name="id4164780"><h4>Defining boxes for the Local DOS(E)</h4></a>
+<a name="idp59888"><h4>Defining boxes for the Local DOS(E)</h4></a>
          <blockquote><pre>
 Boxes are specified using the variables irmin and irmax:
 FFT grid points are included from irmin(j,n) to irmax(j,n)
@@ -400,7 +404,7 @@ and from irmin to nr1/2/3
          </pre></blockquote>
       </blockquote>
       <blockquote>
-<a name="id4164794"><h4>Important notices</h4></a>
+<a name="idp61536"><h4>Important notices</h4></a>
          <blockquote><pre>
 * The tetrahedron method is presently not implemented.
 

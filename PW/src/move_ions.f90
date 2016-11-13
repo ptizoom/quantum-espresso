@@ -18,7 +18,7 @@ SUBROUTINE move_ions()
   ! ... coefficients for potential and wavefunctions extrapolation are
   ! ... also computed here
   !
-  USE constants,              ONLY : e2, eps8, ry_kbar
+  USE constants,              ONLY : e2, eps6, ry_kbar
   USE io_global,              ONLY : stdout
   USE io_files,               ONLY : tmp_dir, iunupdate, seqopn
   USE kinds,                  ONLY : DP
@@ -35,16 +35,18 @@ SUBROUTINE move_ions()
   USE ener,                   ONLY : etot
   USE force_mod,              ONLY : force, sigma
   USE control_flags,          ONLY : istep, nstep, upscale, lbfgs, ldamped, &
-                                     lconstrain, conv_ions, &
+                                     lconstrain, conv_ions, use_SMC, &
                                      lmd, llang, history, tr2
+  USE basis,                  ONLY : starting_wfc
   USE relax,                  ONLY : epse, epsf, epsp, starting_scf_threshold
   USE lsda_mod,               ONLY : lsda, absmag
-  USE mp_global,              ONLY : intra_image_comm
+  USE mp_images,              ONLY : intra_image_comm
   USE io_global,              ONLY : ionode_id, ionode
   USE mp,                     ONLY : mp_bcast
   USE bfgs_module,            ONLY : bfgs, terminate_bfgs
   USE basic_algebra_routines, ONLY : norm
   USE dynamics_module,        ONLY : verlet, langevin_md, proj_verlet
+  USE dynamics_module,        ONLY : smart_MC
   USE dfunct,                 only : newd
   !
   IMPLICIT NONE
@@ -60,6 +62,8 @@ SUBROUTINE move_ions()
   REAL(DP)              :: h(3,3), fcell(3,3)=0.d0, epsp1
   INTEGER,  ALLOCATABLE :: fixion(:)
   real(dp) :: tr
+  !
+  IF (use_SMC) CALL smart_MC()  ! for smart monte carlo method
   !
   ! ... only one node does the calculation in the parallel case
   !
@@ -169,7 +173,7 @@ SUBROUTINE move_ions()
         !
         IF ( conv_ions ) THEN
            !
-           IF ( ( lsda .AND. ( absmag < eps8 ) .AND. lcheck_mag ) ) THEN
+           IF ( ( lsda .AND. ( absmag < eps6 ) .AND. lcheck_mag ) ) THEN
               !
               ! ... lsda relaxation :  a final configuration with zero 
               ! ...                    absolute magnetization has been found.
@@ -275,11 +279,14 @@ SUBROUTINE move_ions()
      ! 
      ! ... Variable-cell optimization: once convergence is achieved, 
      ! ... make a final calculation with G-vectors and plane waves
-     ! ... calculated for the final cell (may differ from the curent
+     ! ... calculated for the final cell (may differ from the current
      ! ... result, using G_vectors and PWs for the starting cell)
      !
      WRITE( UNIT = stdout, FMT = 9110 )
      WRITE( UNIT = stdout, FMT = 9120 )
+     !
+     ! ... prepare for a new run, restarted from scratch, not from previous
+     ! ... data (dimensions and file lengths will be different in general)
      !
      CALL clean_pw( .FALSE. )
      CALL close_files(.TRUE.)
@@ -290,6 +297,7 @@ SUBROUTINE move_ions()
      lmd=.FALSE.
      lcheck_mag = .FALSE.
      restart_with_starting_magnetiz = .FALSE.
+     if (trim(starting_wfc) == 'file') starting_wfc = 'atomic+random'
      ! ... conv_ions is set to .FALSE. to perform a final scf cycle
      conv_ions = .FALSE.
      ! ... allow re-calculation of FFT grid
@@ -313,11 +321,11 @@ SUBROUTINE move_ions()
      ! ... conv_ions is set to .FALSE. to perform a final scf cycle
      conv_ions = .FALSE.
      !
-     ! ... re-initialize the potential and wavefunctions
+     ! ... re-initialize the potential (no need to re-initialize wavefunctions)
      !
      CALL potinit()
      CALL newd()
-     CALL wfcinit()
+     !!! CALL wfcinit()
      !
   END IF
   !

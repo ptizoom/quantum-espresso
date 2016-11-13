@@ -12,8 +12,8 @@ SUBROUTINE init_run()
   USE klist,              ONLY : nkstot
   USE symme,              ONLY : sym_rho_init
   USE wvfct,              ONLY : nbnd, et, wg, btype
-  USE control_flags,      ONLY : lmd, gamma_only
-  USE cell_base,          ONLY : at, bg
+  USE control_flags,      ONLY : lmd, gamma_only, smallmem, ts_vdw
+  USE cell_base,          ONLY : at, bg, set_h_ainv
   USE cellmd,             ONLY : lmovecell
   USE dynamics_module,    ONLY : allocate_dyn_vars
   USE paw_variables,      ONLY : okpaw
@@ -24,14 +24,12 @@ SUBROUTINE init_run()
   USE bp,                 ONLY : allocate_bp_efield, bp_global_map
   USE fft_base,           ONLY : dffts
   USE funct,              ONLY : dft_is_hybrid
-#ifdef __ENVIRON
-  USE fft_base,           ONLY : dfftp
-  USE environ_base,       ONLY : do_environ
-#endif
   USE recvec_subs,        ONLY : ggen
   USE wannier_new,        ONLY : use_wannier    
   USE dfunct,             ONLY : newd
   USE esm,                ONLY : do_comp_esm, esm_ggen_2d
+  USE mp_bands,           ONLY : intra_bgrp_comm
+  USE tsvdw_module,       ONLY : tsvdw_initialize
   !
   IMPLICIT NONE
   !
@@ -51,7 +49,12 @@ SUBROUTINE init_run()
   !
   ! ... generate reciprocal-lattice vectors and fft indices
   !
-  CALL ggen ( gamma_only, at, bg )
+  IF( smallmem ) THEN
+     CALL ggen( gamma_only, at, bg, intra_bgrp_comm, no_global_sort = .TRUE. )
+  ELSE
+     CALL ggen( gamma_only, at, bg )
+  END IF
+  !
   IF (do_comp_esm) CALL esm_ggen_2d ()
   CALL gshells ( lmovecell )
   !
@@ -72,9 +75,8 @@ SUBROUTINE init_run()
   CALL allocate_wfc()
   CALL allocate_bp_efield()
   CALL bp_global_map()
-#ifdef __ENVIRON
-  IF ( do_environ ) CALL environ_initbase( dfftp%nnr )
-#endif
+  !
+  call plugin_initbase()
   !
   CALL memory_report()
   !
@@ -84,6 +86,11 @@ SUBROUTINE init_run()
   wg(:,:) = 0.D0
   !
   btype(:,:) = 1
+  !
+  IF (ts_vdw) THEN
+    CALL tsvdw_initialize()
+    CALL set_h_ainv()
+  END IF
   !
   CALL openfil()
   !

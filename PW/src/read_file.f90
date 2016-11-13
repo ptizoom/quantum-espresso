@@ -11,8 +11,8 @@ SUBROUTINE read_file()
   !
   ! Wrapper routine, for compatibility
   !
-  USE io_files,             ONLY : nwordwfc, iunwfc
-  USE io_global,            ONLY : stdout
+  USE io_files,             ONLY : nwordwfc, iunwfc, prefix, tmp_dir, wfc_dir
+  USE io_global,            ONLY : stdout, ionode
   USE buffers,              ONLY : open_buffer, close_buffer
   USE wvfct,                ONLY : nbnd, npwx
   USE noncollin_module,     ONLY : npol
@@ -21,11 +21,12 @@ SUBROUTINE read_file()
   USE paw_onecenter,        ONLY : paw_potential
   USE uspp,                 ONLY : becsum
   USE scf,                  ONLY : rho
-  USE realus,               ONLY : qpointlist, betapointlist, &
+  USE realus,               ONLY : betapointlist, &
                                    init_realspace_vars,real_space
   USE dfunct,               ONLY : newd
   USE ldaU,                 ONLY : lda_plus_u, U_projection
   USE pw_restart,           ONLY : pw_readfile
+  USE control_flags,        ONLY : io_level
   !
   IMPLICIT NONE 
   INTEGER :: ierr
@@ -33,12 +34,19 @@ SUBROUTINE read_file()
   !
   ! ... Read the contents of the xml data file
   !
+  IF ( ionode ) WRITE( stdout, '(/,5x,A,/,5x,A)') &
+     'Reading data from directory:', TRIM( tmp_dir ) // TRIM( prefix ) // '.save'
+  !
   CALL read_xml_file ( )
   !
-  ! ... Open unit iunwfc, for Kohn-Sham orbitals
+  ! ... Open unit iunwfc, for Kohn-Sham orbitals - we assume that wfcs
+  ! ... have been written to tmp_dir, not to a different directory!
+  ! ... io_level = 1 so that a real file is opened
   !
+  wfc_dir = tmp_dir
   nwordwfc = nbnd*npwx*npol
-  CALL open_buffer ( iunwfc, 'wfc', nwordwfc, nks, exst )
+  io_level = 1
+  CALL open_buffer ( iunwfc, 'wfc', nwordwfc, io_level, exst )
   !
   ! ... Read orbitals, write them in 'distributed' form to iunwfc
   !
@@ -48,7 +56,8 @@ SUBROUTINE read_file()
   ! ... Not sure which ones (if any) should be done here
   !
   CALL init_us_1()
-  IF (lda_plus_U .AND. (U_projection == 'pseudo')) CALL init_q_aeps()
+  !
+  IF (lda_plus_u .AND. (U_projection == 'pseudo')) CALL init_q_aeps()
   !
   IF (okpaw) THEN
      becsum = rho%bec
@@ -58,7 +67,7 @@ SUBROUTINE read_file()
   IF ( real_space ) THEN
     CALL betapointlist()
     CALL init_realspace_vars()
-    WRITE(stdout,'(5X,"Real space initialisation completed")')
+    IF( ionode ) WRITE(stdout,'(5x,"Real space initialisation completed")')
   ENDIF
   CALL newd()
   !
@@ -77,7 +86,6 @@ SUBROUTINE read_xml_file()
   !
   USE kinds,                ONLY : DP
   USE ions_base,            ONLY : nat, nsp, ityp, tau, if_pos, extfor
-  USE basis,                ONLY : natomwfc
   USE cell_base,            ONLY : tpiba2, alat,omega, at, bg, ibrav
   USE force_mod,            ONLY : force
   USE klist,                ONLY : nkstot, nks, xk, wk
@@ -108,12 +116,13 @@ SUBROUTINE read_xml_file()
   USE uspp_param,           ONLY : upf
   USE paw_variables,        ONLY : okpaw, ddd_PAW
   USE paw_init,             ONLY : paw_init_onecenter, allocate_paw_internals
-  USE ldaU,                 ONLY : lda_plus_u, eth, oatwfc
+  USE ldaU,                 ONLY : lda_plus_u, eth, init_lda_plus_u
   USE control_flags,        ONLY : gamma_only
   USE funct,                ONLY : get_inlc, get_dft_name
   USE kernel_table,         ONLY : initialize_kernel_table
   USE esm,                  ONLY : do_comp_esm, esm_ggen_2d
   !
+  IMPLICIT NONE
   INTEGER  :: i, is, ik, ibnd, nb, nt, ios, isym, ierr, inlc
   REAL(DP) :: rdum(1,1), ehart, etxc, vtxc, etotefield, charge
   REAL(DP) :: sr(3,3,48)
@@ -146,8 +155,7 @@ SUBROUTINE read_xml_file()
   !
   ! ... allocate space for atomic positions, symmetries, forces, tetrahedra
   !
-  IF ( nat < 0 ) &
-     CALL errore( 'read_xml_file', 'wrong number of atoms', 1 )
+  IF ( nat < 0 ) CALL errore( 'read_xml_file', 'wrong number of atoms', 1 )
   !
   ! ... allocation
   !
@@ -164,6 +172,7 @@ SUBROUTINE read_xml_file()
   !
   CALL set_dimensions()
   CALL realspace_grids_init ( dfftp, dffts, at, bg, gcutm, gcutms )
+
   !
   ! ... check whether LSDA
   !
@@ -234,8 +243,8 @@ SUBROUTINE read_xml_file()
   ! ... read the vdw kernel table if needed
   !
   inlc = get_inlc()
-  if (inlc == 1 .or. inlc ==2 ) then
-      call initialize_kernel_table()
+  if (inlc > 0 ) then
+      call initialize_kernel_table(inlc)
   endif
   !
   okpaw = ANY ( upf(1:nsp)%tpawp )
@@ -261,8 +270,7 @@ SUBROUTINE read_xml_file()
   ENDIF
   !
   IF ( lda_plus_u ) THEN
-     ALLOCATE ( oatwfc(nat) )
-     CALL offset_atom_wfc ( nat, oatwfc )
+     CALL init_lda_plus_u ( upf(1:nsp)%psd, noncolin )
   ENDIF
   !
   CALL allocate_wfc()

@@ -1,3 +1,179 @@
+New in 5.1.2 version:
+
+   * PW: Hybrid functionals for USPP and PAW still have problems, disabled
+   * code "molecularpdos.x" computing PDOS on selected molecular orbitals
+     separately computed (courtesy of Guido Fratesi)
+   * TDDFPT: a few more options, improved documentation, compatibility
+     with "Environ" plugin
+   * Added spin-polarized b86r exchange (courtesy of Ikutaro Hamada)
+
+Incompatible changes in 5.1.2 version:
+
+   * XSpectra: variable ef_r, used to eliminate the occupied states
+               from the spectrum, replaced by new variable xe0  
+   * PHonon: input variable iverbosity => verbosity
+   * The (undocumented) *.evp file of CP uses a slightly different format
+     (equally undocumented) since v.5.1.1. In order to use original format,
+     compile with __OLD_FORMAT preprocessing variable on.
+
+Fixed in 5.1.2 version:
+
+   * Option wf_collect wasn't working with LSDA and one k-point per pool
+   * Restarting from interrupted calculations could be spoiled by options
+     "startingwfc" and "startingpot": warning added
+   * Bug in space-group generator in the monoclinic case.
+   * atomic: a small bug was preventing the generation of non-PAW 
+     pseudopotentials with GIPAW reconstruction data
+   * Changes made in rev.10251 had broken pw.x -pw2casino when just
+     one k-point per processor was present. Also: pp converter from upf 
+     to casino produced invalid pp for Z>=10 due to insufficient format
+   * Symmetry printout could lead to error exit in same cases
+   * Restarting from incomplete calculation could lead in some cases
+     to mysterious crashes due to usage of unitialized communicator
+   * PH: option only_init + US or PAW was not working.
+   * Minor printout bug: the printed number of symmetries with fractional
+     translations was sometimes incorrect in the noncollinear magnetic case.
+ 
+
+Incompatible changes in 5.1.1 version:
+
+   * Regularization of DFT names for nonlocal functionals:
+       "vdw-df3"                   replaced by "vdw-df-obk8"
+       "vdw-df4" and "optb86b-vdw" replaced by "vdw-df-ob86"
+       "rev-vdw-df2"               replaced by "vdw-df2-b86r"
+     Explanation: We have tried to unify the naming convention of the vdW-DF 
+     family of functionals built on "Dion et al., PRL 92, 246401 (2004)." 
+     Within this family, numbering should be used for different non-local
+     pieces of the functionals, such as vdW-DF2. If functionals only change the
+     (semi)local contribution, the choice of (semi)local functional should be 
+     attached at the end of the name, such as vdW-DF-C09 or vdW-DF-cx.
+
+New in 5.1.1 version:
+
+   * CP: Hybrid functionals with Wannier functions
+   * Added possibility to provide structure via space-group number and
+     Wyckoff positions (experimental)
+   * Added vdW-DF-cx, Berland and Hyldgaard, PRB 89, 035412 (2014)
+     (courtesy of Timo Thonhauser)
+   * PW: TB09 meta-GGA functional (requires libxc)
+   * PW: the code can capture "signals". typically sent by batch queues
+     when allowed time is close to expire, and terminate gracefully.
+     Experimental, to be enabled at compile time (see the user guide)
+   * TDDFPT: Implemented a restart option in turbo_Davidson
+
+Fixed in 5.1.1 version:
+
+   * PWscf: variable-cell glitches at last scf step 
+   * PWscf & PHonon: added several checks for unimplemented features
+   * PWscf: energy related to external forces wasn't correct
+   * CP: Wannier functions dynamics with nspin=2 wasn't working
+   * PWscf: restart in variable-cell case wasn't working in v.5.1
+   * pot_extrapolation='none' was crashing with a bogus error message
+   * PHonon: the recently introduced fix to the G=0 component of the 
+     deformation potential at q=0 was not working properly
+   * Kernel table for rVV10 nonlocal functional was not written to file,
+     breaking restart and postprocessing (no problem for scf)
+   * Strange compilation bug on some IBM machines
+   * Minor bug plus OpenMP bug in ESM implementation
+   * Small bug leading to crashes when restarting some type of constrained
+     magnetization calculations (courtesy of Florian Thoele, ETHZ)
+
+New in 5.1 version:
+
+   * "Cold restart" for Car-Parrinello dynamics
+   * Calling QE from external codes made easier: see new subdirectory COUPLE
+   * PW: Hybrid functionals for USPP and PAW (experimental)
+   * PW: partial support to the use of k-point labels in the Brillouin zone
+   * PW: Langevin dynamics with Smart Monte Carlo
+   * CP and PW: Tkatchenko-Scheffler vdW correction (experimental)
+   * GWW replaced by GWL (using Lanczos chains)
+   * turboTDDFT: pseudo_Hermitian Lanczos algorithm and 
+     Davidson-like diagonalization added
+   * PWCOND with DFT+U
+   * New functionals: gau-pbe, PW86 (unrevised), B86B, XDM (exchange-hole 
+     dipole moment) model of dispersions, vdW-DF-obk8, vdW-DF-ob86 (Klimes
+     et al), rVV10, vdW-DF2-b86r
+   * PHonon: Calculation of phonon dispersions using the finite displacements 
+     supercell approach. See subdirectory FD/ in PHonon.
+   * dynmat.x can calculate phonon contribution to dielectric tensor
+   * turboTDDFT now supports hybrid functionals (only with norm-conserving
+     pseudopotentials)
+   * "image" parallelization re-introduced in pw.x: see code "manypw.x"
+
+Incompatible changes in 5.1 version:
+
+   * Initialization of MPI modified in order to simplify usage of QE routines
+     from external codes. It is now possible to run an instance of QE into a
+     mpi communicator passed by the external routine. Changes affect a few MPI
+     initialization routines (e.g. mp_start) and some MPI related modules;
+     the communicator must be explicitly specified when calling mp_* interfaces
+     to low-level MPI libraries.
+   * Input variable "london" should be replaced by " vdw_corr='Grimme-D2' "
+   * Routine "electrons" doesn't deal any longer with non-scf cases;
+     use routine "non_scf" instead. For hybrid functionals, the loops over
+     the charge density and over the exchange potential have been separated.
+   * Restart mechanism of pw.x changed a lot. It works ONLY if you stop
+     the code cleanly with the prefix.EXIT file, or by setting "max_seconds";
+     disk_io='high' no longer needed (use it ONLY if tight with memory)
+     Restarting from hard crashes is no longer supported.
+   * Major restructuring of DFT+U and related modules in PW: related variables
+     moved to module ldaU, "swfcatom" moved to module "basis"
+   * Definition of "nwordwfc" in PP/ follows the same logic as in PW/
+   * Calls to "find_equiv_sites" and "writemodes" changed (fixed dimension
+     "nax" removed)
+   * Call to "open_buffer" changed: unit must be a valid fortran unit > 0;
+     max number of records is no longer specified; a new flag explicitly
+     specifies if writing to RAM buffer is required. Functionalities of 
+     Modules/buffers.f90 have been considerably modified and extended.
+
+Fixed in 5.1 version:
+
+   * PWscf: bug in finite electric field in noncolinear case
+   * PHonon: G=0 component of the deformation potential at q=0 was incorrect
+     (the contribution from the average coulomb potential, i.e. the integral 
+      of the Coulomb contribution on the unit cell, was missing). For more 
+     details, see M. Calandra et al. Phys. Rev. B 82 165111 , section III B.
+   * PWscf: spin-polarized HSE for PAW was incorrectly implemented
+   * PHonon: Gamma-specific code wasn't properly restarting in parallel
+   * PHonon: epsil + paw was not working with k-point parallelization.
+   * PHonon: problem with the symmetry analysis in D_6h. The problem appeared
+     in special cases after the symmetry reshuffling made by the phonon code.
+   * PWscf: starting with uniform charge worked only for non-spin-polarized
+     calculations. Not a big deal unless one used HGH or other pseudopotentials
+     without atomic charge information
+   * PWscf: Forces with finite electric field (lelfield=.true.) and US PP
+     were incorrect in parallel execution
+   * D3: bug when the crystal has symmetry but the small group of the 
+     q-point has no symmetry.
+   * Bogus "file not found" error in pp.x when extracting quantities not
+     requiring wave functions if these were "collected" - v.5.0.2 only
+   * Some quantities calculated in real space (including the charge itself
+     when tqr=.true.) were not always accurately computed in parallel
+     execution if the number of planes wasn't the same for all processors
+   * Bogus symmetry error in NEB due to missing re-initialization
+     of fractional translations
+
+Fixed in 5.0.3 version:
+
+   * PW, PP, PHonon: files for DFT+U produced by previous versions
+     could no longer be read
+   * PHonon: restart with convt=.true. was not working with PAW
+   * PHonon: in matdyn.x, displacement patterns were no longer correct
+     if eigenvectors of the dynamical matrix were also written to file
+   * PHonon: compatibility with files produced by previous releases
+     was broken if pools were used
+   * VERY NASTY PHonon bug: symmetry Sq=-q+G introduced in v.5.0.2
+     could lead to bad phonons in some cases and has been disabled 
+   * PHonon: effective charges eu + PAW were not accurate with pools;
+     effective charges eu + US PP + spin-orbit nonmagnetic were not
+     working in parallel.
+   * Bug fix for NC pseudos with GIPAW info, for upf version 2 only:
+     Pseudo local potential was incorrectly written and read. 
+   * divide_class: wrong check for T_h
+   * PP: incorrect check yielding bogus error in bands.f90 (v.5.0.2 only)
+   * CP wasn't working properly with USPP having distinct Q functions 
+     for each value of l, due to the never ending l/l+1 problem
+
 New in 5.0.2 version:
 
    * DFT+U with on-site occupations from pseudopotential projectors;

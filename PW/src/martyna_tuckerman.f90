@@ -8,7 +8,7 @@
 #undef TESTING
 MODULE martyna_tuckerman
   !
-  ! ... The variables needed to the Martyna-Tuckeman method for isolated
+  ! ... The variables needed to the Martyna-Tuckerman method for isolated
   !     systems
   !
   USE kinds, ONLY: dp
@@ -24,7 +24,7 @@ MODULE martyna_tuckerman
   LOGICAL :: do_comp_mt = .FALSE.
   LOGICAL :: gamma_only = .FALSE.
   integer :: gstart = 1
-  !
+    !
   SAVE
 
   PRIVATE
@@ -83,25 +83,30 @@ CONTAINS
   RETURN
   END SUBROUTINE wg_corr_loc
 !----------------------------------------------------------------------------
-  SUBROUTINE wg_corr_force( omega, nat, ntyp, ityp, ngm, g, tau, zv, strf, nspin, rho, force )
+  SUBROUTINE wg_corr_force( lnuclei, omega, nat, ntyp, ityp, ngm, g, tau, zv, strf, nspin, &
+                            rho, force )
 !----------------------------------------------------------------------------
   USE cell_base, ONLY : tpiba
-  USE mp_global, ONLY : intra_bgrp_comm
+  USE mp_bands,  ONLY : intra_bgrp_comm
   USE mp,        ONLY : mp_sum
   INTEGER, INTENT(IN) :: nat, ntyp, ityp(nat), ngm, nspin
   REAL(DP), INTENT(IN) :: omega, zv(ntyp), tau(3,nat), g(3,ngm)
   COMPLEX(DP), INTENT(IN) :: strf(ngm,ntyp), rho(ngm,nspin)
+  LOGICAL, INTENT(IN) :: lnuclei
+  ! this variable is used in wg_corr_force to select if
+  ! corr should be done on rho and nuclei or only on rho
   REAL(DP), INTENT(OUT) :: force(3,nat)
   INTEGER :: ig, na
   REAL (DP) :: arg
   COMPLEX(DP), ALLOCATABLE :: v(:)
   COMPLEX(DP) :: rho_tot
-
+  !
   IF (.NOT.wg_corr_is_updated) CALL init_wg_corr
-!
+  !
   allocate ( v(ngm) )
   do ig=1,ngm
-     rho_tot = rho(ig,1) - SUM(zv(1:ntyp)*strf(ig,1:ntyp)) / omega
+     rho_tot = rho(ig,1)
+     if(lnuclei) rho_tot = rho_tot - SUM(zv(1:ntyp)*strf(ig,1:ntyp)) / omega
      if (nspin==2) rho_tot = rho_tot + rho(ig,2)
      v(ig) = e2 * wg_corr(ig) * rho_tot
   end do
@@ -122,14 +127,14 @@ CONTAINS
 !----------------------------------------------------------------------------
   SUBROUTINE init_wg_corr
 !----------------------------------------------------------------------------
-  USE mp_global,     ONLY : me_bgrp
+  USE mp_bands,      ONLY : me_bgrp
   USE fft_base,      ONLY : dfftp
   USE fft_interfaces,ONLY : fwfft, invfft
   USE control_flags, ONLY : gamma_only_ => gamma_only
   USE gvect,         ONLY : ngm, gg, gstart_ => gstart, nl, nlm, ecutrho
   USE cell_base,     ONLY : at, alat, tpiba2, omega
 
-  INTEGER :: index0, index, ir, i,j,k, ig, nt
+  INTEGER :: idx0, idx, ir, i,j,k, ig, nt
   REAL(DP) :: r(3), rws, upperbound, rws2
   COMPLEX (DP), ALLOCATABLE :: aux(:)
   REAL(DP), EXTERNAL :: qe_erfc
@@ -163,25 +168,24 @@ CONTAINS
   !
   ! Index for parallel summation
   !
-  index0 = 0
 #if defined (__MPI)
-  DO i = 1, me_bgrp
-     index0 = index0 + dfftp%nr1x*dfftp%nr2x*dfftp%npp(i)
-  END DO
+  idx0 = dfftp%nr1x*dfftp%nr2x*dfftp%ipp(me_bgrp+1)
+#else
+  idx0 = 0 
 #endif
   !
   ALLOCATE (aux(dfftp%nnr))
   aux = CMPLX(0._dp,0._dp)
-  DO ir = 1, dfftp%nnr
+  DO ir = 1, dfftp%nr1x*dfftp%nr2x * dfftp%npl
      !
-     ! ... three dimensional indexes
+     ! ... three dimensional indices
      !
-     index = index0 + ir - 1
-     k     = index / (dfftp%nr1x*dfftp%nr2x)
-     index = index - (dfftp%nr1x*dfftp%nr2x)*k
-     j     = index / dfftp%nr1x
-     index = index - dfftp%nr1x*j
-     i     = index
+     idx = idx0 + ir - 1
+     k   = idx / (dfftp%nr1x*dfftp%nr2x)
+     idx = idx - (dfftp%nr1x*dfftp%nr2x)*k
+     j   = idx / dfftp%nr1x
+     idx = idx - dfftp%nr1x*j
+     i   = idx
 
      r(:) = ( at(:,1)/dfftp%nr1*i + at(:,2)/dfftp%nr2*j + at(:,3)/dfftp%nr3*k )
 

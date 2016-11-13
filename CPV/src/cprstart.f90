@@ -20,11 +20,12 @@ PROGRAM main
   !
   USE input,         ONLY : iosys_pseudo, iosys
   USE read_input,    ONLY : read_input_file
-  USE mp_global,     ONLY : mp_startup, nimage, me_image, root_image
-  USE io_global,     ONLY : ionode, ionode_id, io_global_start
+  USE mp_global,     ONLY : mp_startup
+  USE io_global,     ONLY : ionode, ionode_id
   USE environment,   ONLY : environment_start
   USE check_stop,    ONLY : check_stop_init
-  USE mp_global,     ONLY : mp_bcast, intra_image_comm
+  USE mp_images,     ONLY : intra_image_comm
+  USE command_line_options, ONLY : input_file_
   !
   IMPLICIT NONE
   !
@@ -43,9 +44,9 @@ PROGRAM main
   IF(ionode) CALL plugin_arguments()
   CALL plugin_arguments_bcast(ionode_id,intra_image_comm)
   !
-  ! ... readin the input file
+  ! ... open, read, close the input file
   !
-  CALL read_input_file( 'CP' )
+  CALL read_input_file( 'CP', input_file_ )
   !
   ! ... read in pseudopotentials files and then
   ! ... copy pseudopotential parameters into internal variables
@@ -65,7 +66,8 @@ PROGRAM main
   !
   CALL cpr_loop( 1 )
   !
-  CALL stop_run( .TRUE. )
+  CALL stop_run()
+  CALL do_stop( .TRUE. )
   !
   STOP
   !

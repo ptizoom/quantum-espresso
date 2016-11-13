@@ -14,19 +14,20 @@ SUBROUTINE close_files(lflag)
   USE ldaU,          ONLY : lda_plus_u, U_projection
   USE control_flags, ONLY : twfcollect, io_level
   USE fixed_occ,     ONLY : one_atom_occupations
-  USE io_files,      ONLY : prefix, iunwfc, iunigk, iunat, iunsat, &
-                            iunefield, iunefieldm, iunefieldp
+  USE io_files,      ONLY : prefix, iunwfc, iunigk, iunsat, &
+                            iunhub, iunefield, iunefieldm, iunefieldp
   USE buffers,       ONLY : close_buffer
-  USE mp_global,     ONLY : intra_image_comm
+  USE mp_images,     ONLY : intra_image_comm
   USE mp,            ONLY : mp_barrier
-  USE wannier_new,     ONLY : use_wannier
-  USE bp,                 ONLY : lelfield
+  USE wannier_new,   ONLY : use_wannier
+  USE bp,            ONLY : lelfield
   !
   IMPLICIT NONE
   !
   LOGICAL, intent(in) :: lflag
   !
   LOGICAL :: opnd
+  !
   !  ... close buffer/file containing wavefunctions: discard if
   !  ... wavefunctions are written in xml format, save otherwise
   !
@@ -41,31 +42,37 @@ SUBROUTINE close_files(lflag)
   INQUIRE( UNIT = iunigk, OPENED = opnd )
   IF ( opnd ) CLOSE( UNIT = iunigk, STATUS = 'DELETE' )
   !
-  ! ... iunat  contains the (orthogonalized) atomic wfcs 
   ! ... iunsat contains the (orthogonalized) atomic wfcs * S
+  ! ... iunhub as above, only for wavefcts having an associated Hubbard U
   !
-  IF ( ( lda_plus_u .AND. (U_projection.NE.'pseudo') ) .OR. &
-        use_wannier .OR. one_atom_occupations ) THEN
-     !
-     INQUIRE( UNIT = iunat, OPENED = opnd )  
-     IF ( opnd ) CLOSE( UNIT = iunat, STATUS = 'KEEP' )
-     INQUIRE( UNIT = iunsat, OPENED = opnd )  
-     IF ( opnd ) CLOSE( UNIT = iunsat, STATUS = 'KEEP' )
-     !
+  IF ( lda_plus_u .AND. (U_projection.NE.'pseudo') ) THEN
+     IF ( io_level < 0 ) THEN
+        CALL close_buffer ( iunhub,'DELETE' )
+     ELSE
+        CALL close_buffer ( iunhub,'KEEP' )
+     END IF
+  END IF
+  IF ( use_wannier .OR. one_atom_occupations ) THEN
+     IF ( io_level < 0 ) THEN
+        CALL close_buffer ( iunsat,'DELETE' )
+     ELSE
+        CALL close_buffer ( iunsat,'KEEP' )
+     END IF
   END IF
   !
   ! ... close unit for electric field if needed
   !
   IF ( lelfield ) THEN
      !
-     INQUIRE( UNIT = iunefield, OPENED = opnd )
-     IF ( opnd ) CLOSE( UNIT = iunefield, STATUS = 'KEEP' )
-     !
-     INQUIRE( UNIT = iunefieldm, OPENED = opnd )
-     IF ( opnd ) CLOSE( UNIT = iunefieldm, STATUS = 'KEEP' )
-     !
-     INQUIRE( UNIT = iunefieldp, OPENED = opnd )
-     IF ( opnd ) CLOSE( UNIT = iunefieldp, STATUS = 'KEEP' )
+     IF ( io_level < 0 ) THEN
+        CALL close_buffer ( iunefield, 'DELETE' )
+        CALL close_buffer ( iunefieldm,'DELETE' )
+        CALL close_buffer ( iunefieldp,'DELETE' )
+     ELSE
+        CALL close_buffer ( iunefield, 'KEEP' )
+        CALL close_buffer ( iunefieldm,'KEEP' )
+        CALL close_buffer ( iunefieldp,'KEEP' )
+     ENDIF
      !
   END IF
   !

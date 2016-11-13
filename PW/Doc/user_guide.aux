@@ -1,17 +1,20 @@
 \relax 
-\ifx\hyper@anchor\@undefined
-\global \let \oldcontentsline\contentsline
-\gdef \contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
-\global \let \oldnewlabel\newlabel
-\gdef \newlabel#1#2{\newlabelxx{#1}#2}
-\gdef \newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
-\AtEndDocument{\let \contentsline\oldcontentsline
-\let \newlabel\oldnewlabel}
-\else
-\global \let \hyper@last\relax 
-\fi
-
-\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}{section.1}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.1}What can \texttt  {PWscf}\ do}{2}{subsection.1.1}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.2}People}{2}{subsection.1.2}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Terms of use}{4}{subsection.1.3}}
@@ -26,7 +29,7 @@
 \@writefile{toc}{\contentsline {paragraph}{DFT+U}{8}{section*.5}}
 \@writefile{toc}{\contentsline {paragraph}{Dispersion Interactions (DFT-D)}{8}{section*.6}}
 \@writefile{toc}{\contentsline {paragraph}{Hartree-Fock and Hybrid functionals}{8}{section*.7}}
-\@writefile{toc}{\contentsline {paragraph}{Dispersion interaction with non-local functional (vdwDF)}{8}{section*.8}}
+\@writefile{toc}{\contentsline {paragraph}{Dispersion interaction with non-local functional (vdW-DF)}{8}{section*.8}}
 \@writefile{toc}{\contentsline {paragraph}{Polarization via Berry Phase}{8}{section*.9}}
 \@writefile{toc}{\contentsline {paragraph}{Finite electric fields}{8}{section*.10}}
 \@writefile{toc}{\contentsline {paragraph}{Orbital magnetization}{9}{section*.11}}
@@ -51,34 +54,36 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.2}Parallel execution}{15}{subsubsection.4.5.2}}
 \@writefile{toc}{\contentsline {paragraph}{ Quick estimate of parallelization parameters}{16}{section*.19}}
 \@writefile{toc}{\contentsline {paragraph}{Typical symptoms of bad/inadequate parallelization}{17}{section*.20}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Troubleshooting}{17}{section.5}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x says 'error while loading shared libraries' or 'cannot open shared object file' and does not start}{17}{section*.21}}
-\@writefile{toc}{\contentsline {paragraph}{errors in examples with parallel execution}{17}{section*.22}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x prints the first few lines and then nothing happens (parallel execution)}{18}{section*.23}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x stops with error while reading data}{18}{section*.24}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x mumbles something like {\em  cannot recover} or {\em  error reading recover file}}{18}{section*.25}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x stops with {\em  inconsistent DFT} error}{18}{section*.26}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x stops with error in cdiaghg or rdiaghg}{18}{section*.27}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x crashes with no error message at all}{19}{section*.28}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x crashes with {\em  segmentation fault} or similarly obscure messages}{19}{section*.29}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x works for simple systems, but not for large systems or whenever more RAM is needed}{19}{section*.30}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x crashes with {\em  error in davcio}}{20}{section*.31}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x crashes in parallel execution with an obscure message related to MPI errors}{20}{section*.32}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x stops with error message {\em  the system is metallic, specify occupations}}{20}{section*.33}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x stops with {\em  internal error: cannot bracket Ef}}{20}{section*.34}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x yields {\em  internal error: cannot bracket Ef} message but does not stop}{21}{section*.35}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x runs but nothing happens}{21}{section*.36}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x yields weird results}{21}{section*.37}}
-\@writefile{toc}{\contentsline {paragraph}{FFT grid is machine-dependent}{21}{section*.38}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x does not find all the symmetries you expected}{22}{section*.39}}
-\@writefile{toc}{\contentsline {paragraph}{{\em  Warning: symmetry operation \# N not allowed}}{22}{section*.40}}
-\@writefile{toc}{\contentsline {paragraph}{Self-consistency is slow or does not converge at all}{22}{section*.41}}
-\@writefile{toc}{\contentsline {paragraph}{I do not get the same results in different machines!}{23}{section*.42}}
-\@writefile{toc}{\contentsline {paragraph}{Execution time is time-dependent!}{23}{section*.43}}
-\@writefile{toc}{\contentsline {paragraph}{{\em  Warning : N eigenvectors not converged}}{23}{section*.44}}
-\@writefile{toc}{\contentsline {paragraph}{{\em  Warning : negative or imaginary charge...}, or {\em  ...core charge ...}, or {\em  npt with rhoup$<0$...} or {\em  rho dw$<0$...}}{23}{section*.45}}
-\@writefile{toc}{\contentsline {paragraph}{Structural optimization is slow or does not converge or ends with a mysterious bfgs error}{24}{section*.46}}
-\@writefile{toc}{\contentsline {paragraph}{pw.x stops during variable-cell optimization in checkallsym with {\em  non orthogonal operation} error}{24}{section*.47}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Compilation problems with \texttt  {PLUMED}}{24}{subsection.5.1}}
-\@writefile{toc}{\contentsline {paragraph}{xlc compiler}{24}{section*.48}}
-\@writefile{toc}{\contentsline {paragraph}{Calling C from fortran}{25}{section*.49}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Restarting}{17}{subsection.4.6}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.1}Signal trapping (experimental!)}{18}{subsubsection.4.6.1}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Troubleshooting}{18}{section.5}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x says 'error while loading shared libraries' or 'cannot open shared object file' and does not start}{18}{section*.21}}
+\@writefile{toc}{\contentsline {paragraph}{errors in examples with parallel execution}{18}{section*.22}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x prints the first few lines and then nothing happens (parallel execution)}{19}{section*.23}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x stops with error while reading data}{19}{section*.24}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x mumbles something like {\em  cannot recover} or {\em  error reading recover file}}{19}{section*.25}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x stops with {\em  inconsistent DFT} error}{19}{section*.26}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x stops with error in cdiaghg or rdiaghg}{19}{section*.27}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x crashes with no error message at all}{20}{section*.28}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x crashes with {\em  segmentation fault} or similarly obscure messages}{20}{section*.29}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x works for simple systems, but not for large systems or whenever more RAM is needed}{20}{section*.30}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x crashes with {\em  error in davcio}}{21}{section*.31}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x crashes in parallel execution with an obscure message related to MPI errors}{21}{section*.32}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x stops with error message {\em  the system is metallic, specify occupations}}{21}{section*.33}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x stops with {\em  internal error: cannot bracket Ef}}{21}{section*.34}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x yields {\em  internal error: cannot bracket Ef} message but does not stop}{22}{section*.35}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x runs but nothing happens}{22}{section*.36}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x yields weird results}{22}{section*.37}}
+\@writefile{toc}{\contentsline {paragraph}{FFT grid is machine-dependent}{22}{section*.38}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x does not find all the symmetries you expected}{23}{section*.39}}
+\@writefile{toc}{\contentsline {paragraph}{{\em  Warning: symmetry operation \# N not allowed}}{23}{section*.40}}
+\@writefile{toc}{\contentsline {paragraph}{Self-consistency is slow or does not converge at all}{23}{section*.41}}
+\@writefile{toc}{\contentsline {paragraph}{I do not get the same results in different machines!}{24}{section*.42}}
+\@writefile{toc}{\contentsline {paragraph}{Execution time is time-dependent!}{24}{section*.43}}
+\@writefile{toc}{\contentsline {paragraph}{{\em  Warning : N eigenvectors not converged}}{24}{section*.44}}
+\@writefile{toc}{\contentsline {paragraph}{{\em  Warning : negative or imaginary charge...}, or {\em  ...core charge ...}, or {\em  npt with rhoup$<0$...} or {\em  rho dw$<0$...}}{24}{section*.45}}
+\@writefile{toc}{\contentsline {paragraph}{Structural optimization is slow or does not converge or ends with a mysterious bfgs error}{25}{section*.46}}
+\@writefile{toc}{\contentsline {paragraph}{pw.x stops during variable-cell optimization in checkallsym with {\em  non orthogonal operation} error}{25}{section*.47}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Compilation problems with \texttt  {PLUMED}}{25}{subsection.5.1}}
+\@writefile{toc}{\contentsline {paragraph}{xlc compiler}{25}{section*.48}}
+\@writefile{toc}{\contentsline {paragraph}{Calling C from fortran}{26}{section*.49}}

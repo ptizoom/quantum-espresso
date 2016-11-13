@@ -32,11 +32,11 @@ MODULE control_flags
      !
   END TYPE convergence_criteria
   !
-  PUBLIC :: tbeg, nomore, nbeg, isave, iprint, tv0rd, nv0rd, tzeroc, tzerop, &
+  PUBLIC :: tbeg, nomore, nbeg, isave, iprint, tv0rd, tzeroc, tzerop, &
             tfor, tpre, tzeroe, tsde, tsdp, tsdc, taurdr,                    &
             ndr, ndw, tortho, ortho_eps, ortho_max, tstress, tprnfor,        &
-            timing, memchk, tprnsfac, tcarpar,                               &
-            trane,dt_old,ampre, tranp, amprp, tdipole, t_diis, t_diis_simple,&
+            timing, memchk, tprnsfac,                                        &
+            trane,dt_old,ampre, tranp, amprp, t_diis, t_diis_simple,         &
             t_diis_rot, tnosee, tnosep, tnoseh, tcp, tcap, tdamp, tdampions, &
             tconvthrs, tolp, convergence_criteria, tionstep, nstepe,         &
             tsteepdesc, tatomicwfc, tscreen, gamma_only, force_pairing,      &
@@ -74,7 +74,6 @@ MODULE control_flags
   LOGICAL :: timing        = .FALSE. ! print out timing information
   LOGICAL :: memchk        = .FALSE. ! check for memory leakage
   LOGICAL :: tprnsfac      = .FALSE. ! print out structure factor
-  LOGICAL :: tcarpar       = .FALSE. ! tcarpar is set TRUE for a "pure" Car Parrinello simulation
   LOGICAL :: tdamp         = .FALSE. ! Use damped dynamics for electrons
   LOGICAL :: tdampions     = .FALSE. ! Use damped dynamics for ions
   LOGICAL :: tatomicwfc    = .FALSE. ! Use atomic wavefunctions as starting guess for ch. density
@@ -109,7 +108,6 @@ MODULE control_flags
   INTEGER :: nomore = 0 !
   INTEGER :: iprint =10 ! print output every iprint step
   INTEGER :: isave  = 0 ! write restart to ndr unit every isave step
-  INTEGER :: nv0rd  = 0 !
   !
   ! ... .TRUE. if only gamma point is used
   !
@@ -132,10 +130,6 @@ MODULE control_flags
   ! ... Read the cell from standard input
   !
   LOGICAL :: tbeg = .FALSE.
-  !
-  ! ... This flags control the calculation of the Dipole Moments
-  !
-  LOGICAL :: tdipole = .FALSE.
   !
   ! ... Flags that controls DIIS electronic minimization
   !
@@ -172,25 +166,23 @@ MODULE control_flags
   ! ... logical flags controlling the execution
   !
   LOGICAL, PUBLIC :: &
-    lfixatom=.FALSE., &! if .TRUE. some atom is kept fixed
     lscf    =.FALSE., &! if .TRUE. the calc. is selfconsistent
     lbfgs   =.FALSE., &! if .TRUE. the calc. is a relaxation based on BFGS
     lmd     =.FALSE., &! if .TRUE. the calc. is a dynamics
     llang   =.FALSE., &! if .TRUE. the calc. is Langevin dynamics
-    lpath   =.FALSE., &! if .TRUE. the calc. is a path optimizations
-    lneb    =.FALSE., &! if .TRUE. the calc. is NEB dynamics
-    lsmd    =.FALSE., &! if .TRUE. the calc. is string dynamics
+    use_SMC =.FALSE., &! if .TRUE. use the Smart Monte Carlo method
     lwf     =.FALSE., &! if .TRUE. the calc. is with wannier functions
     !=================================================================
-    !  Lingzhu Kong 
+    !exx_wf related 
     lwfnscf =.FALSE., &
-    lwfpbe0 =.FALSE., &! if .TRUE. the calc. is with wannier functions and with PBE0 functional
     lwfpbe0nscf=.FALSE.,&
     !=================================================================
     lbands  =.FALSE., &! if .TRUE. the calc. is band structure
     lconstrain=.FALSE.,&! if .TRUE. the calc. is constraint
     ldamped =.FALSE., &! if .TRUE. the calc. is a damped dynamics
-    llondon =.FALSE., & ! if .TRUE. compute semi-empirical dispersion correction
+    llondon =.FALSE., & ! if .TRUE. compute Grimme D2 dispersion corrections
+    ts_vdw  =.FALSE., & ! as above for Tkatchenko-Scheffler disp.corrections
+    lxdm    =.FALSE., & ! if .TRUE. compute XDM dispersion corrections
     restart =.FALSE.   ! if .TRUE. restart from results of a preceding run
   !
   ! ... pw self-consistency
@@ -310,16 +302,6 @@ MODULE control_flags
       !
       IMPLICIT NONE
       !
-      ! ... Car Parrinello simulation
-      !
-      tcarpar = .TRUE.
-      !
-      IF ( t_diis .OR. tsteepdesc ) THEN
-         !
-         tcarpar = .FALSE.
-         !
-      END IF
-      !
       ! ... if thdyn = .FALSE. set TSDC and TZEROC to .FALSE. too.
       !
       IF ( .NOT. thdyn ) THEN
@@ -381,9 +363,6 @@ MODULE control_flags
       !
       IF ( tcp .AND. tcap ) &
          CALL errore( ' control_flags ', ' TCP AND TCAP BOTH TRUE', 0 )
-      !
-      IF ( tdipole .AND. thdyn ) &
-         CALL errore( '  control_flags  ', ' DIPOLE WITH CELL DYNAMICS ', 0 )
       !
       IF ( tv0rd .AND. tsdp ) &
          CALL errore( ' control_flags ', &

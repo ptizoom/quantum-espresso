@@ -14,15 +14,16 @@ PROGRAM do_bands
   ! IMPORTANT: since v.5 namelist name is &bands and no longer &inputpp
   !
   USE io_files,  ONLY : prefix, tmp_dir
-  USE mp_global, ONLY : npool, nproc, nproc_pool, nproc_file, &
+  USE mp_global, ONLY : npool, nproc_pool, nproc_file, &
                         nproc_pool_file, mp_startup
   USE control_flags, ONLY : twfcollect, gamma_only
-  USE environment,   ONLY : environment_start
+  USE environment,   ONLY : environment_start, environment_end
   USE wvfct,     ONLY : nbnd
   USE klist,     ONLY : nkstot, two_fermi_energies
   USE noncollin_module, ONLY : i_cons
   USE io_global, ONLY : ionode, ionode_id, stdout
   USE mp,        ONLY : mp_bcast
+  USE mp_world,  ONLY : world_comm
   !
   IMPLICIT NONE
   !
@@ -73,25 +74,25 @@ PROGRAM do_bands
   ENDIF
   !
   !
-  CALL mp_bcast( ios, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
   IF (ios /= 0) WRITE (stdout, &
     '("*** namelist &inputpp no longer valid: please use &bands instead")')
   IF (ios /= 0) CALL errore ('bands', 'reading bands namelist', abs(ios) )
   !
   ! ... Broadcast variables
   !
-  CALL mp_bcast( tmp_dir, ionode_id )
-  CALL mp_bcast( prefix, ionode_id )
-  CALL mp_bcast( filband, ionode_id )
-  CALL mp_bcast( filp, ionode_id )
-  CALL mp_bcast( spin_component, ionode_id )
-  CALL mp_bcast( firstk, ionode_id )
-  CALL mp_bcast( lastk, ionode_id )
-  CALL mp_bcast( lp, ionode_id )
-  CALL mp_bcast( lsym, ionode_id )
-  CALL mp_bcast( lsigma, ionode_id )
-  CALL mp_bcast( no_overlap, ionode_id )
-  CALL mp_bcast( plot_2d, ionode_id )
+  CALL mp_bcast( tmp_dir, ionode_id, world_comm )
+  CALL mp_bcast( prefix, ionode_id, world_comm )
+  CALL mp_bcast( filband, ionode_id, world_comm )
+  CALL mp_bcast( filp, ionode_id, world_comm )
+  CALL mp_bcast( spin_component, ionode_id, world_comm )
+  CALL mp_bcast( firstk, ionode_id, world_comm )
+  CALL mp_bcast( lastk, ionode_id, world_comm )
+  CALL mp_bcast( lp, ionode_id, world_comm )
+  CALL mp_bcast( lsym, ionode_id, world_comm )
+  CALL mp_bcast( lsigma, ionode_id, world_comm )
+  CALL mp_bcast( no_overlap, ionode_id, world_comm )
+  CALL mp_bcast( plot_2d, ionode_id, world_comm )
 
   IF (plot_2d) THEN
      lsym=.false.
@@ -101,21 +102,19 @@ PROGRAM do_bands
 
   IF ( npool > 1 .and..not.(lsym.or.no_overlap)) CALL errore('bands', &
                                              'pools not implemented',npool)
-
-  IF (gamma_only) CALL errore('bands','gamma_only case not implemented',1)
   !
   !   Now allocate space for pwscf variables, read and check them.
   !
   CALL read_file()
-
+  !
+  IF (gamma_only) CALL errore('bands','gamma_only case not implemented',1)
   IF (nproc_pool /= nproc_pool_file .and. .not. twfcollect)  &
      CALL errore('bands',&
      'pw.x run with a different number of procs/pools. Use wf_collect=.true.',1)
-
   IF (two_fermi_energies.or.i_cons /= 0) &
      CALL errore('bands',&
      'The bands code with constrained magnetization has not been tested',1)
-
+  !
   CALL openfil_pp()
   !
   IF (lsym) no_overlap=.true.
@@ -126,6 +125,8 @@ PROGRAM do_bands
      IF (lsym) CALL sym_band(filband,spin_component,firstk,lastk)
      IF (lp) CALL write_p_avg(filp,spin_component,firstk,lastk)
   END IF
+  !
+  CALL environment_end ( 'BANDS' )
   !
   CALL stop_pp
   STOP
@@ -154,8 +155,9 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
   USE uspp_param,           ONLY : upf, nh, nhm
   USE noncollin_module,     ONLY : noncolin, npol
   USE wavefunctions_module, ONLY : evc
-  USE io_global,            ONLY : ionode, ionode_id
+  USE io_global,            ONLY : ionode, ionode_id, stdout
   USE mp,                   ONLY : mp_bcast
+  USE mp_world,             ONLY : world_comm
   USE becmod,               ONLY : calbec, bec_type, allocate_bec_type, &
                                    deallocate_bec_type
 
@@ -197,7 +199,7 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
   ! threshold (Ry) for degenerate states
   REAL(DP) :: minene
   COMPLEX(DP), EXTERNAL :: cgracsc, cgracsc_nc
- ! scalar product with the S matrix
+  ! scalar product with the S matrix
 
   IF (filband == ' ') RETURN
   DO ipol=1,4
@@ -230,7 +232,7 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
      !
   ENDIF
   !
-  CALL mp_bcast( ios, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
   IF ( ios(0) /= 0 ) &
      CALL errore ('punch_band', 'Opening filband file', abs(ios(0)) )
   DO ipol=1,4
@@ -278,7 +280,7 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
         !
         !   read eigenfunctions
         !
-        CALL davcio (evc, nwordwfc, iunwfc, ik, - 1)
+        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, - 1)
         !
         ! calculate becp = <psi|beta>
         !
@@ -341,7 +343,7 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
                     DO ig = 1, npw
                        new (igk (ig) ) = evc (ig, jbnd)
                     ENDDO
-                    pro=cgracsc(nkb,becp%k(1,jbnd),becpold%k(1,idx(ibnd)), &
+                    pro=cgracsc(nkb,becp%k(:,jbnd),becpold%k(:,idx(ibnd)), &
                          nhm, ntyp, nh, qq, nat, ityp, ngm, NEW, old, upf)
                  ENDIF
 !                 write(6,'(3i5,f15.10)') ik,idx(ibnd), jbnd, abs(pro)
@@ -453,6 +455,9 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
   !
   IF ( ionode ) THEN
      !
+     CALL punch_plottable_bands ( filband, nks1tot, nks2tot, nkstot, nbnd, &
+                                  xk, et )
+     !
      DO ik=nks1tot,nks2tot
         IF (ik == nks1) THEN
            WRITE (iunpun, '(" &plot nbnd=",i4,", nks=",i6," /")') &
@@ -495,6 +500,8 @@ SUBROUTINE punch_band (filband, spin_component, lsigma, no_overlap)
   !
   IF ( ionode ) THEN
      CLOSE (iunpun)
+     WRITE ( stdout, &
+          '(5x,"Bands written to file ",A)') TRIM(filband)
      DO ipol=1,4
         IF (lsigma(ipol)) CLOSE(iunpun_sigma(ipol))
      ENDDO
@@ -527,6 +534,7 @@ SUBROUTINE punch_band_2d(filband,spin_component)
    USE io_files, ONLY : iuntmp
    USE io_global, ONLY : ionode, ionode_id
    USE mp, ONLY : mp_bcast
+   USE mp_world, ONLY : world_comm
 
    IMPLICIT NONE
    CHARACTER(LEN=256),INTENT(IN) :: filband
@@ -589,7 +597,7 @@ loop_k:  DO j=start_k+2, nkstot
      filename=TRIM(filband) // '.' // TRIM(int_to_char(ibnd))
      IF (ionode) &
      open(unit=iuntmp,file=filename,status='unknown', err=100, iostat=ios)
-     CALL mp_bcast(ios,ionode_id)
+     CALL mp_bcast(ios,ionode_id, world_comm)
 100  CALL errore('punch_band_2d','Problem opening outputfile',ios)
      ijk=0
      DO i1=1,n1
@@ -608,3 +616,157 @@ loop_k:  DO j=start_k+2, nkstot
 
   RETURN
   END
+!
+!----------------------------------------------------------------------------
+SUBROUTINE punch_plottable_bands ( filband, nks1tot, nks2tot, nkstot, nbnd, &
+                                   xk, et )
+  !---------------------------------------------------------------------------
+  !
+  USE kinds, ONLY : dp
+  IMPLICIT NONE
+  CHARACTER(LEN=*), INTENT(IN) :: filband
+  INTEGER, INTENT(IN) :: nks1tot, nks2tot, nkstot, nbnd
+  REAL(dp), INTENT(IN) :: xk(3,nkstot), et(nbnd,nkstot)
+  !
+  INTEGER, PARAMETER :: max_lines = 100, stdout=6, iunpun0=19
+  INTEGER:: ios, i, n, nlines, npoints(max_lines), point(max_lines)
+  LOGICAL :: high_symmetry(nkstot), opnd
+  REAL(dp) :: k1(3), k2(3), kx(nkstot), ps, dxmod, dxmod_save
+  !
+  !
+  IF ( nks1tot < 1 .OR. nks2tot > nkstot .OR. nkstot < 1 .OR. nbnd < 1 ) THEN
+     CALL infomsg('punch_plottable_bands','incorrect input data, exiting')
+     RETURN
+  END IF
+  ios = 0
+  OPEN (unit = iunpun0, file = TRIM(filband)//'.gnu', status = 'unknown',&
+       form = 'formatted', iostat = ios)
+  IF ( ios /= 0 ) THEN
+     WRITE ( stdout, &
+          '(/,5x,"Error opening plottable file ",A)') TRIM(filband)//'.gnu'
+     RETURN
+  END IF
+  !
+  !  Find high-symmetry points (poor man's algorithm)
+  !
+  DO n=nks1tot,nks2tot
+     IF (n==nks1tot .OR. n==nks2tot) THEN
+        high_symmetry(n) = .true.
+     ELSE
+        k1(:) = xk(:,n) - xk(:,n-1)
+        k2(:) = xk(:,n+1) - xk(:,n)
+        IF ( k1(1)*k1(1) + k1(2)*k1(2) + k1(3)*k1(3) < 1.0d-8 .OR. &
+             k2(1)*k2(1) + k2(2)*k2(2) + k2(3)*k2(3) < 1.0d-8 ) THEN
+           CALL infomsg('punch_plottable_bands','two consecutive same k, exiting')
+           RETURN
+        END IF
+        ps = ( k1(1)*k2(1) + k1(2)*k2(2) + k1(3)*k2(3) ) / &
+             sqrt( k1(1)*k1(1) + k1(2)*k1(2) + k1(3)*k1(3) ) / &
+             sqrt( k2(1)*k2(1) + k2(2)*k2(2) + k2(3)*k2(3) )
+        high_symmetry(n) = (ABS(ps-1.d0) >1.0d-4)
+        !
+        !  The gamma point is a high symmetry point
+        !
+        IF (xk(1,n)**2+xk(2,n)**2+xk(3,n)**2 < 1.0d-8) high_symmetry(n)=.true.
+        !
+        !   save the typical length of dk
+        !
+        IF (n==2) dxmod_save = sqrt( k1(1)**2 + k1(2)**2 + k1(3)**2)
+     ENDIF
+  ENDDO
+
+  kx(nks1tot) = 0.0_dp
+  DO n=nks1tot+1,nks2tot
+     dxmod=sqrt ( (xk(1,n)-xk(1,n-1))**2 + &
+                  (xk(2,n)-xk(2,n-1))**2 + &
+                  (xk(3,n)-xk(3,n-1))**2 )
+     IF (dxmod > 5*dxmod_save) THEN
+        !
+        !   A big jump in dxmod is a sign that the point xk(:,n) and xk(:,n-1)
+        !   are quite distant and belong to two different lines. We put them on
+        !   the same point in the graph 
+        !
+        kx(n)=kx(n-1)
+     ELSEIF (dxmod > 1.d-4) THEN
+        !
+        !  This is the usual case. The two points xk(:,n) and xk(:,n-1) are in
+        !  the same path.
+        !
+        kx(n) = kx(n-1) +  dxmod
+        dxmod_save = dxmod
+     ELSE
+        !
+        !  This is the case in which dxmod is almost zero. The two points
+        !  coincide in the graph, but we do not save dxmod.
+        !
+        kx(n) = kx(n-1) +  dxmod
+        !
+     ENDIF
+  ENDDO
+  !
+  !  Now we compute how many paths there are: nlines
+  !  The first point of this path: point(iline)
+  !  How many points are in each path: npoints(iline)
+  !
+  DO n=nks1tot,nks2tot
+     IF (high_symmetry(n)) THEN
+        IF (n==nks1tot) THEN
+           !
+           !   first point. Initialize the number of lines, and the number of point
+           !   and say that this line start at the first point
+           !
+           nlines=1
+           npoints(1)=1
+           point(1)=1
+        ELSEIF (n==nks2tot) THEN
+           !
+           !    Last point. Here we save the last point of this line, but
+           !    do not increase the number of lines
+           !
+           npoints(nlines) = npoints(nlines)+1
+           point(nlines+1)=n
+        ELSE
+           !
+           !   Middle line. The current line has one more points, and there is
+           !   a new line that has to be initialized. It has one point and its
+           !   first point is the current k.
+           !
+           npoints(nlines) = npoints(nlines)+1
+           nlines=nlines+1
+           IF (nlines>max_lines) THEN
+              CALL infomsg('punch_plottable_bands','too many lines, exiting')
+              RETURN
+           END IF
+           npoints(nlines) = 1
+           point(nlines)=n
+        ENDIF
+        !
+        WRITE( stdout,'(5x,"high-symmetry point: ",3f7.4,&
+                         &"   x coordinate",f9.4)') (xk(i,n),i=1,3), kx(n)
+     ELSE
+        !
+        !   This k is not an high symmetry line so we just increase the number
+        !   of points of this line.
+        !
+        npoints(nlines) = npoints(nlines)+1
+     ENDIF
+  ENDDO
+  !
+  !  Write odd bands from left to right, even ones from right to left
+  !
+  DO i=1,nbnd
+     IF ( mod(i,2) /= 0) THEN
+        WRITE (iunpun0,'(2f10.4)') (kx(n), et(i,n),n=nks1tot,nks2tot)
+     ELSE
+        WRITE (iunpun0,'(2f10.4)') (kx(n), et(i,n),n=nks2tot,nks1tot,-1)
+     ENDIF
+  ENDDO
+  !
+  WRITE ( stdout, &
+       '(/,5x,"Plottable bands written to file ",A)') TRIM(filband)//'.gnu'
+  CLOSE(unit=iunpun0, STATUS='KEEP')
+
+  RETURN
+  !
+END SUBROUTINE punch_plottable_bands
+

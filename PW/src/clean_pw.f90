@@ -18,6 +18,7 @@ SUBROUTINE clean_pw( lflag )
   ! ... phonon, vc-relax). Beware: the new calculation should not call any
   ! ... of the routines mentioned above
   !
+  USE basis,                ONLY : swfcatom
   USE cellmd,               ONLY : lmovecell
   USE ions_base,            ONLY : deallocate_ions_base
   USE gvect,                ONLY : g, gg, gl, nl, nlm, igtongl, mill, &
@@ -38,7 +39,7 @@ SUBROUTINE clean_pw( lflag )
   USE us,                   ONLY : qrad, tab, tab_at, tab_d2y, spline_ps
   USE uspp,                 ONLY : deallocate_uspp
   USE uspp_param,           ONLY : upf
-  USE ldaU,                 ONLY : lda_plus_u, oatwfc, swfcatom, q_ae, q_ps
+  USE ldaU,                 ONLY : deallocate_ldaU
   USE extfield,             ONLY : forcefield
   USE fft_base,             ONLY : dfftp, dffts  
   USE stick_base,           ONLY : sticks_deallocate
@@ -52,14 +53,12 @@ SUBROUTINE clean_pw( lflag )
   USE wannier_new,          ONLY : use_wannier
   !
   USE london_module,        ONLY : dealloca_london
+  USE xdm_module,           ONLY : cleanup_xdm
   USE constraints_module,   ONLY : deallocate_constraint
   USE realus,               ONLY : deallocatenewdreal
   USE pseudo_types,         ONLY : deallocate_pseudo_upf
   USE bp,                   ONLY : deallocate_bp_efield
   USE exx,                  ONLY : deallocate_exx
-#ifdef __ENVIRON
-  USE environ_base,         ONLY : do_environ
-#endif
   !
   IMPLICIT NONE
   !
@@ -77,25 +76,23 @@ SUBROUTINE clean_pw( lflag )
         END DO
         DEALLOCATE( upf )
      END IF
-     DEALLOCATE (msh)
+     IF (ALLOCATED(msh)) DEALLOCATE (msh)
      CALL deallocate_radial_grid(rgrid)
      !
      CALL deallocate_ions_base()
      !
      IF ( ALLOCATED( force ) )      DEALLOCATE( force )
      IF ( ALLOCATED( forcefield ) ) DEALLOCATE( forcefield )
-     IF ( ALLOCATED (irt) )         DEALLOCATE (irt)
+     IF ( ALLOCATED( irt ) )        DEALLOCATE( irt )
      !
-     IF ( lda_plus_u ) THEN
-        IF ( ALLOCATED( oatwfc ) )     DEALLOCATE( oatwfc )
-        IF ( ALLOCATED( q_ae ) )       DEALLOCATE( q_ae )
-        IF ( ALLOCATED( q_ps ) )       DEALLOCATE( q_ps )
-     END IF
      CALL deallocate_bp_efield()
      CALL dealloca_london()
+     CALL cleanup_xdm()
      CALL deallocate_constraint()
      !
   END IF
+  !
+  CALL deallocate_ldaU ( lflag )
   !
   IF ( ALLOCATED( f_inp ) )      DEALLOCATE( f_inp )
   IF ( ALLOCATED( tetra ) )      DEALLOCATE( tetra )
@@ -165,9 +162,7 @@ SUBROUTINE clean_pw( lflag )
   ! ... arrays allocated in allocate_wfc.f90 ( and never deallocated )
   !
   IF ( ALLOCATED( evc ) )        DEALLOCATE( evc )
-  IF ( lda_plus_u ) THEN
-     IF ( ALLOCATED( swfcatom ) )   DEALLOCATE( swfcatom )
-  ENDIF
+  IF ( ALLOCATED( swfcatom ) )   DEALLOCATE( swfcatom )
   !
   ! ... fft structures allocated in data_structure.f90  
   !
@@ -194,12 +189,8 @@ SUBROUTINE clean_pw( lflag )
   if (use_wannier) CALL wannier_clean()
   !
   CALL deallocate_exx ( ) 
-#ifdef __ENVIRON
-  ! ... additional arrays for external environment 
   !
-  CALL environ_clean( lflag )
-  !
-#endif
+  CALL plugin_clean( lflag )
   !
   RETURN
   !

@@ -183,6 +183,27 @@ name of BerkeleyGW RHO output file. Only used for the GPP model in sigma
 code in BerkeleyGW. Not used if rhog_flag = .FALSE.
          </info>
       </var>
+      <var name="rhog_nvmin" type="INTEGER" >
+         <default> 0
+         </default>
+         <info>
+index of the lowest band used for calculation of charge density. This is
+needed if one wants to exclude semicore states from charge density used
+for the GPP model in sigma code in BerkeleyGW. Make sure to include the
+same k-points as in scf calculation. Self-consistent charge density is
+used if rhog_nvmin = 0 and rhog_nvmax = 0. Not used if rhog_flag = .FALSE.
+BEWARE: this feature is highly experimental and may not work at all in
+parallel, with pools, with spins, etc.
+         </info>
+      </var>
+      <var name="rhog_nvmax" type="INTEGER" >
+         <default> 0
+         </default>
+         <info>
+index of the highest band used for calculation of charge density. See
+description of rhog_nvmin for more details
+         </info>
+      </var>
       <var name="vxcg_flag" type="LOGICAL" >
          <default> .FALSE.
          </default>
@@ -270,12 +291,14 @@ maximum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = 
          </info>
       </var>
       <var name="vxc_zero_rho_core" type="LOGICAL" >
-         <default> .FALSE.
+         <default> .TRUE.
          </default>
          <info>
 set to .TRUE. to zero out NLCC or to .FALSE. to keep NLCC when computing
-exchange-correlation potential. For details, see Hybertsen &amp; Louie PRB 34,
-5390 (1986), Eq. (38) and discussion afterwards
+exchange-correlation potential. This flag has no effect for pseudopotentials
+without NLCC. BEWARE: setting vxc_zero_rho_core to .FALSE. will produce
+incorrect results. This functionality is only included for testing purposes
+and is not meant to be used in a production environment
          </info>
       </var>
       <var name="vscg_flag" type="LOGICAL" >

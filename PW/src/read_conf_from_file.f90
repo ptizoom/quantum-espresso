@@ -7,27 +7,29 @@
 !
 !
 !-----------------------------------------------------------------------
-SUBROUTINE read_config_from_file()
+FUNCTION read_config_from_file(nat, at_old,omega_old, lmovecell, at, bg, omega, tau) RESULT (ierr)
   !-----------------------------------------------------------------------
   !
   USE kinds,          ONLY : DP
   USE io_global,      ONLY : stdout
-  USE ions_base,      ONLY : nat, ityp, tau
-  USE basis,          ONLY : startingconfig
-  USE cell_base,      ONLY : at, bg, omega
-  USE cellmd,         ONLY : at_old, omega_old, lmovecell
+!   USE ions_base,      ONLY : nat,  tau
+!   USE cell_base,      ONLY : at, bg, omega
+!   USE cellmd,         ONLY : at_old, omega_old, lmovecell
   USE io_files,       ONLY : tmp_dir, prefix
   USE pw_restart,     ONLY : pw_readfile
   !
   IMPLICIT NONE
   !
+  REAL(DP),INTENT(inout) :: at_old(3,3), omega_old
+  LOGICAL,INTENT(in)     :: lmovecell
+  REAL(DP),INTENT(inout) :: at(3,3), bg(3,3), omega
+  REAL(DP),INTENT(inout) :: tau(3,nat)
+  INTEGER,INTENT(in)     :: nat
   INTEGER :: ierr
   !
   !
-  IF ( TRIM( startingconfig ) /= 'file' ) RETURN
-  !
-  WRITE( stdout, '(/5X,"Atomic positions and unit cell read from directory:"/5X,A)') &
-      TRIM( tmp_dir ) // TRIM( prefix ) // ".save/"
+  WRITE( stdout, '(/5X,"Atomic positions and unit cell read from directory:", &
+                &  /,5X,A)') TRIM( tmp_dir ) // TRIM( prefix ) // ".save/"
   !
   ! ... check if restart file is present, if yes read config parameters
   !
@@ -37,7 +39,6 @@ SUBROUTINE read_config_from_file()
      !
      WRITE( stdout, '(5X,"Nothing found: ", &
                        & "using input atomic positions and unit cell",/)' )
-     !
      RETURN
      !
   END IF
@@ -64,4 +65,4 @@ SUBROUTINE read_config_from_file()
   !
   RETURN
   !
-END SUBROUTINE read_config_from_file
+END FUNCTION read_config_from_file

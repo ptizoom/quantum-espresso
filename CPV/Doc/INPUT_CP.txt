@@ -14,8 +14,9 @@ HARTREE ATOMIC UNITS
 
 BEWARE: TABS, DOS <CR><LF> CHARACTERS ARE POTENTIAL SOURCES OF TROUBLE
 Comment lines in namelists can be introduced by a "!", exactly as in
-fortran code. Comments lines in ``cards'' can be introduced either by
-a "!" or a "#" character in the first position of a line.
+fortran code. Comments lines in ``cards'' can be introduced by
+either a "!" or a "#" character in the first position of a line.
+Do not start any line in ``cards'' with a "/" character.
 
 Structure of the input data:
 ===============================================================================
@@ -69,6 +70,11 @@ ATOMIC_POSITIONS { alat | bohr | crystal | angstrom }
    nconstr  { constr_tol }
    constr_type(.)   constr(1,.)   constr(2,.) [ constr(3,.)   constr(4,.) ] { constr_target(.) } ]
 
+[ ATOMIC_FORCES
+   label_1 Fx(1) Fy(1) Fz(1)
+   .....
+   label_n Fx(n) Fy(n) Fz(n) ]
+
 
 
 ========================================================================
@@ -86,9 +92,11 @@ NAMELIST: &CONTROL
                       'relax',
                       'vc-relax',
                       'vc-cp',
-                      'cp-wf'
+                      'cp-wf',
+                      'vc-cp-wf'
                    
                       (vc = variable-cell).
+                      (wf = Wannier functions).
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -145,9 +153,9 @@ NAMELIST: &CONTROL
    
    Type:           INTEGER
    Default:        10
-   Description:    Number of steps between successive writings of relevant
-                   physical quantities to standard output and to files "fort.3?"
-                   or "prefix.???" depending on "prefix" parameter
+   Description:    Number of steps between successive writings of relevant physical quantities
+                   to files named as "prefix.???" depending on "prefix" parameter.
+                   In the standard output relevant quantities are written every 10*iprint steps.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -203,7 +211,18 @@ NAMELIST: &CONTROL
    Type:           CHARACTER
    Default:        'cp'
    Description:    prepended to input/output filenames:
-                   prefix.pos, prefix.vel, etc.
+                     prefix.pos : atomic positions
+                     prefix.vel : atomic velocities
+                     prefix.for : atomic forces
+                     prefix.cel : cell parameters
+                     prefix.str : stress tensors
+                     prefix.evp : energies
+                     prefix.hrs : Hirshfeld effective volumes (ts-vdw)
+                     prefix.eig : eigen values
+                     prefix.nos : Nose-Hoover variables
+                     prefix.spr : spread of Wannier orbitals
+                     prefix.wfc : center of Wannier orbitals
+                     prefix.ncg : number of Poisson CG steps (PBE0)
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -228,7 +247,7 @@ NAMELIST: &CONTROL
    Type:           LOGICAL
    Default:        .false.
    Description:    .true. to compute the volume and/or the surface of an isolated
-                   system for finete pressure/finite surface tension calculations
+                   system for finite pressure/finite surface tension calculations
                    (PRL 94, 145501 (2005); JCP 124, 074103 (2006)).
    +--------------------------------------------------------------------
    
@@ -279,11 +298,25 @@ NAMELIST: &CONTROL
    Variable:       disk_io
    
    Type:           CHARACTER
-   Description:    'high', 'default'
-                   
-                   'high': CP code will write Kohn-Sham wf files and additional
+   Default:        'default'
+   Description:    'high': CP code will write Kohn-Sham wfc files and additional
                            information in data-file.xml in order to restart
                            with a PW calculation or to use postprocessing tools.
+                           If disk_io is not set to 'high', the data file
+                           written by CP will not be readable by PW or PostProc.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       memory
+   
+   Type:           CHARACTER
+   Default:        'default'
+   Description:    'small': memory-saving tricks are implemented. Currently:
+                            - the G-vectors are sorted only locally, not globally
+                            - they are not collected and written to file
+                            For large systems, the memory and time gain is sizable
+                            but the resulting data files are not portable - use it
+                            only if you do not need to re-read the data file
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -315,110 +348,106 @@ NAMELIST: &SYSTEM
    
    Type:           INTEGER
    Status:         REQUIRED
-   Description:    Bravais-lattice index:
+   Description:    Bravais-lattice index. If ibrav /= 0, specify EITHER
+                     [ celldm(1)-celldm(6) ] OR [ A,B,C,cosAB,cosAC,cosBC ]
+                     but NOT both. The lattice parameter alat is set to
+                     alat = celldm(1) (in a.u.) or alat = A (in Angstrom);
+                     see below for the other parameters.
+                     For ibrav=0 specify the lattice vectors in CELL_PARAMETER,
+                     optionally the lattice parameter alat = celldm(1) (in a.u.)
+                     or = A (in Angstrom), or else it is taken from CELL_PARAMETERS
                    
-                     ibrav        structure                   celldm(2)-celldm(6)
+                   ibrav      structure                   celldm(2)-celldm(6)
+                                                        or: b,c,cosab,cosac,cosbc
+                     0          free
+                         crystal axis provided in input: see card CELL_PARAMETERS
                    
-                       0          "free", see above                 not used
-                       1          cubic P (sc)                      not used
-                       2          cubic F (fcc)                     not used
-                       3          cubic I (bcc)                     not used
-                       4          Hexagonal and Trigonal P        celldm(3)=c/a
-                       5          Trigonal R                      celldm(4)=cos(alpha)
-                       6          Tetragonal P (st)               celldm(3)=c/a
-                       7          Tetragonal I (bct)              celldm(3)=c/a
-                       8          Orthorhombic P                  celldm(2)=b/a,celldm(3)=c/a
-                       9          Orthorhombic base-centered(bco) celldm(2)=b/a,celldm(3)=c/a
-                      10          Orthorhombic face-centered      celldm(2)=b/a,celldm(3)=c/a
-                      11          Orthorhombic body-centered      celldm(2)=b/a,celldm(3)=c/a
-                      12          Monoclinic P                    celldm(2)=b/a,celldm(3)=c/a,
-                                                                  celldm(4)=cos(ab)
-                      13          Monoclinic base-centered        celldm(2)=b/a,celldm(3)=c/a,
-                                                                  celldm(4)=cos(ab)
-                      14          Triclinic                       celldm(2)= b/a,
-                                                                  celldm(3)= c/a,
-                                                                  celldm(4)= cos(bc),
-                                                                  celldm(5)= cos(ac),
-                                                                  celldm(6)= cos(ab)
+                     1          cubic P (sc)
+                         v1 = a(1,0,0),  v2 = a(0,1,0),  v3 = a(0,0,1)
                    
-                   For P lattices: the special axis (c) is the z-axis, one basal-plane
-                   vector (a) is along x, the other basal-plane vector (b) is at angle
-                   gamma for monoclinic, at 120 degrees for trigonal and hexagonal
-                   lattices, at 90 degrees for cubic, tetragonal, orthorhombic lattices
+                     2          cubic F (fcc)
+                         v1 = (a/2)(-1,0,1),  v2 = (a/2)(0,1,1), v3 = (a/2)(-1,1,0)
                    
-                   sc simple cubic
-                   ====================
-                   v1 = a(1,0,0),  v2 = a(0,1,0),  v3 = a(0,0,1)
+                     3          cubic I (bcc)
+                         v1 = (a/2)(1,1,1),  v2 = (a/2)(-1,1,1),  v3 = (a/2)(-1,-1,1)
                    
-                   fcc face centered cubic
-                   ====================
-                   v1 = (a/2)(-1,0,1),  v2 = (a/2)(0,1,1), v3 = (a/2)(-1,1,0).
+                     4          Hexagonal and Trigonal P        celldm(3)=c/a
+                         v1 = a(1,0,0),  v2 = a(-1/2,sqrt(3)/2,0),  v3 = a(0,0,c/a)
                    
-                   bcc body entered cubic
-                   ====================
-                   v1 = (a/2)(1,1,1),  v2 = (a/2)(-1,1,1),  v3 = (a/2)(-1,-1,1).
+                     5          Trigonal R, 3fold axis c        celldm(4)=cos(alpha)
+                         The crystallographic vectors form a three-fold star around
+                         the z-axis, the primitive cell is a simple rhombohedron:
+                         v1 = a(tx,-ty,tz),   v2 = a(0,2ty,tz),   v3 = a(-tx,-ty,tz)
+                         where c=cos(alpha) is the cosine of the angle alpha between
+                         any pair of crystallographic vectors, tx, ty, tz are:
+                           tx=sqrt((1-c)/2), ty=sqrt((1-c)/6), tz=sqrt((1+2c)/3)
+                    -5          Trigonal R, 3fold axis <111>    celldm(4)=cos(alpha)
+                         The crystallographic vectors form a three-fold star around
+                         <111>. Defining a' = a/sqrt(3) :
+                         v1 = a' (u,v,v),   v2 = a' (v,u,v),   v3 = a' (v,v,u)
+                         where u and v are defined as
+                           u = tz - 2*sqrt(2)*ty,  v = tz + sqrt(2)*ty
+                         and tx, ty, tz as for case ibrav=5
+                         Note: if you prefer x,y,z as axis in the cubic limit,
+                               set  u = tz + 2*sqrt(2)*ty,  v = tz - sqrt(2)*ty
+                               See also the note in flib/latgen.f90
                    
-                   simple hexagonal and trigonal(p)
-                   ====================
-                   v1 = a(1,0,0),  v2 = a(-1/2,sqrt(3)/2,0),  v3 = a(0,0,c/a).
+                     6          Tetragonal P (st)               celldm(3)=c/a
+                         v1 = a(1,0,0),  v2 = a(0,1,0),  v3 = a(0,0,c/a)
                    
-                   trigonal(r)
-                   ===================
-                   for these groups, the z-axis is chosen as the 3-fold axis, but the
-                   crystallographic vectors form a three-fold star around the z-axis,
-                   and the primitive cell is a simple rhombohedron. The crystallographic
-                   vectors are:
-                         v1 = a(tx,-ty,tz),   v2 = a(0,2ty,tz),   v3 = a(-tx,-ty,tz).
-                   where c=cos(alpha) is the cosine of the angle alpha between any pair
-                   of crystallographic vectors, tc, ty, tz are defined as
-                        tx=sqrt((1-c)/2), ty=sqrt((1-c)/6), tz=sqrt((1+2c)/3)
+                     7          Tetragonal I (bct)              celldm(3)=c/a
+                         v1=(a/2)(1,-1,c/a),  v2=(a/2)(1,1,c/a),  v3=(a/2)(-1,-1,c/a)
                    
-                   simple tetragonal (p)
-                   ====================
-                      v1 = a(1,0,0),  v2 = a(0,1,0),  v3 = a(0,0,c/a)
+                     8          Orthorhombic P                  celldm(2)=b/a
+                                                                celldm(3)=c/a
+                         v1 = (a,0,0),  v2 = (0,b,0), v3 = (0,0,c)
                    
-                   body centered tetragonal (i)
-                   ================================
-                      v1 = (a/2)(1,-1,c/a),  v2 = (a/2)(1,1,c/a),  v3 = (a/2)(-1,-1,c/a).
+                     9          Orthorhombic base-centered(bco) celldm(2)=b/a
+                                                                celldm(3)=c/a
+                         v1 = (a/2, b/2,0),  v2 = (-a/2,b/2,0),  v3 = (0,0,c)
+                    -9          as 9, alternate description
+                         v1 = (a/2,-b/2,0),  v2 = (a/2,-b/2,0),  v3 = (0,0,c)
                    
-                   simple orthorhombic (p)
-                   =============================
-                      v1 = (a,0,0),  v2 = (0,b,0), v3 = (0,0,c)
+                    10          Orthorhombic face-centered      celldm(2)=b/a
+                                                                celldm(3)=c/a
+                         v1 = (a/2,0,c/2),  v2 = (a/2,b/2,0),  v3 = (0,b/2,c/2)
                    
-                   bco base centered orthorhombic
-                   =============================
-                      v1 = (a/2,b/2,0),  v2 = (-a/2,b/2,0),  v3 = (0,0,c)
+                    11          Orthorhombic body-centered      celldm(2)=b/a
+                                                                celldm(3)=c/a
+                         v1=(a/2,b/2,c/2),  v2=(-a/2,b/2,c/2),  v3=(-a/2,-b/2,c/2)
                    
-                   face centered orthorhombic
-                   =============================
-                      v1 = (a/2,0,c/2),  v2 = (a/2,b/2,0),  v3 = (0,b/2,c/2)
+                    12          Monoclinic P, unique axis c     celldm(2)=b/a
+                                                                celldm(3)=c/a,
+                                                                celldm(4)=cos(ab)
+                         v1=(a,0,0), v2=(b*cos(gamma),b*sin(gamma),0),  v3 = (0,0,c)
+                         where gamma is the angle between axis a and b.
+                   -12          Monoclinic P, unique axis b     celldm(2)=b/a
+                                                                celldm(3)=c/a,
+                                                                celldm(5)=cos(ac)
+                         v1 = (a,0,0), v2 = (0,b,0), v3 = (c*sin(beta),0,c*cos(beta))
+                         where beta is the angle between axis a and c
                    
-                   body centered orthorhombic
-                   =============================
-                      v1 = (a/2,b/2,c/2),  v2 = (-a/2,b/2,c/2),  v3 = (-a/2,-b/2,c/2)
+                    13          Monoclinic base-centered        celldm(2)=b/a
+                                                                celldm(3)=c/a,
+                                                                celldm(4)=cos(ab)
+                         v1 = (  a/2,         0,                -c/2),
+                         v2 = (b*cos(gamma), b*sin(gamma), 0),
+                         v3 = (  a/2,         0,                  c/2),
+                         where gamma is the angle between axis a and b
                    
-                   monoclinic (p)
-                   =============================
-                      v1 = (a,0,0), v2= (b*cos(gamma), b*sin(gamma), 0),  v3 = (0, 0, c)
-                   where gamma is the angle between axis a and b
-                   
-                   base centered monoclinic
-                   =============================
-                      v1 = (  a/2,         0,                -c/2),
-                      v2 = (b*cos(gamma), b*sin(gamma), 0),
-                      v3 = (  a/2,         0,                  c/2),
-                   where gamma is the angle between axis a and b
-                   
-                   triclinic
-                   =============================
-                      v1 = (a, 0, 0),
-                      v2 = (b*cos(gamma), b*sin(gamma), 0)
-                      v3 = (c*cos(beta),  c*(cos(alpha)-cos(beta)cos(gamma))/sin(gamma),
-                            c*sqrt( 1 + 2*cos(alpha)cos(beta)cos(gamma)
-                                      - cos(alpha)^2-cos(beta)^2-cos(gamma)^2 )/sin(gamma) )
-                   where alpha is the angle between axis b and c
-                          beta is the angle between axis a and c
-                         gamma is the angle between axis a and b
+                    14          Triclinic                       celldm(2)= b/a,
+                                                                celldm(3)= c/a,
+                                                                celldm(4)= cos(bc),
+                                                                celldm(5)= cos(ac),
+                                                                celldm(6)= cos(ab)
+                         v1 = (a, 0, 0),
+                         v2 = (b*cos(gamma), b*sin(gamma), 0)
+                         v3 = (c*cos(beta),  c*(cos(alpha)-cos(beta)cos(gamma))/sin(gamma),
+                              c*sqrt( 1 + 2*cos(alpha)cos(beta)cos(gamma)
+                                        - cos(alpha)^2-cos(beta)^2-cos(gamma)^2 )/sin(gamma) )
+                     where alpha is the angle between axis b and c
+                            beta is the angle between axis a and c
+                           gamma is the angle between axis a and b
    +--------------------------------------------------------------------
    
    ///---
@@ -430,10 +459,11 @@ NAMELIST: &SYSTEM
       Type:           REAL
       See:            ibrav
       Description:    Crystallographic constants - see description of ibrav variable.
-                      
-                      * alat = celldm(1) is the lattice parameter "a" (in BOHR)
-                      * only needed celldm (depending on ibrav) must be specified
-                      * if ibrav=0 only alat = celldm(1) is used (if present)
+                      Specify either these OR A,B,C,cosAB,cosBC,cosAC NOT both.
+                      Only needed celldm (depending on ibrav) must be specified
+                      alat = celldm(1) is the lattice parameter "a" (in BOHR)
+                      If ibrav=0, only celldm(1) is used if present;
+                      cell vectors are read from card CELL_PARAMETERS
       +--------------------------------------------------------------------
       
       OR:
@@ -442,13 +472,16 @@ NAMELIST: &SYSTEM
       Variables:      A, B, C, cosAB, cosAC, cosBC
       
       Type:           REAL
-      Description:    Traditional crystallographic constants (a,b,c in ANGSTROM),
-                      cosab = cosine of the angle between axis a and b
-                      specify either these OR celldm but NOT both.
-                      
+      Description:    Traditional crystallographic constants: a,b,c in ANGSTROM
+                        cosAB = cosine of the angle between axis a and b (gamma)
+                        cosAC = cosine of the angle between axis a and c (beta)
+                        cosBC = cosine of the angle between axis b and c (alpha)
                       The axis are chosen according to the value of ibrav.
-                      If ibrav is not specified, the axis are taken from card
-                      CELL_PARAMETERS and only a is used as lattice parameter.
+                      Specify either these OR celldm but NOT both.
+                      Only needed values (depending on ibrav) must be specified
+                      The lattice parameter alat = A (in ANGSTROM )
+                      If ibrav = 0, only A is used if present;
+                      cell vectors are read from card CELL_PARAMETERS
       +--------------------------------------------------------------------
       
    \\\---
@@ -638,9 +671,24 @@ NAMELIST: &SYSTEM
    Type:           CHARACTER
    Default:        read from pseudopotential files
    Description:    Exchange-correlation functional: eg 'PBE', 'BLYP' etc
-                   See Modules/functionals.f90 for allowed values.
+                   See Modules/funct.f90 for allowed values.
                    Overrides the value read from pseudopotential files.
                    Use with care and if you know what you are doing!
+                   
+                   Use 'PBE0' to perform hybrid functional calculation using Wannier functions.
+                   Allowed calculation: 'cp-wf' and 'vc-cp-wf'
+                   See CP specific user manual for further guidance (or in CPV/Doc/user_guide.tex)
+                   and examples in CPV/examples/EXX-wf-example.
+                   Also see related keywords starting with exx_.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_fraction
+   
+   Type:           REAL
+   Default:        it depends on the specified functional
+   Description:    Fraction of EXX for hybrid functional calculations. In the case of
+                   input_dft='PBE0', the default value is 0.25.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -667,6 +715,73 @@ NAMELIST: &SYSTEM
    Description:    Hubbard_U(i): parameter U (in eV) for LDA+U calculations.
                    Currently only the simpler, one-parameter LDA+U is
                    implemented (no "alpha" or "J" terms)
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       vdw_corr
+   
+   Type:           CHARACTER
+   Default:        'none'
+   Description:    Type of Van der Waals correction. Allowed values:
+                   
+                      'grimme-d2', 'Grimme-D2', 'DFT-D', 'dft-d': semiempirical Grimme's DFT-D2.
+                       Optional variables: "london_s6", "london_rcut"
+                       S. Grimme, J. Comp. Chem. 27, 1787 (2006),
+                       V. Barone et al., J. Comp. Chem. 30, 934 (2009).
+                   
+                       'TS', 'ts', 'ts-vdw', 'ts-vdW', 'tkatchenko-scheffler': Tkatchenko-Scheffler
+                        dispersion corrections with first-principle derived C6 coefficients
+                        Optional variables: "ts_vdw_econv_thr", "ts_vdw_isolated"
+                        See A. Tkatchenko and M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009)
+                   
+                       'XDM', 'xdm': Exchange-hole dipole-moment model. Optional variables: "xdm_a1", "xdm_a2"
+                        (implemented in PW only)
+                        A. D. Becke and E. R. Johnson, J. Chem. Phys. 127, 154108 (2007)
+                         A. Otero de la Roza, E. R. Johnson, J. Chem. Phys. 136, 174109 (2012)
+                   
+                   Note that non-local functionals (eg vdw-DF) are NOT specified here but in "input_dft"
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       london_s6
+   
+   Type:           REAL
+   Default:        0.75
+   Description:    global scaling parameter for DFT-D. Default is good for PBE.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       london_rcut
+   
+   Type:           REAL
+   Default:        200
+   Description:    cutoff radius (a.u.) for dispersion interactions
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       ts_vdw
+   
+   Type:           LOGICAL
+   Default:        .FALSE.
+   Description:    OBSOLESCENT, same as vdw_corr='TS'
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       ts_vdw_econv_thr
+   
+   Type:           REAL
+   Default:        1.D-6
+   Description:    Optional: controls the convergence of the vdW energy (and forces). The default value
+                   is a safe choice, likely too safe, but you do not gain much in increasing it
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       ts_vdw_isolated
+   
+   Type:           LOGICAL
+   Default:        .FALSE.
+   Description:    Optional: set it to .TRUE. when computing the Tkatchenko-Scheffler vdW energy
+                   for an isolated (non-periodic) system.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -820,7 +935,7 @@ NAMELIST: &ELECTRONS
    
    Type:           INTEGER
    Default:        0
-   Status:         OBSOLETE: use command-line option " -ndiag XX" instead
+   Status:         OBSOLETE: use command-line option " -nd XX" instead
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -970,7 +1085,7 @@ NAMELIST: &ELECTRONS
 ========================================================================
 NAMELIST: &IONS
 
-   INPUT THIS NAMELIST ONLY IF CALCULATION = 'CP', 'RELAX', 'VC-RELAX', 'VC_CP'
+   INPUT THIS NAMELIST ONLY IF CALCULATION = 'CP', 'RELAX', 'VC-RELAX', 'VC-CP', 'CP-WF', 'VC-CP-WF'
    
    +--------------------------------------------------------------------
    Variable:       ion_dynamics
@@ -1018,10 +1133,45 @@ NAMELIST: &IONS
                                    as in tolp = 'old_time_step_value' in au
                    'random'      : start the simulation with random atomic velocities
                    'from_input'  : restart the simulation with atomic velocities read
-                                   from standard input
-                                   ( see the card 'ATOMIC_VELOCITIES' )
+                                   from standard input - see card 'ATOMIC_VELOCITIES'
+                                   BEWARE: works only if restart_mode='from_scratch',
+                                   tested only with electrons_dynamics='cg'
                    'zero'        : restart the simulation with atomic velocities set
                                    to zero
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       ion_damping
+   
+   Type:           REAL
+   Default:        0.2D0
+   Description:    damping frequency times delta t, optimal values could be
+                     calculated with the formula :
+                     SQRT( 0.5 * LOG( ( E1 - E2 ) / ( E2 - E3 ) ) )
+                     where E1, E2, E3 are successive values of the DFT total energy
+                     in a steepest descent simulations.
+                     meaningful only if " ion_dynamics = 'damp' "
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       ion_radius(i), i=1,ntyp
+   
+   Type:           REAL
+   Default:        0.5 a.u. for all species
+   Description:    ion_radius(i): pseudo-atomic radius of the i-th atomic species
+                   used in Ewald summation. Typical values: between 0.5 and 2.
+                   Results should NOT depend upon such parameters if their values
+                   are properly chosen. See also "iesr".
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       iesr
+   
+   Type:           INTEGER
+   Default:        1
+   Description:    The real-space contribution to the Ewald summation is performed
+                   on iesr*iesr*iesr cells. Typically iesr=1 is sufficient to have
+                   converged results.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -1203,7 +1353,7 @@ NAMELIST: &IONS
 ========================================================================
 NAMELIST: &CELL
 
-   INPUT THIS NAMELIST ONLY IF CALCULATION = 'VC-RELAX', 'VC-CP'
+   INPUT THIS NAMELIST ONLY IF CALCULATION = 'VC-RELAX', 'VC-CP', 'VC-CP-WF'
    
    +--------------------------------------------------------------------
    Variable:       cell_parameters
@@ -1331,14 +1481,15 @@ NAMELIST: &CELL
                    x       = only the x component of axis 1 (v1_x) is moved
                    y       = only the y component of axis 2 (v2_y) is moved
                    z       = only the z component of axis 3 (v3_z) is moved
-                   xy      = only v1_x and v_2y are moved
-                   xz      = only v1_x and v_3z are moved
-                   yz      = only v2_x and v_3z are moved
-                   xyz     = only v1_x, v2_x, v_3z are moved
+                   xy      = only v1_x and v2_y are moved
+                   xz      = only v1_x and v3_z are moved
+                   yz      = only v2_y and v3_z are moved
+                   xyz     = only v1_x, v2_y, v3_z are moved
                    shape   = all axis and angles, keeping the volume fixed
-                   
-                   Beware: if axis are not orthogonal, some of the above options
-                           will break symmetry
+                   2Dxy    = only x and y components are allowed to change
+                   2Dshape = as above, keeping the area in xy plane fixed
+                   volume  = isotropic variations of v1_x, v2_y, v3_z, keeping
+                             the shape fixed. Should be used only with ibrav=1.
    +--------------------------------------------------------------------
    
 ===END OF NAMELIST======================================================
@@ -1437,7 +1588,7 @@ NAMELIST: &PRESS_AI
 ========================================================================
 NAMELIST: &WANNIER
 
-   ONLY IF CALCULATION = 'CP-WF'
+   ONLY IF CALCULATION = 'CP-WF', 'VC-CP-WF'
    
    Output files used by Wannier Function options are the following
    
@@ -1522,8 +1673,8 @@ NAMELIST: &WANNIER
    Type:           INTEGER
    Default:        1
    Description:    Localization algorithm for Wannier function calculation:
-                   wfsd=1  Steepest-Descent / Conjugate-Gradient
-                   wfsd=2  Damped Dynamics
+                   wfsd=1  Damped Dynamics
+                   wfsd=2  Steepest-Descent / Conjugate-Gradient
                    wfsd=3  Jocobi Rotation
                    Remember, this is consistent with all the calwf options
                    as well as the tolw (see below).
@@ -1691,6 +1842,77 @@ NAMELIST: &WANNIER
                    G-vectors are written to G_PARA or G_SERL.
    +--------------------------------------------------------------------
    
+   +--------------------------------------------------------------------
+   Variable:       exx_neigh
+   
+   Type:           INTEGER
+   Default:        60
+   Description:    An initial guess on the maximum number of neighboring (overlapping) Wannier functions.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_dis_cutoff
+   
+   Type:           REAL
+   Default:        8.0
+   Description:    Radial cutoff distance (in bohr) for including overlapping Wannier function pairs
+                   in EXX calculations.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_poisson_eps
+   
+   Type:           REAL
+   Default:        1.0D-6
+   Description:    Poisson solver convergence criterion during computation of the EXX potential.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_ps_rcut_self
+   
+   Type:           REAL
+   Default:        6.0
+   Description:    Radial cutoff distance (in bohr) to compute the self EXX energy.
+                   This distance determines the radius of the Poisson sphere centered at
+                   a given Wannier function center, and should be large enough to cover
+                   the majority of the orbital charge density.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_ps_rcut_pair
+   
+   Type:           REAL
+   Default:        5.0
+   Description:    Radial cutoff distance (in bohr) to compute the pair EXX energy.
+                   This distance determines the radius of the Poisson sphere centered at
+                   the midpoint of two overlapping Wannier functions, and should be
+                   large enough to cover the majority of the orbital overlap charge density.
+                   This parameter can generally be chosen as smaller than exx_ps_rcut_self.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_me_rcut_self
+   
+   Type:           REAL
+   Default:        10.0
+   Description:    Radial cutoff distance (in bohr) for the multipole-expansion sphere
+                   centered at a given Wannier function center.
+                   The far-field self EXX potential in this sphere is generated with
+                   multipole expansion of the orbital charge density.
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       exx_me_rcut_pair
+   
+   Type:           REAL
+   Default:        7.0
+   Description:    Radial cutoff distance (in bohr) for the multipole-expansion sphere
+                   centered at the midpoint of two overlapping Wannier functions.
+                   The far-field pair EXX potential in this sphere is generated with
+                   a multipole expansion of the orbital overlap charge density.
+                   This parameter can generally be chosen as smaller than exx_me_rcut_self.
+   +--------------------------------------------------------------------
+   
 ===END OF NAMELIST======================================================
 
 
@@ -1715,7 +1937,11 @@ CARD: ATOMIC_SPECIES
       Variable:       X
       
       Type:           CHARACTER
-      Description:    label of the atom
+      Description:    label of the atom. Acceptable syntax:
+                      chemical symbol X (1 or 2 characters, case-insensitive)
+                      or chemical symbol plus a number or a letter, as in
+                      "Xn" (e.g. Fe1) or "X_*" or "X-*" (e.g. C1, C_h;
+                      max total length cannot exceed 3 characters)
       +--------------------------------------------------------------------
       
       +--------------------------------------------------------------------
@@ -1777,18 +2003,24 @@ CARD: ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal   }
       +--------------------------------------------------------------------
       Card's flags:   {  alat | bohr | angstrom | crystal   }
       
-      Default:        alat
+      Default:        (DEPRECATED) bohr
       Description:    alat    : atomic positions are in cartesian coordinates,
-                                in units of the lattice parameter "a" (default)
+                                in units of the lattice parameter (either
+                                celldm(1) or A).
                       
                       bohr    : atomic positions are in cartesian coordinate,
-                                in atomic units (i.e. Bohr)
+                                in atomic units (i.e. Bohr).
+                                If no option is specified, 'bohr' is assumed;
+                                not specifying units is DEPRECATED and will no
+                                longer be allowed in the future
                       
                       angstrom: atomic positions are in cartesian coordinates,
                                 in Angstrom
                       
                       crystal : atomic positions are in crystal coordinates, i.e.
-                                in relative coordinates of the primitive lattice vectors (see below)
+                                in relative coordinates of the primitive lattice
+                                vectors as defined either in card CELL_PARAMETERS
+                                or via the ibrav + celldm / a,b,c... variables
       +--------------------------------------------------------------------
 
 
@@ -1866,7 +2098,7 @@ CARD: ATOMIC_VELOCITIES {   a.u   }
 
 
 ========================================================================
-CARD: CELL_PARAMETERS {  bohr | angstrom   }
+CARD: CELL_PARAMETERS {  bohr | angstrom | alat   }
 
    OPTIONAL CARD, NEEDED ONLY IF IBRAV = 0 IS SPECIFIED, IGNORED OTHERWISE !
    
@@ -1874,7 +2106,7 @@ CARD: CELL_PARAMETERS {  bohr | angstrom   }
    // Syntax:                             //
    /////////////////////////////////////////
    
-      CELL_PARAMETERS {  bohr | angstrom   }
+      CELL_PARAMETERS {  bohr | angstrom | alat   }
          v1(1)  v1(2)  v1(3)  
          v2(1)  v2(2)  v2(3)  
          v3(1)  v3(2)  v3(3)  
@@ -1884,12 +2116,14 @@ CARD: CELL_PARAMETERS {  bohr | angstrom   }
    DESCRIPTION OF ITEMS:
    
       +--------------------------------------------------------------------
-      Card's flags:   {  bohr | angstrom   }
+      Card's flags:   {  bohr | angstrom | alat   }
       
-      Description:    bohr / angstrom: lattice vectors in bohr radii / angstrom.
-                      nothing specified: if a lattice constant (celldm(1) or a)
-                      is present, lattice vectors are in units of the lattice
-                      constant; otherwise, in bohr radii.
+      Description:    'bohr'/'angstrom': lattice vectors in bohr radii / angstrom.
+                      'alat' / nothing specified: lattice vectors in units or the
+                      lattice parameter (either celldm(1) or a). Not specifing
+                      units is DEPRECATED and will not be allowed in the future.
+                      If nothing specified and no lattice parameter specified,
+                      'bohr' is assumed - DEPRECATED, will no longer be allowed
       +--------------------------------------------------------------------
 
 
@@ -1901,6 +2135,65 @@ CARD: CELL_PARAMETERS {  bohr | angstrom   }
                           v1(1)  v1(2)  v1(3)    ... 1st lattice vector
                           v2(1)  v2(2)  v2(3)    ... 2nd lattice vector
                           v3(1)  v3(2)  v3(3)    ... 3rd lattice vector
+      +--------------------------------------------------------------------
+      
+===END OF CARD==========================================================
+
+
+========================================================================
+CARD: REF_CELL_PARAMETERS {  bohr | angstrom   }
+
+         OPTIONAL CARD, NEEDED ONLY IF ONE WANTS TO DO VARIABLE CELL CALCULATIONS ACCURATELY.
+   THE REFERENCE CELL GENERATES ADDITIONAL BUFFER PLANEWAVES.
+   
+   /////////////////////////////////////////
+   // Syntax:                             //
+   /////////////////////////////////////////
+   
+      REF_CELL_PARAMETERS {  bohr | angstrom   }
+         v1(1)  v1(2)  v1(3)  
+         v2(1)  v2(2)  v2(3)  
+         v3(1)  v3(2)  v3(3)  
+   
+   /////////////////////////////////////////
+   
+   DESCRIPTION OF ITEMS:
+   
+      +--------------------------------------------------------------------
+      Card's flags:   {  bohr | angstrom   }
+      
+      Description:    bohr / angstrom: reference cell parameters in bohr radii / angstrom.
+                      
+                      To mimic a constant effective planewave kinetic energy (ecfixed) during a
+                      variable-cell calculation, the specified reference cell has to be large enough
+                      such that the individual cell vector lengths of the fluctuating cell do not
+                      exceed the corresponding reference lattice vector lengths during the entire
+                      calculation. The cost of the calculation will increase with the increasing
+                      size of the reference cell. The user must test for the proper reference cell
+                      parameters.
+                      
+                      The reference cell parameters should be used in conjunction with q2sigma,
+                      qcutz, and ecfixed. See q2sigma for more information about mimicking constant
+                      effective planewave kinetic energy (ecfixed) during variable-cell calculations.
+                      
+                      The reference cell parameters should be chosen as an isotropic scaling of the
+                      initial cell of the system. This means that the reference cell should have
+                      the same shape as the initial simulatoin cell. The reference cell parameters should
+                      NOT be changed throughout a given simulatoin. Typically, 2%-10% scaling of
+                      the unit cell vectors are sufficient. However, the cell fluctuations depend on
+                      the system and the thermodynamic conditions. So again user must test for the proper
+                      choice of reference cell parameters.
+      +--------------------------------------------------------------------
+
+
+      +--------------------------------------------------------------------
+      Variables:      v1, v2, v3
+      
+      Type:           REAL
+      Description:    REF_CELL_PARAMETERS { bohr | angstrom }
+                      v1(1)  v1(2)  v1(3)    ... 1st reference lattice vector
+                      v2(1)  v2(2)  v2(3)    ... 2nd reference lattice vector
+                      v3(1)  v3(2)  v3(3)    ... 3rd reference lattice vector
       +--------------------------------------------------------------------
       
 ===END OF CARD==========================================================
@@ -2064,6 +2357,42 @@ CARD: OCCUPATIONS
 
 
 ========================================================================
+CARD: ATOMIC_FORCES 
+
+   OPTIONAL CARD USED TO SPECIFY EXTERNAL FORCES ACTING ON ATOMS
+   
+   /////////////////////////////////////////
+   // Syntax:                             //
+   /////////////////////////////////////////
+   
+      ATOMIC_FORCES 
+         X(1)    fx(1)    fy(1)    fz(1)    
+         X(2)    fx(2)    fy(2)    fz(2)    
+         . . . 
+         X(nat)  fx(nat)  fy(nat)  fz(nat)  
+   
+   /////////////////////////////////////////
+   
+   DESCRIPTION OF ITEMS:
+   
+      +--------------------------------------------------------------------
+      Variable:       X
+      
+      Type:           CHARACTER
+      Description:    label of the atom as specified in ATOMIC_SPECIES
+      +--------------------------------------------------------------------
+      
+      +--------------------------------------------------------------------
+      Variables:      fx, fy, fz
+      
+      Type:           REAL
+      Description:    external force on atom X (cartesian components, Ha/a.u. units)
+      +--------------------------------------------------------------------
+      
+===END OF CARD==========================================================
+
+
+========================================================================
 CARD: PLOT_WANNIER 
 
    OPTIONAL CARD, INDICES OF THE STATES THAT HAVE TO BE PRINTED (ONLY FOR CALF=1 AND CALF=5).
@@ -2090,6 +2419,51 @@ CARD: PLOT_WANNIER
                       Also used with calwf = 1 and 5. If calwf = 1, then you need
                       nwf indices here (each in a new line). If CALWF=5, then just
                       one index in needed.
+      +--------------------------------------------------------------------
+      
+===END OF CARD==========================================================
+
+
+========================================================================
+CARD: AUTOPILOT 
+
+   OPTIONAL CARD, CHANGES SOME VARIABLES ON THE FLY OF THE CALCULATION.
+   
+   NOTICE THAT THE RULES HAS TO BE ORDERED IN WITH TIME STEP AND THE CARD HAS
+   TO BE TERMINATED WITH "ENDRULES"
+   
+   /////////////////////////////////////////
+   // Syntax:                             //
+   /////////////////////////////////////////
+   
+      AUTOPILOT 
+         pilot_rule(1)       
+         pilot_rule(2)       
+         . . . 
+         pilot_rule(nevent)  
+   
+   /////////////////////////////////////////
+   
+   DESCRIPTION OF ITEMS:
+   
+      +--------------------------------------------------------------------
+      Variable:       pilot_rule
+      
+      Type:           RULE
+      Description:    To set up a rule, one can add the scheduled steps with on_step and
+                      separate the corresponding change in parameters with a column.
+                      
+                      See a simple example bellow:
+                      
+                      AUTOPILOT
+                          on_step =  31  : dt               = 5.0
+                          on_step =  91  : iprint           = 100
+                          on_step =  91  : isave            = 100
+                          on_step = 191  : ion_dynamics     = 'damp'
+                          on_step = 191  : electron_damping = 0.00
+                          on_step = 691  : ion_temperature  = 'nose'
+                          on_step = 691  : tempw            = 150.0
+                      ENDRULES
       +--------------------------------------------------------------------
       
 ===END OF CARD==========================================================

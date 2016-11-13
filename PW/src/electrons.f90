@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2011 Quantum ESPRESSO group
+! Copyright (C) 2001-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -10,81 +10,338 @@
 SUBROUTINE electrons()
   !----------------------------------------------------------------------------
   !
-  ! ... This routine is a driver of the self-consistent cycle.
-  ! ... It uses the routine c_bands for computing the bands at fixed
-  ! ... Hamiltonian, the routine sum_band to compute the charge density,
-  ! ... the routine v_of_rho to compute the new potential and the routine
-  ! ... mix_rho to mix input and output charge densities.
-  ! ... It prints on output the total energy and its decomposition in
-  ! ... the separate contributions.
+  ! ... General self-consistency loop, also for hybrid functionals
+  ! ... For non-hybrid functionals it just calls "electron_scf"
   !
   USE kinds,                ONLY : DP
-  USE constants,            ONLY : eps8, pi
+  USE check_stop,           ONLY : check_stop_now, stopped_by_user
   USE io_global,            ONLY : stdout, ionode
-  USE cell_base,            ONLY : at, bg, alat, omega, tpiba2
-  USE ions_base,            ONLY : zv, nat, nsp, ityp, tau, compute_eextfor
-  USE basis,                ONLY : starting_pot, starting_wfc
-  USE bp,                   ONLY : lelfield
   USE fft_base,             ONLY : dfftp
-  USE gvect,                ONLY : ngm, gstart, nl, nlm, g, gg, gcutm
-  USE gvecs,                ONLY : doublegrid, ngms
-  USE klist,                ONLY : xk, wk, nelec, ngk, nks, nkstot, lgauss
+  USE gvecs,                ONLY : doublegrid
+  USE gvect,                ONLY : ecutrho
   USE lsda_mod,             ONLY : lsda, nspin, magtot, absmag, isk
-  USE vlocal,               ONLY : strf
-  USE wvfct,                ONLY : nbnd, et, npwx, ecutwfc
   USE ener,                 ONLY : etot, hwf_energy, eband, deband, ehart, &
                                    vtxc, etxc, etxcc, ewld, demet, epaw, &
-                                   elondon
-  USE scf,                  ONLY : scf_type, scf_type_COPY, bcast_scf_type,&
-                                   create_scf_type, destroy_scf_type, &
-                                   rho, rho_core, rhog_core, &
-                                   v, vltot, vrs, kedtau, vnew
-  USE control_flags,        ONLY : mixing_beta, tr2, ethr, niter, nmix, &
-                                   iprint, istep, lscf, lmd, conv_elec, &
-                                   restart, io_level, do_makov_payne,  &
-                                   gamma_only, iverbosity, textfor,     &
-                                   llondon, scf_must_converge
-  USE io_files,             ONLY : iunwfc, iunocc, nwordwfc, output_drho, &
-                                   iunefield, iunpaw
-  USE buffers,              ONLY : save_buffer
-  USE ldaU,                 ONLY : eth, Hubbard_U, Hubbard_lmax, &
-                                   niter_with_fixed_ns, lda_plus_u
+                                   elondon, ef_up, ef_dw
+  USE scf,                  ONLY : rho, rho_core, rhog_core, v, vltot, vrs, &
+                                   kedtau, vnew
+  USE control_flags,        ONLY : tr2, niter, conv_elec, restart, lmd
+  USE io_files,             ONLY : iunwfc, iunmix, nwordwfc, output_drho, &
+                                   iunres, iunefield, seqopn
+  USE buffers,              ONLY : save_buffer, close_buffer
+  USE ldaU,                 ONLY : eth
   USE extfield,             ONLY : tefield, etotefield
-  USE wavefunctions_module, ONLY : evc, psic
+  USE wavefunctions_module, ONLY : evc
+  USE wvfct,                ONLY : nbnd, wg, et
+  USE klist,                ONLY : nks
   USE noncollin_module,     ONLY : noncolin, magtot_nc, i_cons,  bfield, &
                                    lambda, report
-  USE spin_orb,             ONLY : domag
-  USE io_rho_xml,           ONLY : write_rho
   USE uspp,                 ONLY : okvan
-  USE exx,                  ONLY : exxinit, exxenergy, exxenergy2, &
-                                   fock0, fock1, fock2, dexx, exx_restart
+  USE exx,                  ONLY : exxinit, exxenergy2, exxbuff, &
+                                   ecutfock, fock0, fock1, fock2, dexx
   USE funct,                ONLY : dft_is_hybrid, exx_is_active
   USE control_flags,        ONLY : adapt_thr, tr2_init, tr2_multi
-  USE funct,                ONLY : dft_is_meta
-  USE mp_global,            ONLY : intra_bgrp_comm, inter_pool_comm, &
-                                   root_pool, my_pool_id
-  USE mp,                   ONLY : mp_sum, mp_bcast
-  !
-  USE london_module,        ONLY : energy_london
   !
   USE paw_variables,        ONLY : okpaw, ddd_paw, total_core_energy, only_paw
   USE paw_onecenter,        ONLY : PAW_potential
   USE paw_symmetry,         ONLY : PAW_symmetrize_ddd
   USE uspp_param,           ONLY : nh, nhm ! used for PAW
-#ifdef __ENVIRON
-  USE environ_base,         ONLY : do_environ, update_venviron,             &
-                                   vltot_zero, environ_thr,                 &
-                                   env_static_permittivity,                 & 
-                                   env_surface_tension, env_pressure,       &
-                                   env_periodicity, env_ioncc_concentration,&
-                                   deenviron, esolvent, ecavity, epressure, &
-                                   eperiodic, eioncc
-#endif
-  USE dfunct,                 only : newd
-  USE esm,                  ONLY : do_comp_esm, esm_printpot
   !
   !
   IMPLICIT NONE
+  !
+  ! ... a few local variables
+  !
+  REAL(DP) :: &
+      charge         ! the total charge
+  INTEGER :: &
+      idum,         &! dummy counter on iterations
+      iter,         &! counter on iterations
+      printout,     &
+      ik, ios
+  REAL(DP) :: &
+      tr2_min,     &! estimated error on energy coming from diagonalization
+      tr2_final     ! final threshold for exx minimization 
+                    ! when using adaptive thresholds.
+  LOGICAL :: first, exst
+  !
+  !
+  iter = 0
+  first = .true.
+  tr2_final = tr2
+  IF ( dft_is_hybrid() ) THEN
+     printout = 0  ! do not print etot and energy components at each scf step
+  ELSE IF ( lmd ) THEN
+     printout = 1  ! print etot, not energy components at each scf step
+  ELSE
+     printout = 2  ! print etot and energy components at each scf step
+  END IF
+  IF (dft_is_hybrid() .AND. adapt_thr ) tr2= tr2_init
+  fock0 = 0.D0
+  fock1 = 0.D0
+  IF (.NOT. exx_is_active () ) fock2 = 0.D0
+  !
+  ! these routines can be used to patch quantities that are dependent
+  ! on the ions and cell parameters
+  !
+  CALL plugin_init_ions()
+  CALL plugin_init_cell()
+  !
+  CALL plugin_init_potential()
+  !
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !%%%%%%%%%%%%%%%%%%%%  Iterate hybrid functional  %%%%%%%%%%%%%%%%%%%%%
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !
+  IF ( restart ) THEN
+     CALL seqopn (iunres, 'restart_e', 'formatted', exst)
+     IF ( exst ) THEN
+        ios = 0
+        READ (iunres, *, iostat=ios) iter, tr2, dexx
+        IF ( ios /= 0 ) THEN
+           iter = 0
+        ELSE IF ( iter < 0 .OR. iter > niter ) THEN
+           iter = 0
+        ELSE 
+           READ (iunres, *) fock0, fock1, fock2
+           ! FIXME: et and wg should be read from xml file
+           READ (iunres, *) (wg(1:nbnd,ik),ik=1,nks)
+           READ (iunres, *) (et(1:nbnd,ik),ik=1,nks)
+           CLOSE ( unit=iunres, status='delete')
+           ! ... if restarting here, exx was already active
+           ! ... initialize stuff for exx
+           first = .false.
+           CALL exxinit()
+           ! FIXME: ugly hack, overwrites exxbuffer from exxinit
+           CALL seqopn (iunres, 'restart_exx', 'unformatted', exst)
+           IF (exst) READ (iunres, iostat=ios) exxbuff
+           IF (ios /= 0) WRITE(stdout,'(5x,"Error in EXX restart!")')
+           !
+           CALL v_of_rho( rho, rho_core, rhog_core, &
+               ehart, etxc, vtxc, eth, etotefield, charge, v)
+           IF (okpaw) CALL PAW_potential(rho%bec, ddd_PAW, epaw)
+           CALL set_vrs( vrs, vltot, v%of_r, kedtau, v%kin_r, dfftp%nnr, &
+                         nspin, doublegrid )
+           !
+           WRITE(stdout,'(5x,"Calculation (EXX) restarted from iteration #", &
+                        & i6)') iter 
+        END IF
+     END IF
+     CLOSE ( unit=iunres, status='delete')
+  END IF
+  !
+  DO idum=1,niter
+     !
+     iter = iter + 1
+     !
+     ! ... Self-consistency loop. For hybrid functionals the exchange potential
+     ! ... is calculated with the orbitals at previous step (none at first step)
+     !
+     CALL electrons_scf ( printout )
+     !
+     IF ( .NOT. dft_is_hybrid() ) RETURN
+     !
+     ! ... From now on: hybrid DFT only
+     !
+     IF ( stopped_by_user .OR. .NOT. conv_elec ) THEN
+        conv_elec=.FALSE.
+        IF ( .NOT. first) THEN
+           WRITE(stdout,'(5x,"Calculation (EXX) stopped during iteration #", &
+                        & i6)') iter
+           CALL seqopn (iunres, 'restart_e', 'formatted', exst)
+           WRITE (iunres, *) iter-1, tr2, dexx
+           WRITE (iunres, *) fock0, fock1, fock2
+           WRITE (iunres, *) (wg(1:nbnd,ik),ik=1,nks)
+           WRITE (iunres, *) (et(1:nbnd,ik),ik=1,nks)
+           CLOSE (unit=iunres, status='keep')
+           CALL seqopn (iunres, 'restart_exx', 'unformatted', exst)
+           WRITE (iunres) exxbuff
+           CLOSE (unit=iunres, status='keep')
+        END IF
+        RETURN
+     END IF
+     !
+     first =  first .AND. .NOT. exx_is_active ( )
+     !
+     ! "first" is true if the scf step was performed without exact exchange
+     !
+     IF ( first ) THEN
+        !
+        first = .false.
+        !
+        ! Activate exact exchange, set orbitals used in its calculation,
+        ! then calculate exchange energy (will be useful at next step)
+        !
+        CALL exxinit()
+        fock2 = exxenergy2()
+        !
+        ! Recalculate potential because XC functional has changed,
+        ! start self-consistency loop on exchange
+        !
+        CALL v_of_rho( rho, rho_core, rhog_core, &
+             ehart, etxc, vtxc, eth, etotefield, charge, v)
+        IF (okpaw) CALL PAW_potential(rho%bec, ddd_PAW, epaw)
+        CALL set_vrs( vrs, vltot, v%of_r, kedtau, v%kin_r, dfftp%nnr, &
+             nspin, doublegrid )
+        !
+     ELSE
+        !
+        ! fock1 is the exchange energy calculated for orbitals at step n,
+        !       using orbitals at step n-1 in the expression of exchange
+        !
+        fock1 = exxenergy2()
+        !
+        ! Set new orbitals for the calculation of the exchange term
+        !
+        CALL exxinit()
+        !
+        ! fock2 is the exchange energy calculated for orbitals at step n,
+        !       using orbitals at step n in the expression of exchange 
+        ! fock0 is fock2 at previous step
+        !
+        fock0 = fock2
+        fock2 = exxenergy2()
+        !
+        ! check for convergence. dexx is positive definite: if it isn't,
+        ! there is some numerical problem. One such cause could be that
+        ! the treatment of the divergence in exact exchange has failed. 
+        !
+        dexx = fock1 - 0.5D0*(fock0+fock2)
+        IF ( dexx < 0d0 ) CALL errore( 'electrons', 'dexx is negative! &
+           &  Check that exxdiv_treatment is appropriate for the system', 1 )
+        !
+        etot = etot + 0.5D0*fock2 - fock1
+        hwf_energy = hwf_energy + 0.5D0*fock2 - fock1
+        IF ( dexx < tr2_final ) THEN
+           WRITE( stdout, 9066 ) '!', etot, hwf_energy, dexx
+        ELSE
+           WRITE( stdout, 9066 ) ' ', etot, hwf_energy, dexx
+        END IF
+        WRITE( stdout, 9062 ) - fock1
+        WRITE( stdout, 9064 ) 0.5D0*fock2
+        !
+        IF ( dexx < tr2_final ) THEN
+           WRITE( stdout, 9101 )
+           RETURN
+        END IF
+        !
+        IF ( adapt_thr ) THEN
+           tr2 = MAX(tr2_multi * dexx, tr2_final)
+           WRITE( stdout, 9121 ) tr2
+        ENDIF
+     ENDIF
+     !
+     WRITE( stdout,'(/5x,"EXX: now go back to refine exchange calculation")')
+     IF(ecutfock < ecutrho) &
+        WRITE(stdout,'(5X,"Cutoff for exact exchange = ",F12.4," Ry")') ecutfock
+     !
+     IF ( check_stop_now() ) THEN
+        WRITE(stdout,'(5x,"Calculation (EXX) stopped after iteration #", &
+                        & i6)') iter
+        conv_elec=.FALSE.
+        CALL seqopn (iunres, 'restart_e', 'formatted', exst)
+        WRITE (iunres, *) iter, tr2, dexx
+        WRITE (iunres, *) fock0, fock1, fock2
+        ! FIXME: et and wg are written to xml file
+        WRITE (iunres, *) (wg(1:nbnd,ik),ik=1,nks)
+        WRITE (iunres, *) (et(1:nbnd,ik),ik=1,nks)
+        CLOSE (unit=iunres, status='keep')
+        RETURN
+     END IF
+     !
+  END DO
+  !
+  WRITE( stdout, 9120 ) iter
+  CALL flush_unit( stdout )
+  !
+  RETURN
+  !
+  ! ... formats
+  !
+9062 FORMAT( '     - averaged Fock potential =',0PF17.8,' Ry' )
+9064 FORMAT( '     + Fock energy             =',0PF17.8,' Ry' )
+9066 FORMAT(/,A1,'    total energy              =',0PF17.8,' Ry' &
+            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
+            /'     est. exchange err (dexx)  =',0PF17.8,' Ry' )
+9101 FORMAT(/'     EXX self-consistency reached' )
+9120 FORMAT(/'     EXX convergence NOT achieved after ',i3,' iterations: stopping' )
+9121 FORMAT(/'     scf convergence threshold =',1PE17.1,' Ry' )
+  !
+END SUBROUTINE electrons
+!
+!----------------------------------------------------------------------------
+SUBROUTINE electrons_scf ( printout )
+  !----------------------------------------------------------------------------
+  !
+  ! ... This routine is a driver of the self-consistent cycle.
+  ! ... It uses the routine c_bands for computing the bands at fixed
+  ! ... Hamiltonian, the routine sum_band to compute the charge density,
+  ! ... the routine v_of_rho to compute the new potential and the routine
+  ! ... mix_rho to mix input and output charge densities.
+  ! ... If printout > 0, prints on output the total energy;
+  ! ... if printout > 1, also prints decomposition into energy contributions
+  !
+  USE kinds,                ONLY : DP
+  USE check_stop,           ONLY : check_stop_now, stopped_by_user
+  USE io_global,            ONLY : stdout, ionode
+  USE cell_base,            ONLY : at, bg, alat, omega, tpiba2
+  USE ions_base,            ONLY : zv, nat, nsp, ityp, tau, compute_eextfor
+  USE basis,                ONLY : starting_pot
+  USE bp,                   ONLY : lelfield
+  USE fft_base,             ONLY : dfftp
+  USE gvect,                ONLY : ngm, gstart, nl, nlm, g, gg, gcutm
+  USE gvecs,                ONLY : doublegrid, ngms
+  USE klist,                ONLY : xk, wk, nelec, ngk, nks, nkstot, lgauss, &
+                                   two_fermi_energies
+  USE lsda_mod,             ONLY : lsda, nspin, magtot, absmag, isk
+  USE vlocal,               ONLY : strf
+  USE wvfct,                ONLY : nbnd, et, npwx, ecutwfc
+  USE ener,                 ONLY : etot, hwf_energy, eband, deband, ehart, &
+                                   vtxc, etxc, etxcc, ewld, demet, epaw, &
+                                   elondon, ef_up, ef_dw, exdm
+  USE scf,                  ONLY : scf_type, scf_type_COPY, bcast_scf_type,&
+                                   create_scf_type, destroy_scf_type, &
+                                   open_mix_file, close_mix_file, &
+                                   rho, rho_core, rhog_core, v, vltot, vrs, &
+                                   kedtau, vnew
+  USE control_flags,        ONLY : mixing_beta, tr2, ethr, niter, nmix, &
+                                   iprint, istep, conv_elec, &
+                                   restart, io_level, do_makov_payne,  &
+                                   gamma_only, iverbosity, textfor,     &
+                                   llondon, scf_must_converge, lxdm, ts_vdw
+  USE io_files,             ONLY : iunwfc, iunmix, nwordwfc, output_drho, &
+                                   iunres, iunefield, seqopn
+  USE buffers,              ONLY : save_buffer, close_buffer
+  USE ldaU,                 ONLY : eth, Hubbard_U, Hubbard_lmax, &
+                                   niter_with_fixed_ns, lda_plus_u
+  USE extfield,             ONLY : tefield, etotefield
+  USE wavefunctions_module, ONLY : evc
+  USE noncollin_module,     ONLY : noncolin, magtot_nc, i_cons,  bfield, &
+                                   lambda, report
+  USE spin_orb,             ONLY : domag
+  USE io_rho_xml,           ONLY : write_rho
+  USE uspp,                 ONLY : okvan
+  USE mp_bands,             ONLY : intra_bgrp_comm
+  USE mp_pools,             ONLY : root_pool, my_pool_id, inter_pool_comm
+  USE mp,                   ONLY : mp_sum, mp_bcast
+  !
+  USE london_module,        ONLY : energy_london
+  USE xdm_module,           ONLY : energy_xdm
+  USE tsvdw_module,         ONLY : EtsvdW
+  !
+  USE paw_variables,        ONLY : okpaw, ddd_paw, total_core_energy, only_paw
+  USE paw_onecenter,        ONLY : PAW_potential
+  USE paw_symmetry,         ONLY : PAW_symmetrize_ddd
+  USE uspp_param,           ONLY : nh, nhm ! used for PAW
+  USE dfunct,               ONLY : newd
+  USE esm,                  ONLY : do_comp_esm, esm_printpot
+  USE iso_c_binding,        ONLY : c_int
+  !
+  USE plugin_variables,     ONLY : plugin_etot
+  !
+  IMPLICIT NONE
+  !
+  INTEGER, INTENT (IN) :: printout
   !
   ! ... a few local variables
   !
@@ -97,96 +354,43 @@ SUBROUTINE electrons()
       i,            &! counter on polarization
       idum,         &! dummy counter on iterations
       iter,         &! counter on iterations
-      ik_,          &! used to read ik from restart file
-      kilobytes
+      ios
+  INTEGER(kind=c_int) :: kilobytes
   REAL(DP) :: &
       tr2_min,     &! estimated error on energy coming from diagonalization
       descf,       &! correction for variational energy
       en_el=0.0_DP,&! electric field contribution to the total energy
       eext=0.0_DP   ! external forces contribution to the total energy
   LOGICAL :: &
-      first
+      first, exst
   !
   ! ... auxiliary variables for calculating and storing temporary copies of
   ! ... the charge density and of the HXC-potential
   !
-  type (scf_type), save :: rhoin ! used to store rho_in of current/next iteration
+  type (scf_type) :: rhoin ! used to store rho_in of current/next iteration
   !
   ! ... external functions
   !
   REAL(DP), EXTERNAL :: ewald, get_clock
-  REAL(DP) :: tr2_final ! final threshold for exx minimization 
-                        ! when using adaptive thresholds.
-  iter = 0
-  ik_  = 0
-  dr2  = 0.0_dp
-  tr2_final = tr2
-  IF (dft_is_hybrid() .AND. adapt_thr ) THEN
-     tr2= tr2_init
-  ENDIF
   !
-  IF ( restart ) THEN
-     !
-     CALL restart_in_electrons( iter, ik_, dr2 )
-     !
-     IF ( ik_ == -1000 ) THEN
-        !
-        conv_elec = .TRUE.
-        !
-        IF ( output_drho /= ' ' ) CALL remove_atomic_rho ()
-        !
-        RETURN
-        !
-     END IF
-     !
-     IF( exx_is_active() ) THEN
-       iter = 0
-       call save_in_electrons( iter, dr2 )
-       WRITE( stdout, '(5x,"EXX: now go back to refine exchange calculation")')
-     ELSE IF ( dft_is_hybrid() .AND. TRIM(starting_wfc) == 'file' ) THEN
-       !
-       ! suggested by Hannu Komsa: useful when several calculations with 
-       ! different values of alpha have to be performed
-       !
-       call exx_restart(.true.)
-       WRITE( stdout, '(5x,"EXX: now go back to refine exchange calculation")')
-     ENDIF
-  END IF
+  iter = 0
+  dr2  = 0.0_dp
+  !
+  ! ... Convergence threshold for iterative diagonalization
+  ! ... for the first scf iteration of each ionic step (after the first),
+  ! ... the threshold is fixed to a default value of 1.D-6
+  !
+  IF ( istep > 0 ) ethr = 1.D-6
+  !
+  IF ( restart ) CALL restart_in_electrons (iter, dr2, ethr, et )
   !
   WRITE( stdout, 9000 ) get_clock( 'PWSCF' )
   !
   CALL memstat( kilobytes )
   IF ( kilobytes > 0 ) WRITE( stdout, 9001 ) kilobytes/1000.0
   !
-  CALL flush_unit( stdout )
-  !
-  IF ( .NOT. lscf ) THEN
-     !
-     CALL non_scf (ik_)
-     !
-     conv_elec = .TRUE.
-     !
-     RETURN
-     !
-  END IF
-  !
   CALL start_clock( 'electrons' )
   !
-  if ( exx_is_active())  then
-     CALL v_of_rho( rho, rho_core, rhog_core, &
-                    ehart, etxc, vtxc, eth, etotefield, charge, v)
-     CALL set_vrs( vrs, vltot, v%of_r, kedtau, v%kin_r, dfftp%nnr, nspin, doublegrid )
-  end if
-  !  
-#ifdef __ENVIRON
-  IF ( do_environ ) THEN
-    vltot_zero = vltot
-    CALL environ_initions( dfftp%nnr, nat, nsp, ityp, zv, tau, alat ) 
-    CALL environ_initcell( dfftp%nnr, dfftp%nr1*dfftp%nr2*dfftp%nr3, &
-                           omega, alat, at ) 
-  END IF
-#endif
-  !  
   CALL flush_unit( stdout )
   !
   ! ... calculates the ewald contribution to total energy
@@ -202,19 +406,10 @@ SUBROUTINE electrons()
   !
   call create_scf_type ( rhoin )
   !
-10 CONTINUE
-  !
-  ! ... Convergence threshold for iterative diagonalization
-  !
-  ! ... for the first scf iteration of each ionic step (after the first),
-  ! ... the threshold is fixed to a default value of 1.D-6
-  !
-  IF ( istep > 0 ) ethr = 1.D-6
-  !
   WRITE( stdout, 9002 )
-  !
   CALL flush_unit( stdout )
-
+  !
+  CALL open_mix_file( iunmix, 'mix', exst )
   !
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !%%%%%%%%%%%%%%%%%%%%          iterate !          %%%%%%%%%%%%%%%%%%%%%
@@ -222,8 +417,11 @@ SUBROUTINE electrons()
   !
   DO idum = 1, niter
      !
-     IF ( check_stop_now() ) RETURN
-     !
+     IF ( check_stop_now() ) THEN
+        conv_elec=.FALSE.
+        CALL save_in_electrons (iter, dr2, ethr, et )
+        GO TO 10
+     END IF
      iter = iter + 1
      !
      WRITE( stdout, 9010 ) iter, ecutwfc, mixing_beta
@@ -233,7 +431,7 @@ SUBROUTINE electrons()
      ! ... Convergence threshold for iterative diagonalization is
      ! ... automatically updated during self consistency
      !
-     IF ( iter > 1 .AND. ik_ == 0 ) THEN
+     IF ( iter > 1 ) THEN
         !
         IF ( iter == 2 ) ethr = 1.D-2
         ethr = MIN( ethr, 0.1D0*dr2 / MAX( 1.D0, nelec ) )
@@ -251,7 +449,8 @@ SUBROUTINE electrons()
      !
      deband_hwf = delta_e()
      !
-     ! save input current density in rhoin
+     ! ... save input density to rhoin
+     !
      call scf_type_COPY( rho, rhoin )
      !
      scf_step: DO
@@ -266,16 +465,16 @@ SUBROUTINE electrons()
         ! ... diagonalization of the KS hamiltonian
         !
         IF ( lelfield ) THEN
-           !
-           CALL c_bands_efield ( iter, ik_, dr2 )
-           !
+           CALL c_bands_efield ( iter )
         ELSE
-           !
-           CALL c_bands( iter, ik_, dr2 )
-           !
+           CALL c_bands( iter )
         END IF
         !
-        IF ( check_stop_now() ) RETURN
+        IF ( stopped_by_user ) THEN
+           conv_elec=.FALSE.
+           CALL save_in_electrons (iter-1, dr2, ethr, et )
+           GO TO 10
+        END IF
         !
         ! ... xk, wk, isk, et, wg are distributed across pools;
         ! ... the first node has a complete copy of xk, wk, isk,
@@ -285,47 +484,47 @@ SUBROUTINE electrons()
         !
         CALL poolrecover( et, nbnd, nkstot, nks )
         !
-        ! ... the new density is computed here
+        ! ... the new density is computed here. For PAW:
+        ! ... sum_band computes new becsum (stored in uspp modules)
+        ! ... and a subtly different copy in rho%bec (scf module)
+        !
         CALL sum_band()
-        ! PAW : sum_band computes new becsum (stored in uspp modules) and a
-        ! subtly different copy in rho%bec (scf module)
         !
         ! ... the Harris-Weinert-Foulkes energy is computed here using only
         ! ... quantities obtained from the input density
         !
         hwf_energy = eband + deband_hwf + (etxc - etxcc) + ewld + ehart + demet
+        If ( okpaw ) hwf_energy = hwf_energy + epaw
+        IF ( lda_plus_u ) hwf_energy = hwf_energy + eth
         !
         IF ( lda_plus_u )  THEN
            !
-           hwf_energy = hwf_energy + eth
-           !
            IF ( iverbosity > 0 .OR. first ) THEN
-            IF (noncolin) THEN
-              CALL write_ns_nc()
-            ELSE
-              CALL write_ns()
-            ENDIF
+              IF (noncolin) THEN
+                 CALL write_ns_nc()
+              ELSE
+                 CALL write_ns()
+              ENDIF
            ENDIF
            !
            IF ( first .AND. istep == 0 .AND. starting_pot == 'atomic' ) THEN
               CALL ns_adj()
               IF (noncolin) THEN
-                rhoin%ns_nc = rho%ns_nc
+                 rhoin%ns_nc = rho%ns_nc
               ELSE
-                rhoin%ns = rho%ns
+                 rhoin%ns = rho%ns
               ENDIF
            END IF
            IF ( iter <= niter_with_fixed_ns ) THEN
               WRITE( stdout, '(/,5X,"RESET ns to initial values (iter <= mixing_fixed_ns)",/)')
               IF (noncolin) THEN
-                rho%ns_nc = rhoin%ns_nc
+                 rho%ns_nc = rhoin%ns_nc
               ELSE
-                rho%ns = rhoin%ns
+                 rho%ns = rhoin%ns
               ENDIF
            END IF
            !
         END IF
-        IF (okpaw) hwf_energy = hwf_energy + epaw
         !
         ! ... calculate total and absolute magnetization
         !
@@ -345,9 +544,10 @@ SUBROUTINE electrons()
         ! ... The mixing should be done on pool 0 only as well, but inside
         ! ... mix_rho there is a call to rho_ddot that in the PAW case 
         ! ... contains a hidden parallelization level on the entire image
+        !
         ! IF ( my_pool_id == root_pool ) 
-        CALL mix_rho &
-             ( rho, rhoin, mixing_beta, dr2, tr2_min, iter, nmix, conv_elec )
+        CALL mix_rho ( rho, rhoin, mixing_beta, dr2, tr2_min, iter, nmix, &
+                       iunmix, conv_elec )
         CALL bcast_scf_type ( rhoin, root_pool, inter_pool_comm )
         CALL mp_bcast ( dr2, root_pool, inter_pool_comm )
         CALL mp_bcast ( conv_elec, root_pool, inter_pool_comm )
@@ -383,8 +583,8 @@ SUBROUTINE electrons()
            !
         END IF
         !
-        not_converged_electrons : &
         IF ( .NOT. conv_elec ) THEN
+           !
            ! ... no convergence yet: calculate new potential from mixed
            ! ... charge density (i.e. the new estimate)
            !
@@ -408,48 +608,28 @@ SUBROUTINE electrons()
            !
            CALL scf_type_COPY( rhoin, rho )
            !
-           ! ... write the charge density to file
-           ! ... also write ldaU ns coeffs and PAW becsum
-           CALL write_rho( rho, nspin )
-           !
-        ELSE not_converged_electrons
+        ELSE 
            !
            ! ... convergence reached:
-           ! ... 1) the output HXC-potential is saved in vr
+           ! ... 1) the output HXC-potential is saved in v
            ! ... 2) vnew contains V(out)-V(in) ( used to correct the forces ).
            !
            vnew%of_r(:,:) = v%of_r(:,:)
-           !
            CALL v_of_rho( rho,rho_core,rhog_core, &
                           ehart, etxc, vtxc, eth, etotefield, charge, v)
+           vnew%of_r(:,:) = v%of_r(:,:) - vnew%of_r(:,:)
            !
            IF (okpaw) THEN
               CALL PAW_potential(rho%bec, ddd_paw, epaw)
               CALL PAW_symmetrize_ddd(ddd_paw)
            ENDIF
-
-           !
-           vnew%of_r(:,:) = v%of_r(:,:) - vnew%of_r(:,:)
            !
            ! ... note that rho is here the output, not mixed, charge density
            ! ... so correction for variational energy is no longer needed
            !
            descf = 0._dp
            !
-        END IF not_converged_electrons
-        !
-        IF ( exx_is_active() ) THEN
-           !
-           fock1 = exxenergy2()
-           fock2 = fock0
-           !
-        ELSE
-           !
-           fock0 = 0.D0
-           fock1 = 0.D0
-           fock2 = 0.D0
-           !
-        END IF
+        END IF 
         !
         ! ... if we didn't cycle before we can exit the do-loop
         !
@@ -457,56 +637,31 @@ SUBROUTINE electrons()
         !
      END DO scf_step
      !
-#ifdef __ENVIRON
-     ! ... computes the external environment contribution to energy and potential
+     plugin_etot = 0.0_dp
      !
-     IF ( do_environ  )  THEN
-       !
-       vltot = vltot_zero
-       !
-       CALL calc_eenviron( dfftp%nnr, nspin, rhoin%of_r, deenviron, esolvent, &
-                           ecavity, epressure, eperiodic, eioncc )
-       !
-       update_venviron = .NOT. conv_elec .AND. dr2 .LT. environ_thr
-       !
-       IF ( update_venviron ) WRITE( stdout, 9200 )
-       !
-       CALL calc_venviron( update_venviron, dfftp%nnr, nspin, dr2, rhoin%of_r, vltot )
-       !
-     END IF
-#endif
+     CALL plugin_scf_energy(plugin_etot,rhoin)
+     !
+     CALL plugin_scf_potential(rhoin,conv_elec,dr2)
      !
      ! ... define the total local potential (external + scf)
      !
-     CALL set_vrs( vrs, vltot, v%of_r, kedtau, v%kin_r, dfftp%nnr, nspin, doublegrid )
+     CALL sum_vrs( dfftp%nnr, nspin, vltot, v%of_r, vrs )
+     !
+     ! ... interpolate the total local potential
+     !
+     CALL interpolate_vrs( dfftp%nnr, nspin, doublegrid, kedtau, v%kin_r, vrs )
      !
      ! ... in the US case we have to recompute the self-consistent
      ! ... term in the nonlocal potential
-     !
      ! ... PAW: newd contains PAW updates of NL coefficients
+     !
      CALL newd()
      !
-     ! ... save converged wfc if they have not been written previously
+     IF ( lelfield ) en_el =  calc_pol ( )
      !
-     IF ( nks == 1 .AND. (io_level < 2) ) &
-        CALL save_buffer ( evc, nwordwfc, iunwfc, nks )
-     !
-     ! ... calculate the polarization
-     !
-     IF ( lelfield ) THEN
-        CALL calc_pol (en_el)
-     ELSE
-        en_el=0.d0 
-     ENDIF
-     !
-     ! ... write recover file
-     !
-     CALL save_in_electrons( iter, dr2 )
-     !
-     IF ( ( MOD( iter, report ) == 0 ) .OR. &
-          ( report /= 0 .AND. conv_elec ) ) THEN
+     IF ( ( MOD(iter,report) == 0 ) .OR. ( report /= 0 .AND. conv_elec ) ) THEN
         !
-        IF ( noncolin .AND. domag .or. i_cons==1) CALL report_mag()
+        IF ( (noncolin .AND. domag) .OR. i_cons==1 .OR. nspin==2) CALL report_mag()
         !
      END IF
      !
@@ -517,11 +672,11 @@ SUBROUTINE electrons()
      IF ( conv_elec .OR. MOD( iter, iprint ) == 0 ) THEN
         !
         IF ( lda_plus_U .AND. iverbosity == 0 ) THEN
-          IF (noncolin) THEN
-            CALL write_ns_nc()
-          ELSE
-            CALL write_ns()
-          ENDIF
+           IF (noncolin) THEN
+              CALL write_ns_nc()
+           ELSE
+              CALL write_ns()
+           ENDIF
         ENDIF
         CALL print_ks_energies()
         !
@@ -538,174 +693,46 @@ SUBROUTINE electrons()
         END IF
      END IF
      !
-     etot = eband + ( etxc - etxcc ) + ewld + ehart + deband + demet + descf +en_el
+     etot = eband + ( etxc - etxcc ) + ewld + ehart + deband + demet + descf
+     !
      IF (okpaw) etot = etot + epaw
+     IF ( lda_plus_u ) etot = etot + eth
+     !
+     IF ( lelfield ) etot = etot + en_el
+     ! not sure about the HWF functional in the above case
      IF( textfor ) THEN
-        eext =  compute_eextfor()
+        eext = alat*compute_eextfor()
         etot = etot + eext
+        hwf_energy = hwf_energy + eext
      END IF
      IF (llondon) THEN
         etot = etot + elondon
         hwf_energy = hwf_energy + elondon
      END IF
-     !
-     etot = etot - 0.5D0*fock0
-     hwf_energy = hwf_energy -0.5D0*fock0
-     !
-     IF ( dft_is_hybrid() .AND. conv_elec ) THEN
-        !
-        first = .NOT. exx_is_active()
-        !
-        CALL exxinit()
-        !
-        IF ( first ) THEN
-           !
-           fock0 = exxenergy2()
-           !
-           CALL v_of_rho( rho, rho_core,rhog_core, &
-                          ehart, etxc, vtxc, eth, etotefield, charge, v)
-           IF (okpaw) CALL PAW_potential(rho%bec, ddd_PAW, epaw)
-           !
-           CALL set_vrs( vrs, vltot, v%of_r, kedtau, v%kin_r, dfftp%nnr, nspin, doublegrid )
-           !
-           conv_elec = .false.
-           iter = 0
-           CALL save_in_electrons( iter, dr2 )
-           WRITE( stdout,'(5x,"EXX: now go back to refine exchange calculation")')
-           WRITE( stdout, * ) fock0
-           !
-           GO TO 10
-           !
-        END IF
-        !
-        fock2 = exxenergy2()
-        !
-        dexx = fock1 - 0.5D0*( fock0 + fock2 )
-        !
-        ! dexx is by definition positive definite. If it is less than
-        ! 0 there is some numerical problem. One such cause could be
-        ! that the exx divergence treatment has failed. 
-        !
-        IF ( dexx < 0d0 ) CALL errore( 'electrons', 'dexx is negative! &
-             & Check that exxdiv_treatment is appropriate for the system.', 1 )
-        !
-        etot = etot  - dexx
-        hwf_energy = hwf_energy - dexx
-        !
-        WRITE( stdout, * ) fock0, fock1, fock2
-        WRITE( stdout, 9066 ) dexx
-        !
-        fock0 = fock2
-        !
+     ! calculate the xdm energy contribution with converged density
+     if (lxdm .and. conv_elec) then
+        exdm = energy_xdm()
+        etot = etot + exdm
+        hwf_energy = hwf_energy + exdm
+     end if
+     IF (ts_vdw) THEN
+        ! factor 2 converts from Ha to Ry units
+        etot = etot + 2.0d0*EtsvdW
+        hwf_energy = hwf_energy + 2.0d0*EtsvdW
      END IF
      !
-     IF ( lda_plus_u ) etot = etot + eth
      IF ( tefield ) THEN
         etot = etot + etotefield
         hwf_energy = hwf_energy + etotefield
      END IF
      !
-#ifdef __ENVIRON
+     ! ... adds possible external contribution from plugins to the energy
      !
-     ! ... adds the external environment contribution to the energy
+     etot = etot + plugin_etot 
      !
-     IF ( do_environ ) etot = etot + deenviron + esolvent + ecavity + & 
-                              epressure + eperiodic + eioncc
-#endif
-     !
-     IF ( ( conv_elec .OR. MOD( iter, iprint ) == 0 ) .AND. .NOT. lmd ) THEN
-        !
-        IF ( dr2 > eps8 ) THEN
-           WRITE( stdout, 9081 ) etot, hwf_energy, dr2
-        ELSE
-           WRITE( stdout, 9083 ) etot, hwf_energy, dr2
-        END IF
-        IF ( only_paw ) WRITE( stdout, 9085 ) etot+total_core_energy
-        !
-        WRITE( stdout, 9060 ) &
-            ( eband + deband ), ehart, ( etxc - etxcc ), ewld
-        !
-        IF ( llondon ) WRITE ( stdout , 9074 ) elondon
-        !
-        IF ( dft_is_hybrid()) THEN
-           WRITE( stdout, 9062 ) - fock1
-           WRITE( stdout, 9064 ) 0.5D0*fock2
-        ENDIF
-        !
-        IF ( textfor)             WRITE( stdout, &
-            '(/5x,"Energy of the external Forces = ", F18.8)' ) eext
-        IF ( tefield )            WRITE( stdout, 9061 ) etotefield
-        IF ( lda_plus_u )         WRITE( stdout, 9065 ) eth
-        IF ( ABS (descf) > eps8 ) WRITE( stdout, 9069 ) descf
-        IF ( okpaw )              WRITE( stdout, 9067 ) epaw
-        !
-        ! ... With Fermi-Dirac population factor, etot is the electronic
-        ! ... free energy F = E - TS , demet is the -TS contribution
-        !
-        IF ( lgauss ) WRITE( stdout, 9070 ) demet
-        !
-     ELSE IF ( conv_elec .AND. lmd ) THEN
-        !
-        IF ( dr2 > eps8 ) THEN
-           WRITE( stdout, 9081 ) etot, hwf_energy, dr2
-        ELSE
-           WRITE( stdout, 9083 ) etot, hwf_energy, dr2
-        END IF
-        !
-     ELSE
-        !
-        IF ( dr2 > eps8 ) THEN
-           WRITE( stdout, 9080 ) etot, hwf_energy, dr2
-        ELSE
-           WRITE( stdout, 9082 ) etot, hwf_energy, dr2
-        END IF
-     END IF
-     !
-#ifdef __ENVIRON
-     IF ( do_environ )  THEN
-        IF ( env_static_permittivity .GT. 1.D0 ) WRITE( stdout, 9201 ) esolvent
-        IF ( env_surface_tension .GT. 0.D0 ) WRITE( stdout, 9202 ) ecavity
-        IF ( env_pressure .NE. 0.D0 ) WRITE( stdout, 9203 ) epressure
-        IF ( env_ioncc_concentration .GT. 0.D0 ) THEN 
-          WRITE( stdout, 9205 ) eioncc
-        ELSE IF ( env_periodicity .NE. 3 ) THEN
-          WRITE( stdout, 9204 ) eperiodic
-        ENDIF
-     ENDIF
-     !
-#endif
-     !
-     IF ( lsda ) WRITE( stdout, 9017 ) magtot, absmag
-     !
-     IF ( noncolin .AND. domag ) &
-        WRITE( stdout, 9018 ) magtot_nc(1:3), absmag
-     !
-     IF ( i_cons == 3 .OR. i_cons == 4 )  &
-        WRITE( stdout, 9071 ) bfield(1), bfield(2), bfield(3)
-     IF ( i_cons /= 0 .AND. i_cons < 4 ) &
-        WRITE( stdout, 9073 ) lambda
-     !
-     CALL flush_unit( stdout )
+     CALL print_energies ( printout )
      !
      IF ( conv_elec ) THEN
-        !
-        IF ( dft_is_hybrid() .AND. dexx > tr2_final ) THEN  
-           !
-           conv_elec = .false.
-           iter = 0
-
-           CALL save_in_electrons( iter, dr2 )
-           !
-           WRITE (stdout,*) " NOW GO BACK TO REFINE HYBRID CALCULATION"
-
-           IF ( adapt_thr ) THEN
-              tr2 = MAX(tr2_multi * dexx, tr2_final)
-              WRITE( stdout, 9121 ) tr2
-           ENDIF
-           !
-           GO TO 10
-           !
-        END IF
         !
         ! ... if system is charged add a Makov-Payne correction to the energy
         !
@@ -715,21 +742,11 @@ SUBROUTINE electrons()
         !
         IF ( do_comp_esm ) CALL esm_printpot()
         !
-        if (idum < niter) then
-          WRITE( stdout, 9110 ) iter
-        else
-          WRITE( stdout, 9122 ) iter
-        endif
+        WRITE( stdout, 9110 ) iter
         !
         ! ... jump to the end
         !
-        IF ( output_drho /= ' ' ) CALL remove_atomic_rho()
-        !
-        CALL stop_clock( 'electrons' )
-        !
-        call destroy_scf_type ( rhoin )
-        !
-        RETURN
+        GO TO 10
         !
      END IF
      !
@@ -738,15 +755,34 @@ SUBROUTINE electrons()
      !
      !CALL forces()
      !
+     ! ... it can be very useful to track internal clocks during
+     ! ... self-consistency for benchmarking purposes
+#if defined(__PW_TRACK_ELECTRON_STEPS)
+     CALL print_clock_pw()
+#endif
+     !
   END DO
   !
   WRITE( stdout, 9101 )
   WRITE( stdout, 9120 ) iter
   !
-  CALL flush_unit( stdout )
+10  CALL flush_unit( stdout )
+  !
+  ! ... exiting: write (unless disables) the charge density to file
+  ! ... (also write ldaU ns coefficients and PAW becsum)
+  !
+  IF ( io_level > -1 ) CALL write_rho( rho, nspin )
+  !
+  ! ... delete mixing info if converged, keep it if not
+  !
+  IF ( conv_elec ) THEN
+     CALL close_mix_file( iunmix, 'delete' )
+  ELSE
+     CALL close_mix_file( iunmix, 'keep' )
+  END IF
   !
   IF ( output_drho /= ' ' ) CALL remove_atomic_rho()
-  !
+  call destroy_scf_type ( rhoin )
   CALL stop_clock( 'electrons' )
   !
   RETURN
@@ -757,54 +793,10 @@ SUBROUTINE electrons()
 9001 FORMAT(/'     per-process dynamical memory: ',f7.1,' Mb' )
 9002 FORMAT(/'     Self-consistent Calculation' )
 9010 FORMAT(/'     iteration #',I3,'     ecut=', F9.2,' Ry',5X,'beta=',F4.2 )
-9017 FORMAT(/'     total magnetization       =', F9.2,' Bohr mag/cell', &
-            /'     absolute magnetization    =', F9.2,' Bohr mag/cell' )
-9018 FORMAT(/'     total magnetization       =',3F9.2,' Bohr mag/cell' &
-       &   ,/'     absolute magnetization    =', F9.2,' Bohr mag/cell' )
 9050 FORMAT(/'     WARNING: integrated charge=',F15.8,', expected=',F15.8 )
-9060 FORMAT(/'     The total energy is the sum of the following terms:',/,&
-            /'     one-electron contribution =',F17.8,' Ry' &
-            /'     hartree contribution      =',F17.8,' Ry' &
-            /'     xc contribution           =',F17.8,' Ry' &
-            /'     ewald contribution        =',F17.8,' Ry' )
-9061 FORMAT( '     electric field correction =',F17.8,' Ry' )
-9062 FORMAT( '     - averaged Fock potential =',F17.8,' Ry' )
-9064 FORMAT( '     + Fock energy             =',F17.8,' Ry' )
-9065 FORMAT( '     Hubbard energy            =',F17.8,' Ry' )
-9066 FORMAT( '     est. exchange err (dexx)  =',F17.8,' Ry' )
-9067 FORMAT( '     one-center paw contrib.   =',F17.8,' Ry' )
-9069 FORMAT( '     scf correction            =',F17.8,' Ry' )
-9070 FORMAT( '     smearing contrib. (-TS)   =',F17.8,' Ry' )
-9071 FORMAT( '     Magnetic field            =',3F12.7,' Ry' )
-9072 FORMAT( '     Magnetic field            =',F12.7, ' Ry' )
-9073 FORMAT( '     lambda                    =',F11.2,' Ry' )
-9074 FORMAT( '     Dispersion Correction     =',F17.8,' Ry' )
-9080 FORMAT(/'     total energy              =',0PF17.8,' Ry' &
-            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
-            /'     estimated scf accuracy    <',0PF17.8,' Ry' )
-9081 FORMAT(/'!    total energy              =',0PF17.8,' Ry' &
-            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
-            /'     estimated scf accuracy    <',0PF17.8,' Ry' )
-9082 FORMAT(/'     total energy              =',0PF17.8,' Ry' &
-            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
-            /'     estimated scf accuracy    <',1PE17.1,' Ry' )
-9083 FORMAT(/'!    total energy              =',0PF17.8,' Ry' &
-            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
-            /'     estimated scf accuracy    <',1PE17.1,' Ry' )
-9085 FORMAT(/'     total all-electron energy =',0PF17.6,' Ry' )
 9101 FORMAT(/'     End of self-consistent calculation' )
 9110 FORMAT(/'     convergence has been achieved in ',i3,' iterations' )
 9120 FORMAT(/'     convergence NOT achieved after ',i3,' iterations: stopping' )
-9122 FORMAT(/'     WARNING: convergence NOT achieved after ',i3,' iterations' )
-9121 FORMAT(/'     scf convergence threshold =',1PE17.1,' Ry' )
-#ifdef __ENVIRON
-9200 FORMAT(/'     add environment contribution to local potential')
-9201 FORMAT( '     solvation energy          =',F17.8,' Ry' ) 
-9202 FORMAT( '     cavitation energy         =',F17.8,' Ry' ) 
-9203 FORMAT( '     PV energy                 =',F17.8,' Ry' ) 
-9204 FORMAT( '     periodic energy correct.  =',F17.8,' Ry' )
-9205 FORMAT( '     ionic charge energy       =',F17.8,' Ry' )
-#endif
   !
   CONTAINS
      !
@@ -836,6 +828,8 @@ SUBROUTINE electrons()
           !
           CALL mp_sum( magtot, intra_bgrp_comm )
           CALL mp_sum( absmag, intra_bgrp_comm )
+          !
+          IF (two_fermi_energies.and.lgauss) bfield(3)=0.5D0*(ef_up-ef_dw)
           !
        ELSE IF ( noncolin ) THEN
           !
@@ -876,33 +870,13 @@ SUBROUTINE electrons()
      END SUBROUTINE compute_magnetization
      !
      !-----------------------------------------------------------------------
-     FUNCTION check_stop_now()
-       !-----------------------------------------------------------------------
-       !
-       USE check_stop,    ONLY : global_check_stop_now => check_stop_now
-       !
-       IMPLICIT NONE
-       !
-       LOGICAL :: check_stop_now
-       INTEGER :: unit
-       !
-       unit = stdout
-       !
-       check_stop_now = global_check_stop_now( unit )
-       !
-       IF ( check_stop_now ) conv_elec = .FALSE.
-       !
-       RETURN
-       !
-     END FUNCTION check_stop_now
-     !
-     !-----------------------------------------------------------------------
      FUNCTION delta_e()
        !-----------------------------------------------------------------------
        ! ... delta_e = - \int rho%of_r(r)  v%of_r(r)
        !               - \int rho%kin_r(r) v%kin_r(r) [for Meta-GGA]
        !               - \sum rho%ns       v%ns       [for LDA+U]
        !               - \sum becsum       D1_Hxc     [for PAW]
+       USE funct,  ONLY : dft_is_meta
        IMPLICIT NONE
        REAL(DP) :: delta_e, delta_e_hub
        !
@@ -942,8 +916,9 @@ SUBROUTINE electrons()
        !                  - \sum \delta becsum       D1         [for PAW]
        ! ... calculates the difference between the Hartree and XC energy
        ! ... at first order in the charge density difference \delta rho(r)
-       IMPLICIT NONE
        !
+       USE funct,  ONLY : dft_is_meta
+       IMPLICIT NONE
        REAL(DP) :: delta_escf, delta_escf_hub
        !
        delta_escf = - SUM( ( rhoin%of_r(:,:)-rho%of_r(:,:) )*v%of_r(:,:) )
@@ -975,7 +950,7 @@ SUBROUTINE electrons()
      END FUNCTION delta_escf
      !
      !-----------------------------------------------------------------------
-     SUBROUTINE calc_pol ( en_el )
+     FUNCTION calc_pol ( ) RESULT ( en_el )
        !-----------------------------------------------------------------------
        !
        USE kinds,     ONLY : DP
@@ -985,7 +960,7 @@ SUBROUTINE electrons()
                              transform_el, efield_cart
        !
        IMPLICIT NONE
-       REAL (DP), INTENT(out) :: en_el
+       REAL (DP) :: en_el
        !
        INTEGER :: i, j 
        REAL(DP):: sca, el_pol_cart(3),  el_pol_acc_cart(3)
@@ -1015,7 +990,8 @@ SUBROUTINE electrons()
           do i=1,3
              do j=1,3
                 !el_pol_cart(i)=el_pol_cart(i)+transform_el(j,i)*el_pol(j)
-                el_pol_cart(i)=el_pol_cart(i)+at(i,j)*el_pol(j)/(dsqrt(at(1,j)**2.d0+at(2,j)**2.d0+at(3,j)**2.d0))
+                el_pol_cart(i)=el_pol_cart(i)+at(i,j)*el_pol(j) / &
+                               (sqrt(at(1,j)**2.d0+at(2,j)**2.d0+at(3,j)**2.d0))
              enddo
           enddo
 
@@ -1060,6 +1036,109 @@ SUBROUTINE electrons()
           endif
        ENDIF
        !
-     END SUBROUTINE calc_pol
+     END FUNCTION calc_pol
      !
-END SUBROUTINE electrons
+     !-----------------------------------------------------------------------
+     SUBROUTINE print_energies ( printout )
+       !-----------------------------------------------------------------------
+       !
+       USE constants, ONLY : eps8
+       INTEGER, INTENT (IN) :: printout
+       !
+       IF ( printout == 0 ) RETURN
+       IF ( ( conv_elec .OR. MOD(iter,iprint) == 0 ) .AND. printout > 1 ) THEN
+          !
+          IF ( dr2 > eps8 ) THEN
+             WRITE( stdout, 9081 ) etot, hwf_energy, dr2
+          ELSE
+             WRITE( stdout, 9083 ) etot, hwf_energy, dr2
+          END IF
+          IF ( only_paw ) WRITE( stdout, 9085 ) etot+total_core_energy
+          !
+          WRITE( stdout, 9060 ) &
+               ( eband + deband ), ehart, ( etxc - etxcc ), ewld
+          !
+          IF ( llondon ) WRITE ( stdout , 9074 ) elondon
+          IF ( lxdm )    WRITE ( stdout , 9075 ) exdm
+          IF ( ts_vdw )  WRITE ( stdout , 9076 ) 2.0d0*EtsvdW
+          IF ( textfor)  WRITE ( stdout , 9077 ) eext
+          IF ( tefield )            WRITE( stdout, 9061 ) etotefield
+          IF ( lda_plus_u )         WRITE( stdout, 9065 ) eth
+          IF ( ABS (descf) > eps8 ) WRITE( stdout, 9069 ) descf
+          IF ( okpaw )              WRITE( stdout, 9067 ) epaw
+          !
+          ! ... With Fermi-Dirac population factor, etot is the electronic
+          ! ... free energy F = E - TS , demet is the -TS contribution
+          !
+          IF ( lgauss ) WRITE( stdout, 9070 ) demet
+          !
+       ELSE IF ( conv_elec ) THEN
+          !
+          IF ( dr2 > eps8 ) THEN
+             WRITE( stdout, 9081 ) etot, hwf_energy, dr2
+          ELSE
+             WRITE( stdout, 9083 ) etot, hwf_energy, dr2
+          END IF
+          !
+       ELSE
+          !
+          IF ( dr2 > eps8 ) THEN
+             WRITE( stdout, 9080 ) etot, hwf_energy, dr2
+          ELSE
+             WRITE( stdout, 9082 ) etot, hwf_energy, dr2
+          END IF
+       END IF
+       !
+       CALL plugin_print_energies()
+       !
+       IF ( lsda ) WRITE( stdout, 9017 ) magtot, absmag
+       !
+       IF ( noncolin .AND. domag ) &
+            WRITE( stdout, 9018 ) magtot_nc(1:3), absmag
+       !
+       IF ( i_cons == 3 .OR. i_cons == 4 )  &
+            WRITE( stdout, 9071 ) bfield(1), bfield(2), bfield(3)
+       IF ( i_cons /= 0 .AND. i_cons < 4 ) &
+            WRITE( stdout, 9073 ) lambda
+       !
+       CALL flush_unit( stdout )
+       !
+       RETURN
+       !
+9017 FORMAT(/'     total magnetization       =', F9.2,' Bohr mag/cell', &
+            /'     absolute magnetization    =', F9.2,' Bohr mag/cell' )
+9018 FORMAT(/'     total magnetization       =',3F9.2,' Bohr mag/cell' &
+       &   ,/'     absolute magnetization    =', F9.2,' Bohr mag/cell' )
+9060 FORMAT(/'     The total energy is the sum of the following terms:',/,&
+            /'     one-electron contribution =',F17.8,' Ry' &
+            /'     hartree contribution      =',F17.8,' Ry' &
+            /'     xc contribution           =',F17.8,' Ry' &
+            /'     ewald contribution        =',F17.8,' Ry' )
+9061 FORMAT( '     electric field correction =',F17.8,' Ry' )
+9065 FORMAT( '     Hubbard energy            =',F17.8,' Ry' )
+9067 FORMAT( '     one-center paw contrib.   =',F17.8,' Ry' )
+9069 FORMAT( '     scf correction            =',F17.8,' Ry' )
+9070 FORMAT( '     smearing contrib. (-TS)   =',F17.8,' Ry' )
+9071 FORMAT( '     Magnetic field            =',3F12.7,' Ry' )
+9073 FORMAT( '     lambda                    =',F11.2,' Ry' )
+9074 FORMAT( '     Dispersion Correction     =',F17.8,' Ry' )
+9075 FORMAT( '     Dispersion XDM Correction =',F17.8,' Ry' )
+9076 FORMAT( '     Dispersion T-S Correction =',F17.8,' Ry' )
+9077 FORMAT( '     External forces energy    =',F17.8,' Ry' )
+9080 FORMAT(/'     total energy              =',0PF17.8,' Ry' &
+            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
+            /'     estimated scf accuracy    <',0PF17.8,' Ry' )
+9081 FORMAT(/'!    total energy              =',0PF17.8,' Ry' &
+            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
+            /'     estimated scf accuracy    <',0PF17.8,' Ry' )
+9082 FORMAT(/'     total energy              =',0PF17.8,' Ry' &
+            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
+            /'     estimated scf accuracy    <',1PE17.1,' Ry' )
+9083 FORMAT(/'!    total energy              =',0PF17.8,' Ry' &
+            /'     Harris-Foulkes estimate   =',0PF17.8,' Ry' &
+            /'     estimated scf accuracy    <',1PE17.1,' Ry' )
+9085 FORMAT(/'     total all-electron energy =',0PF17.6,' Ry' )
+
+  END SUBROUTINE print_energies
+  !
+END SUBROUTINE electrons_scf

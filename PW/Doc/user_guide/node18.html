@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,11 +13,12 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="user_guide.css">
 
+<LINK REL="next" HREF="node19.html">
 <LINK REL="previous" HREF="node17.html">
 <LINK REL="up" HREF="node13.html">
 <LINK REL="next" HREF="node19.html">
@@ -25,26 +26,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html355"
+<A NAME="tex2html363"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html351"
+<A NAME="tex2html359"
   HREF="node13.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html347"
+<A NAME="tex2html353"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html353"
+<A NAME="tex2html361"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html356"
-  HREF="node19.html">5 Troubleshooting</A>
-<B> Up:</B> <A NAME="tex2html352"
+<B> Next:</B> <A NAME="tex2html364"
+  HREF="node19.html">4.6 Restarting</A>
+<B> Up:</B> <A NAME="tex2html360"
   HREF="node13.html">4 Performances</A>
-<B> Previous:</B> <A NAME="tex2html348"
+<B> Previous:</B> <A NAME="tex2html354"
   HREF="node17.html">4.4 Parallelization issues</A>
- &nbsp; <B>  <A NAME="tex2html354"
+ &nbsp; <B>  <A NAME="tex2html362"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -53,14 +54,14 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
 <UL>
-<LI><A NAME="tex2html357"
+<LI><A NAME="tex2html365"
   HREF="node18.html#SECTION00055100000000000000">4.5.1 Serial execution</A>
-<LI><A NAME="tex2html358"
+<LI><A NAME="tex2html366"
   HREF="node18.html#SECTION00055200000000000000">4.5.2 Parallel execution</A>
 <UL>
-<LI><A NAME="tex2html359"
+<LI><A NAME="tex2html367"
   HREF="node18.html#SECTION00055210000000000000">4.5.2.1  Quick estimate of parallelization parameters</A>
-<LI><A NAME="tex2html360"
+<LI><A NAME="tex2html368"
   HREF="node18.html#SECTION00055220000000000000">4.5.2.2 Typical symptoms of bad/inadequate parallelization</A>
 </UL></UL>
 <!--End of Table of Child-Links-->
@@ -104,8 +105,7 @@ picture signals some anomaly.
   calculating <I>H</I><IMG
  WIDTH="17" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
  SRC="img4.png"
- ALT="$ \psi$">
-<tex2html_verbatim_mark> products. "cdiaghg" (k-points) or "rdiaghg" (Gamma-only), 
+ ALT="$ \psi$"> products. "cdiaghg" (k-points) or "rdiaghg" (Gamma-only), 
   performing subspace diagonalization, should take only a small fraction.
 </LI>
 <LI>Among the "general routines", most of the time is spent in FFT on Kohn-Sham
@@ -125,8 +125,7 @@ picture signals some anomaly.
  ALT="$ \beta$"><IMG
  WIDTH="12" HEIGHT="39" ALIGN="MIDDLE" BORDER="0"
  SRC="img10.png"
- ALT="$ \rangle$">
-<tex2html_verbatim_mark> products. 
+ ALT="$ \rangle$"> products. 
 </LI>
 <LI>Forces and stresses typically take a fraction of the order of 10 to 20%
   of the total time.
@@ -200,41 +199,32 @@ You need to know
 
 <UL>
 <LI>the number of k-points, <I>N</I><SUB>k</SUB>
-<tex2html_verbatim_mark>
 </LI>
 <LI>the third dimension of the (smooth) FFT grid, <I>N</I><SUB>3</SUB>
-<tex2html_verbatim_mark>
 </LI>
 <LI>the number of Kohn-Sham states, <I>M</I>
-<tex2html_verbatim_mark>
 </LI>
 </UL>
 These data allow to set bounds on parallelization:
 
 <UL>
-<LI>k-point parallelization is limited to <I>N</I><SUB>k</SUB>
-<tex2html_verbatim_mark> processor pools: 
-  <TT>-npool Nk</TT>
+<LI>k-point parallelization is limited to <I>N</I><SUB>k</SUB> processor pools: 
+  <TT>-nk Nk</TT>
 </LI>
-<LI>FFT parallelization shouldn't exceed <I>N</I><SUB>3</SUB>
-<tex2html_verbatim_mark> processors, i.e. if you
-  run with <TT>-npool Nk</TT>, use <!-- MATH
+<LI>FFT parallelization shouldn't exceed <I>N</I><SUB>3</SUB> processors, i.e. if you
+  run with <TT>-nk Nk</TT>, use <!-- MATH
  $N=N_k\times N_3$
  -->
-<I>N</I> = <I>N</I><SUB>k</SUB> <TT>x</TT> <I>N</I><SUB>3</SUB>
-<tex2html_verbatim_mark> MPI processes at most (<TT>mpirun -np N ...</TT>)
+<I>N</I> = <I>N</I><SUB>k</SUB> <TT>x</TT> <I>N</I><SUB>3</SUB> MPI processes at most (<TT>mpirun -np N ...</TT>)
 </LI>
-<LI>Unless <I>M</I>
-<tex2html_verbatim_mark> is a few hundreds or more, don't bother using linear-algebra
+<LI>Unless <I>M</I> is a few hundreds or more, don't bother using linear-algebra
   parallelization
 </LI>
 </UL>
 You will need to experiment a bit to find the best compromise. In order
 to have good load balancing among MPI processes, the number of k-point
-pools should be an integer divisor of <I>N</I><SUB>k</SUB>
-<tex2html_verbatim_mark>; the number of processors for
-FFT parallelization should be an integer divisor of <I>N</I><SUB>3</SUB>
-<tex2html_verbatim_mark>. 
+pools should be an integer divisor of <I>N</I><SUB>k</SUB>; the number of processors for
+FFT parallelization should be an integer divisor of <I>N</I><SUB>3</SUB>. 
 
 <P>
 
@@ -289,31 +279,31 @@ FFT parallelization should be an integer divisor of <I>N</I><SUB>3</SUB>
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html355"
+<A NAME="tex2html363"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html351"
+<A NAME="tex2html359"
   HREF="node13.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html347"
+<A NAME="tex2html353"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html353"
+<A NAME="tex2html361"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html356"
-  HREF="node19.html">5 Troubleshooting</A>
-<B> Up:</B> <A NAME="tex2html352"
+<B> Next:</B> <A NAME="tex2html364"
+  HREF="node19.html">4.6 Restarting</A>
+<B> Up:</B> <A NAME="tex2html360"
   HREF="node13.html">4 Performances</A>
-<B> Previous:</B> <A NAME="tex2html348"
+<B> Previous:</B> <A NAME="tex2html354"
   HREF="node17.html">4.4 Parallelization issues</A>
- &nbsp; <B>  <A NAME="tex2html354"
+ &nbsp; <B>  <A NAME="tex2html362"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Layla Martin-Samos Colomer
-2012-11-21
+paolo giannozzi
+2015-03-08
 </ADDRESS>
 </BODY>
 </HTML>

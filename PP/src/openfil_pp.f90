@@ -15,8 +15,11 @@ SUBROUTINE openfil_pp()
   !
   USE kinds,          ONLY : DP
   USE wvfct,          ONLY : nbnd, npwx
-  USE control_flags,  ONLY:  twfcollect
-  USE io_files,       ONLY : prefix, iunwfc, nwordwfc, diropn
+  USE basis,          ONLY : natomwfc
+  USE ldaU,           ONLY : nwfcU
+  USE control_flags,  ONLY : twfcollect
+  USE io_files,       ONLY : prefix, iunwfc, diropn, &
+                             nwordwfc, nwordatwfc, nwordwfcU
   USE noncollin_module, ONLY : npol
   !
   IMPLICIT NONE
@@ -28,13 +31,21 @@ SUBROUTINE openfil_pp()
   ! ... nwordwfc is the record length for the direct-access file
   ! ... containing wavefunctions
   !
-  nwordwfc = 2 * nbnd * npwx * npol
+  ! NOTE: in post-processing codes, wavefunctions are still opened using
+  !       "diropn" and not "open_buffer" (there is no real advantage in
+  !       using buffers; there would be one if wavefunctions in collected
+  !       format were read into a buffer instead of being written to file
+  !       in distributed format, but this is not yet done). In order to have
+  !       a uniform definition, nwordwfc is defined as in pwscf as the number
+  !       of COMPLEX WORDS of the wavefunction packet.
   !
-  CALL diropn( iunwfc, 'wfc', nwordwfc, exst )
+  nwordwfc = nbnd * npwx * npol
+  nwordwfcU = nwfcU * npwx * npol
+  nwordatwfc = natomwfc * npwx * npol
   !
-  IF ( .not. exst ) THEN
+  CALL diropn( iunwfc, 'wfc', 2*nwordwfc, exst )
+  IF ( .not. exst ) &
      CALL errore ('openfil_pp','file '//trim( prefix )//'.wfc'//' not found',1)
-  ENDIF
   !
   RETURN
   !

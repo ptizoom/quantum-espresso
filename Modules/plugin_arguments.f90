@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2010 Quantum ESPRESSO group
+! Copyright (C) 2010-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -12,7 +12,7 @@ SUBROUTINE plugin_arguments()
   ! check for presence of command-line option "-plugin_name" or "--plugin_name"
   ! where "plugin_name" has to be set here. If such option is found, variable
   ! "use_plugin_name" is set and usage of "plugin_name" is thus enabled.
-  ! Currently implemented: "plumed" (case insensitive)
+  ! Currently implemented: "plumed", "pw2casino" (both case-sensitive)
   !
   USE kinds,         ONLY : DP
   !
@@ -37,6 +37,7 @@ SUBROUTINE plugin_arguments()
   ! add here more plugins
   use_plumed = .false.
   use_pw2casino = .false.
+  use_environ = .false.
   !
   DO iiarg = 1, nargs 
     CALL getarg( iiarg, plugin_name)
@@ -55,6 +56,9 @@ SUBROUTINE plugin_arguments()
        IF ( TRIM(arg)=='pw2casino' ) THEN
           use_pw2casino = .true.
        ENDIF
+       IF ( TRIM(arg)=='environ' ) THEN
+          use_environ = .true.
+       ENDIF
     ENDIF
   ENDDO
   !
@@ -68,7 +72,7 @@ END SUBROUTINE plugin_arguments
   !
   ! broadcast plugin arguments
   !
-  USE mp_global, ONLY : mp_bcast
+  USE mp, ONLY : mp_bcast
   USE plugin_flags
   !
   IMPLICIT NONE
@@ -79,6 +83,8 @@ END SUBROUTINE plugin_arguments
   CALL mp_bcast(use_plumed,root,comm)
   !
   CALL mp_bcast(use_pw2casino,root,comm)
+  !
+  CALL mp_bcast(use_environ,root,comm)
   !
 !  write(0,*) "use_plumed: ", use_plumed
   !

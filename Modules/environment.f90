@@ -11,10 +11,13 @@ MODULE environment
   !==-----------------------------------------------------------------------==!
 
   USE kinds, ONLY: DP
-  USE io_files, ONLY: crash_file, crashunit, nd_nmbr
+  USE io_files, ONLY: crash_file, nd_nmbr
   USE io_global, ONLY: stdout, meta_ionode
-  USE mp_global, ONLY: me_image, my_image_id, root_image, nimage, &
-      nproc_image, nproc, npool, nproc_bgrp, nbgrp, get_ntask_groups
+  USE mp_world,  ONLY: nproc
+  USE mp_images, ONLY: me_image, my_image_id, root_image, nimage, &
+      nproc_image
+  USE mp_pools,  ONLY: npool
+  USE mp_bands,  ONLY: ntask_groups, nproc_bgrp, nbgrp
   USE global_version, ONLY: version_number, svn_revision
 
   IMPLICIT NONE
@@ -40,7 +43,8 @@ CONTAINS
     LOGICAL           :: exst, debug = .false.
     CHARACTER(LEN=80) :: code_version, uname
     CHARACTER(LEN=6), EXTERNAL :: int_to_char
-    INTEGER :: iost
+    INTEGER :: ios, crashunit
+    INTEGER, EXTERNAL :: find_free_unit
 
     ! ... Intel compilers v .ge.8 allocate a lot of stack space
     ! ... Stack limit is often small, thus causing SIGSEGV and crash
@@ -71,9 +75,13 @@ CONTAINS
 
        INQUIRE( FILE=TRIM(crash_file), EXIST=exst )
        IF( exst ) THEN
-          OPEN(  UNIT=crashunit, FILE=TRIM(crash_file), STATUS='OLD',IOSTAT=iost )
-          IF(iost==0) CLOSE( UNIT=crashunit, STATUS='DELETE', IOSTAT=iost )
-          IF(iost/=0) WRITE(stdout,'(5x,"Remark: CRASH file could not ne deleted")')
+          crashunit = find_free_unit()
+          OPEN( UNIT=crashunit, FILE=TRIM(crash_file), STATUS='OLD',IOSTAT=ios )
+          IF (ios==0) THEN
+             CLOSE( UNIT=crashunit, STATUS='DELETE', IOSTAT=ios )
+          ELSE
+             WRITE(stdout,'(5x,"Remark: CRASH file could not be deleted")')
+          END IF
        END IF
 
     ELSE
@@ -88,7 +96,11 @@ CONTAINS
                trim(int_to_char( me_image))
           OPEN ( unit = stdout, file = TRIM(uname),status='unknown')
        ELSE
+#if defined(_WIN32)
+          OPEN ( unit = stdout, file='NUL:', status='unknown' )
+#else
           OPEN ( unit = stdout, file='/dev/null', status='unknown' )
+#endif
        END IF
 
     END IF
@@ -143,7 +155,7 @@ CONTAINS
          &    "395502 (2009);", &
          &/9X," URL http://www.quantum-espresso.org"", ", &
          &/5X,"in publications or presentations arising from this work. More details at",&
-         &/5x,"http://www.quantum-espresso.org/quote.php")' )
+         &/5x,"http://www.quantum-espresso.org/quote")' )
 
     RETURN
   END SUBROUTINE opening_message
@@ -199,9 +211,9 @@ CONTAINS
          '(5X,"band groups division:  nbgrp     = ",I7)' ) nbgrp
     IF ( nproc_bgrp > 1 ) WRITE( stdout, &
          '(5X,"R & G space division:  proc/nbgrp/npool/nimage = ",I7)' ) nproc_bgrp
-    IF ( get_ntask_groups() > 1 ) WRITE( stdout, &
-         '(5X,"wavefunctions fft division:  fft/group = ",I7)' ) &
-         get_ntask_groups()
+    IF ( ntask_groups > 1 ) WRITE( stdout, &
+         '(5X,"wavefunctions fft division:  fft and procs/group = ",2I7)' ) &
+         ntask_groups, nproc_bgrp / ntask_groups
     !
   END SUBROUTINE parallel_info
 

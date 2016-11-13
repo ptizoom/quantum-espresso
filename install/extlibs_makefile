@@ -21,7 +21,7 @@ libblas_external : fake_blas_external
 
 fake_blas_external :
 	touch fake_libblas.a
-	rm fake_libblas.a
+	-rm fake_libblas.a
 
 libblas_internal:
 	if test ! -d ../BLAS; then \
@@ -39,7 +39,7 @@ liblapack_external : fake_lapack_external
 
 fake_lapack_external :
 	touch fake_liblapack.a
-	rm fake_liblapack.a
+	-rm fake_liblapack.a
 
 liblapack_internal:
 	if test ! -d ../lapack-3.2; then \
@@ -67,15 +67,16 @@ libiotk:
 # ELPA
 libelpa : libelpa_$(ELPA_LIBS_SWITCH)
 
+libelpa_ : fake_elpa_external
 libelpa_disabled : fake_elpa_external
 
 fake_elpa_external :
 	touch fake_libelpa.a
-	rm fake_libelpa.a
+	-rm fake_libelpa.a
 
 libelpa_enabled:
 	if test ! -d ../ELPA; then \
-	( gzip -dc ../archive/ELPA-0.2.tar.gz |(cd ../; tar -xvf -)); fi
+	( gzip -dc ../archive/ELPA-0.3.tar.gz |(cd ../; tar -xvf -)); fi
 	cd ../ELPA; $(MAKE)
 	
 ###################################
@@ -96,6 +97,7 @@ elpa_veryclean:
 	if test -d ../ELPA; then (rm -R -f ../ELPA); fi
 iotk_clean:
 	if test -d ../S3DE; then (cd ../S3DE; $(MAKE) clean); fi
+	if test -d ../iotk; then (rm -R -f ../iotk); fi
 	if test -e ../S3DE/iotk/src/iotk.x; then \
 	rm -f ../S3DE/iotk/src/iotk.x; fi
 	(rm -f ../bin/iotk; \
@@ -103,6 +105,7 @@ iotk_clean:
 	rm -f ../bin/iotk_print_kinds.x)
 iotk_veryclean:
 	if test -d ../S3DE; then (rm -R -f ../S3DE); fi
+	if test -d ../iotk; then (rm -R -f ../iotk); fi
 	if test -e ../S3DE/iotk/src/iotk.x; then (rm -f ../S3DE/iotk/src/iotk.x); fi
 	rm -f ../bin/iotk; \
 	rm -f ../bin/iotk.x; \

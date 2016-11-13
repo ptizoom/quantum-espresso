@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2004-2012 Quantum ESPRESSO group
+! Copyright (C) 2004-2014 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -25,7 +25,6 @@ module funct
 !                      get_igcx
 !                      get_igcc
 !                      get_exx_fraction
-!                      dft_name
 !                      write_dft_name
 !  logical functions:  dft_is_gradient
 !                      dft_is_meta
@@ -46,29 +45,32 @@ module funct
   ! subroutines/functions managing dft name and indices
   PUBLIC  :: set_dft_from_indices, set_dft_from_name
   PUBLIC  :: enforce_input_dft, write_dft_name, dft_name
-  PUBLIC  :: init_dft_exxrpa, enforce_dft_exxrpa
-  PUBLIC  :: get_dft_name, get_iexch, get_icorr, get_igcx, get_igcc, get_inlc
-  PUBLIC  :: dft_is_gradient, dft_is_meta, dft_is_hybrid, dft_is_nonlocc
+  PUBLIC  :: get_dft_name
+  PUBLIC  :: get_iexch, get_icorr, get_igcx, get_igcc, get_meta, get_inlc
+  PUBLIC  :: dft_is_gradient, dft_is_meta, dft_is_hybrid, dft_is_nonlocc, igcc_is_lyp
 
   ! additional subroutines/functions for hybrid functionals
   PUBLIC  :: start_exx, stop_exx, get_exx_fraction, exx_is_active
   PUBLIC  :: set_exx_fraction
   PUBLIC  :: set_screening_parameter, get_screening_parameter
+  PUBLIC  :: set_gau_parameter, get_gau_parameter
+
   ! additional subroutines/functions for finite size corrections
   PUBLIC  :: dft_has_finite_size_correction, set_finite_size_volume
+  ! rpa specific
+  PUBLIC  :: init_dft_exxrpa, enforce_dft_exxrpa
+
   ! driver subroutines computing XC
   PUBLIC  :: xc, xc_spin, gcxc, gcx_spin, gcc_spin, gcc_spin_more
   PUBLIC  :: tau_xc , tau_xc_spin, dmxc, dmxc_spin, dmxc_nc
   PUBLIC  :: dgcxc, dgcxc_spin
   PUBLIC  :: nlc
-  ! general XC driver
-  PUBLIC  :: vxc_t, exc_t
   ! vector XC driver
   PUBLIC  :: evxc_t_vec, gcx_spin_vec
   !
   ! PRIVATE variables defining the DFT functional
   !
-  PRIVATE :: dft, dft_shortname, iexch, icorr, igcx, igcc, inlc
+  PRIVATE :: dft, dft_shortname, iexch, icorr, igcx, igcc, imeta, inlc
   PRIVATE :: discard_input_dft
   PRIVATE :: isgradient, ismeta, ishybrid
   PRIVATE :: exx_fraction, exx_started
@@ -78,32 +80,47 @@ module funct
   character (len=25) :: dft = 'not set'
   character (len=6)  :: dft_shortname = ' '
   !
-  ! dft is the exchange-correlation functional, described by
-  ! one of the following keywords ("dft_shortname"):
+  ! "dft" is the exchange-correlation functional label, described either 
+  ! by short names listed below, or by a series of keywords (everything
+  ! is case-insensitive). "dft_shortname" contains one of the short names
+  ! listed below (deduced from from "dft" as read from input or PP files)
+  !
+  !           short name       complete name       Short description
   !              "pz"    = "sla+pz"            = Perdew-Zunger LDA
   !              "bp"    = "b88+p86"           = Becke-Perdew grad.corr.
   !              "pw91"  = "sla+pw+ggx+ggc"    = PW91 (aka GGA)
   !              "blyp"  = "sla+b88+lyp+blyp"  = BLYP
   !              "pbe"   = "sla+pw+pbx+pbc"    = PBE
   !              "revpbe"= "sla+pw+rpb+pbc"    = revPBE (Zhang-Yang)
+  !              "pw86pbe" = "sla+pw+pw86+pbc" = PW86 exchange + PBE correlation
+  !              "b86bpbe" = "sla+pw+b86b+pbc" = B86b exchange + PBE correlation
   !              "pbesol"= "sla+pw+psx+psc"    = PBEsol
   !              "q2d"   = "sla+pw+q2dx+q2dc"  = PBEQ2D
   !              "hcth"  = "nox+noc+hcth+hcth" = HCTH/120
   !              "olyp"  = "nox+lyp+optx+blyp" = OLYP
   !              "wc"    = "sla+pw+wcx+pbc"    = Wu-Cohen
-  !              "sogga  = "sla+pw+sox+pbec"   = SOGGA
+  !              "sogga" = "sla+pw+sox+pbec"   = SOGGA
+  !              "optbk88"="sla+pw+obk8+p86"   = optB88
+  !              "optb86b"="sla+pw+ob86+p86"   = optB86
+  !              "ev93"  = "sla+pw+evx+nogc"   = Engel-Vosko
   !              "tpss"  = "sla+pw+tpss+tpss"  = TPSS Meta-GGA
   !              "m06l"  = "nox+noc+m6lx+m6lc" = M06L Meta-GGA
+  !              "tb09"  = "sla+pw+tb09+tb09"  = TB09 Meta-GGA
   !              "pbe0"  = "pb0x+pw+pb0x+pbc"  = PBE0
-  !              "hse"   = "sla+pw+hse+pbc"    = Heyd-Scuseria-Ernzerhof 
-  !                                              (HSE 06, see note below)
+  !              "hse"   = "sla+pw+hse+pbc"    = Heyd-Scuseria-Ernzerhof (HSE 06, see note below)
   !              "b3lyp" = "b3lp+vwn+b3lp+b3lp"= B3LYP
-  !              "vdw-df"= "sla+pw+rpb+vdw1"   = vdW-DF
-  !              "vdw-df2"="sla+pw+rw86+vdw2"  = vdW-DF2
-  !              "vdw-df-c09"="sla+pw+c09x+vdw1"
-  !              "vdw-df2-c09"="sla+pw+c09x+vdw2"
-  ! or by any nonconflicting combination of the following keywords
-  ! (case-insensitive):
+  !              "gaupbe"= "sla+pw+gaup+pbc"   = Gau-PBE (also "gaup")
+  !              "vdw-df"       ="sla+pw+rpb +vdw1"   = vdW-DF
+  !              "vdw-df2"      ="sla+pw+rw86+vdw2"   = vdW-DF2
+  !              "vdw-df-c09"   ="sla+pw+c09x+vdw1"   = vdW-DF-C09
+  !              "vdw-df2-c09"  ="sla+pw+c09x+vdw2"   = vdW-DF2-C09
+  !              "vdw-df-cx"    ="sla+pw+cx13+vdW1"   = vdW-DF-cx
+  !              "vdw-df-obk8"  ="sla+pw+obk8+vdw1"   = vdW-DF-obk8 (optB88-vdW)
+  !              "vdw-df-ob86"  ="sla+pw+ob86+vdw1"   = vdW-DF-ob86 (optB86b-vdW)
+  !              "vdw-df2-b86r" ="sla+pw+b86r+vdw2"   = vdW-DF2-B86R (rev-vdw-df2)
+  !              "rvv10" = "sla+pw+rw86+pbc+vv10"     = rVV10
+  !
+  ! Any nonconflicting combination of the following keywords is acceptable:
   !
   ! Exchange:    "nox"    none                           iexch=0
   !              "sla"    Slater (alpha=2/3)             iexch=1 (default)
@@ -125,8 +142,7 @@ module funct
   !              "obz"    Ortiz-Ballone form for PZ      icorr=7
   !              "obw"    Ortiz-Ballone form for PW      icorr=8
   !              "gl"     Gunnarson-Lunqvist             icorr=9
-  !              "b3lp"   B3LYP (same as "vwn")          icorr=10
-  !              "kzk"    Finite-size corrections        icorr=11
+  !              "kzk"    Finite-size corrections        icorr=10
   !
   ! Gradient Correction on Exchange:
   !              "nogx"   none                           igcx =0 (default)
@@ -135,7 +151,6 @@ module funct
   !              "pbx"    Perdew-Burke-Ernzenhof exch    igcx =3
   !              "rpb"    revised PBE by Zhang-Yang      igcx =4
   !              "hcth"   Cambridge exch, Handy et al    igcx =5
-  !              "tpss"   TPSS meta-gga                  igcx =7
   !              "optx"   Handy's exchange functional    igcx =6
   !              "pb0x"   PBE0 (PBE exchange*0.75)       igcx =8
   !              "b3lp"   B3LYP (Becke88*0.72)           igcx =9
@@ -144,11 +159,17 @@ module funct
   !              "hse"    HSE screened exchange          igcx =12
   !              "rw86"   revised PW86                   igcx =13
   !              "pbe"    same as PBX, back-comp.        igcx =14
-  !              "meta"   same as TPSS, back-comp.       igcx =15
   !              "c09x"   Cooper 09                      igcx =16
   !              "sox"    sogga                          igcx =17
-  !              "m6lx"   M06L exchange Meta-GGA         igcx =18
   !              "q2dx"   Q2D exchange grad corr         igcx =19
+  !              "gaup"   Gau-PBE hybrid exchange        igcx =20
+  !              "pw86"   Perdew-Wang (1986) exchange    igcx =21
+  !              "b86b"   Becke (1986) exchange          igcx =22
+  !              "obk8"   optB88  exchange               igcx =23
+  !              "ob86"   optB86b exchange               igcx =24
+  !              "evx"    Engel-Vosko exchange           igcx =25
+  !              "b86r"   revised Becke (b86b)           igcx =26
+  !              "cx13"   consistent exchange            igcx =27
   !
   ! Gradient Correction on Correlation:
   !              "nogc"   none                           igcc =0 (default)
@@ -157,18 +178,24 @@ module funct
   !              "blyp"   Lee-Yang-Parr                  igcc =3
   !              "pbc"    Perdew-Burke-Ernzenhof corr    igcc =4
   !              "hcth"   Cambridge corr, Handy et al    igcc =5
-  !              "tpss"   TPSS meta-gga                  igcc =6
   !              "b3lp"   B3LYP (Lee-Yang-Parr*0.81)     igcc =7
   !              "psc"    PBEsol corr                    igcc =8
   !              "pbe"    same as PBX, back-comp.        igcc =9
-  !              "meta"   same as TPSS, back-comp.       igcc =10
-  !              "m6lc"   M06L corr  Meta-GGA            igcc =11
   !              "q2dc"   Q2D correlation grad corr      igcc =12
+  !
+  ! Meta-GGA functionals
+  !              "tpss"   TPSS Meta-GGA                  imeta=1
+  !              "m6lx"   M06L Meta-GGA                  imeta=2
+  !              "tb09"   TB09 Meta-GGA                  imeta=3
   !
   ! Van der Waals functionals (nonlocal term only)
   !             "nonlc"   none                           inlc =0 (default)
-  !              "vdw1"    vdW-DF1                        inlc =1
-  !              "vdw2"    vdW-DF2                        inlc =2
+  !              "vdw1"   vdW-DF1                        inlc =1
+  !              "vdw2"   vdW-DF2                        inlc =2
+  !              "vv10"   rVV10                          inlc =3  
+  !
+  ! Note: as a rule, all keywords should be unique, and should be different
+  ! from the short name, but there are a few exceptions.
   !
   ! References:
   !              pz      J.P.Perdew and A.Zunger, PRB 23, 5048 (1981) 
@@ -181,6 +208,10 @@ module funct
   !              obpw    as above
   !              b88     A.D.Becke, PRA 38, 3098 (1988)
   !              p86     J.P.Perdew, PRB 33, 8822 (1986)
+  !              pw86    J.P.Perdew, PRB 33, 8800 (1986)
+  !              b86b    A.D.Becke, J.Chem.Phys. 85, 7184 (1986) 
+  !              ob86    Klimes, Bowler, Michaelides, PRB 83, 195131 (2011)
+  !              b86r    I. Hamada, Phys. Rev. B 89, 121103(R) (2014)
   !              pbe     J.P.Perdew, K.Burke, M.Ernzerhof, PRL 77, 3865 (1996)
   !              pw91    J.P.Perdew and Y. Wang, PRB 46, 6671 (1992)
   !              blyp    C.Lee, W.Yang, R.G.Parr, PRB 37, 785 (1988)
@@ -197,14 +228,22 @@ module funct
   !                      Heyd, Scuseria, Ernzerhof, J. Chem. Phys. 124, 219906 (2006).
   !              b3lyp   P.J. Stephens,F.J. Devlin,C.F. Chabalowski,M.J. Frisch
   !                      J.Phys.Chem 98, 11623 (1994)
-  !              vdW-DF  M. Dion et al., PRL 92, 246401 (2004)
-  !                      T. Thonhauser et al., PRB 76, 125112 (2007)
-  !              vdw-DF2 Lee et al., Phys. Rev. B 82, 081101 (2010)
+  !              vdW-DF       M. Dion et al., PRL 92, 246401 (2004)
+  !                           T. Thonhauser et al., PRB 76, 125112 (2007)
+  !              vdw-DF2      Lee et al., Phys. Rev. B 82, 081101 (2010)
+  !              rev-vdW-DF2  I. Hamada, Phys. Rev. B 89, 121103(R) (2014)
+  !              vdW-DF-cx    K. Berland and P. Hyldgaard, PRB 89, 035412 (2014)
+  !              vdW-DF-obk8  Klimes et al, J. Phys. Cond. Matter, 22, 022201 (2010)
+  !              vdW-DF-ob86  Klimes et al, Phys. Rev. B, 83, 195131 (2011)
   !              c09x    V. R. Cooper, Phys. Rev. B 81, 161104(R) (2010)
   !              tpss    J.Tao, J.P.Perdew, V.N.Staroverov, G.E. Scuseria, 
   !                      PRL 91, 146401 (2003)
+  !              tb09    F Tran and P Blaha, Phys.Rev.Lett. 102, 226401 (2009) 
   !              sogga   Y. Zhao and D. G. Truhlar, JCP 128, 184109 (2008)
   !              m06l    Y. Zhao and D. G. Truhlar, JCP 125, 194101 (2006)
+  !              gau-pbe J.-W. Song, K. Yamashita, K. Hirao JCP 135, 071103 (2011)
+  !              rVV10   R. Sabatini et al. Phys. Rev. B 87, 041108(R) (2013)
+  !              ev93     Engel-Vosko, Phys. Rev. B 47, 13164 (1993)
   !
   ! NOTE ABOUT HSE: there are two slight deviations with respect to the HSE06 
   ! functional as it is in Gaussian code (that is considered as the reference
@@ -219,59 +258,54 @@ module funct
   !
   integer, parameter:: notset = -1
   !
-  integer :: iexch = notset
-  integer :: icorr = notset
-  integer :: igcx  = notset
-  integer :: igcc  = notset
-  integer :: inlc  = notset
-  real(DP):: exx_fraction = 0.0_DP
-  real(DP):: screening_parameter = 0.0_DP
-  logical :: isgradient  = .false.
-  logical :: ismeta      = .false.
-  logical :: ishybrid    = .false.
-  logical :: exx_started = .false.
-  logical :: has_finite_size_correction = .false.
-  logical :: finite_size_cell_volume_set = .false.
-  real(DP):: finite_size_cell_volume = notset
-  
-  logical :: isnonlocc       = .false.
-
-  logical :: discard_input_dft = .false.
-  !
   ! internal indices for exchange-correlation
   !    iexch: type of exchange
   !    icorr: type of correlation
   !    igcx:  type of gradient correction on exchange
   !    igcc:  type of gradient correction on correlation
   !    inlc:  type of non local correction on correlation
+  !    inlc:  type of meta-GGA
+  integer :: iexch = notset
+  integer :: icorr = notset
+  integer :: igcx  = notset
+  integer :: igcc  = notset
+  integer :: imeta = notset
+  integer :: inlc  = notset
   !
-  !    ismeta: .TRUE. if gradient correction is of meta-gga type
-  !    ishybrid: .TRUE. if the xc functional is an HF+DFT hybrid like
-  !              PBE0, B3LYP, HSE or HF itself
+  real(DP):: exx_fraction = 0.0_DP
+  real(DP):: screening_parameter = 0.0_DP
+  real(DP):: gau_parameter = 0.0_DP
+  logical :: islda       = .false.
+  logical :: isgradient  = .false.
+  logical :: ismeta      = .false.
+  logical :: ishybrid    = .false.
+  logical :: isnonlocc   = .false.
+  logical :: exx_started = .false.
+  logical :: has_finite_size_correction = .false.
+  logical :: finite_size_cell_volume_set = .false.
+  real(DP):: finite_size_cell_volume = notset
+  logical :: discard_input_dft = .false.
   !
-  ! see comments above and routine "set_dft_from_name" below 
-  !
-  ! data
-  integer :: nxc, ncc, ngcx, ngcc, ncnl
+  integer, parameter:: nxc=8, ncc=10, ngcx=27, ngcc=12, nmeta=3, ncnl=3
+  character (len=4) :: exc, corr, gradx, gradc, meta, nonlocc
+  dimension :: exc (0:nxc), corr (0:ncc), gradx (0:ngcx), gradc (0:ngcc), &
+               meta(0:nmeta), nonlocc (0:ncnl)
 
-  parameter (nxc = 8, ncc =11, ngcx =19, ngcc = 12, ncnl=2)
-
-  character (len=4) :: exc, corr
-  character (len=4) :: gradx, gradc, nonlocc
-  dimension exc (0:nxc), corr (0:ncc), gradx (0:ngcx), gradc (0: ngcc), nonlocc (0: ncnl)
-
-  data exc / 'NOX', 'SLA', 'SL1', 'RXC', 'OEP', 'HF', 'PB0X', 'B3LP', 'KZK' /
+  data exc  / 'NOX', 'SLA', 'SL1', 'RXC', 'OEP', 'HF', 'PB0X', 'B3LP', 'KZK' /
   data corr / 'NOC', 'PZ', 'VWN', 'LYP', 'PW', 'WIG', 'HL', 'OBZ', &
-              'OBW', 'GL' , 'B3LP', 'KZK' /
+              'OBW', 'GL' , 'KZK' /
 
   data gradx / 'NOGX', 'B88', 'GGX', 'PBX',  'RPB', 'HCTH', 'OPTX',&
-               'TPSS', 'PB0X', 'B3LP','PSX', 'WCX', 'HSE', 'RW86', 'PBE', &
-               'META', 'C09X', 'SOX', 'M6LX', 'Q2DX' / 
+               'xxxx', 'PB0X', 'B3LP','PSX', 'WCX', 'HSE', 'RW86', 'PBE', &
+               'xxxx', 'C09X', 'SOX', 'xxxx', 'Q2DX', 'GAUP', 'PW86', 'B86B', &
+               'OBK8', 'OB86', 'EVX', 'B86R', 'CX13' / 
 
-  data gradc / 'NOGC', 'P86', 'GGC', 'BLYP', 'PBC', 'HCTH', 'TPSS',&
-                'B3LP', 'PSC', 'PBE', 'META', 'M6LC', 'Q2DC' / 
+  data gradc / 'NOGC', 'P86', 'GGC', 'BLYP', 'PBC', 'HCTH', 'NONE',&
+               'B3LP', 'PSC', 'PBE', 'xxxx', 'xxxx', 'Q2DC' / 
 
-  data nonlocc / '    ', 'VDW1', 'VDW2' / 
+  data meta  / 'NONE', 'TPSS', 'M06L', 'TB09' / 
+
+  data nonlocc/'NONE', 'VDW1', 'VDW2', 'VV10' / 
 
 CONTAINS
   !-----------------------------------------------------------------------
@@ -282,17 +316,12 @@ CONTAINS
     ! into internal indices iexch, icorr, igcx, igcc
     !
     implicit none
-    ! input
-    character(len=*)               :: dft_
-    ! local
+    character(len=*), intent(in) :: dft_
     integer :: len, l, i
     character (len=50):: dftout
     logical :: dft_defined = .false.
-    logical, external :: matches
     character (len=1), external :: capital
-    integer ::  save_iexch, save_icorr, save_igcx, save_igcc, save_inlc
-    
-    !
+    integer ::  save_iexch, save_icorr, save_igcx, save_igcc, save_meta, save_inlc
     !
     ! Exit if discard_input_dft
     !
@@ -304,6 +333,7 @@ CONTAINS
     save_icorr = icorr
     save_igcx  = igcx
     save_igcc  = igcc
+    save_meta  = imeta
     save_inlc  = inlc
     !
     ! convert to uppercase
@@ -313,237 +343,167 @@ CONTAINS
     do l = 1, len
        dftout (l:l) = capital (dft_(l:l) )
     enddo
-
     !
     ! ----------------------------------------------
-    ! FIRST WE CHECK ALL THE SPECIAL NAMES
-    ! Note: comparison is now done via exact matching
-    !       not using function "matches"
+    ! FIRST WE CHECK ALL THE SHORT NAMES
+    ! Note: comparison is done via exact matching
     ! ----------------------------------------------
     !
+    ! special cases : PZ  (LDA is equivalent to PZ)
+    IF (('PZ' .EQ. TRIM(dftout) ).OR.('LDA' .EQ. TRIM(dftout) )) THEN
+       dft_defined = set_dft_values(1,1,0,0,0,0)
 
-    if ( 'REVPBE' .EQ. TRIM(dftout) ) then
-    ! special case : revPBE
-       call set_dft_value (iexch,1) !Default
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx, 4)
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc, 0)
-       dft_defined = .true.
+    ! special cases : OEP no GC part (nor LDA...) and no correlation by default
+    else IF ('OEP' .EQ. TRIM(dftout) ) THEN
+       dft_defined = set_dft_values(4,0,0,0,0,0)
+
+    ! special cases : HF no GC part (nor LDA...) and no correlation by default
+    else IF ('HF' .EQ. TRIM(dftout) ) THEN
+       dft_defined = set_dft_values(5,0,0,0,0,0)
        
-    else if ('RPBE' .EQ. TRIM(dftout)) then
+    else if ('PBE' .EQ. TRIM(dftout) ) then
+    ! special case : PBE
+       dft_defined = set_dft_values(1,4,3,4,0,0)
+       
+    ! special case : BP = B88 + P86
+    else if ('BP'.EQ. TRIM(dftout) ) then
+       dft_defined = set_dft_values(1,1,1,1,0,0)
+                     
+    ! special case : PW91 = GGX + GGC
+    else if ('PW91'.EQ. TRIM(dftout) ) then
+       dft_defined = set_dft_values(1,4,2,2,0,0)
+
+    elseif ( 'REVPBE' .EQ. TRIM(dftout) ) then
+    ! special case : revPBE
+       dft_defined = set_dft_values(1,4,4,4,0,0)
+
+    else if ('PBESOL'.EQ. TRIM(dftout) ) then
+    ! special case : PBEsol
+       dft_defined = set_dft_values(1,4,10,8,0,0)
+
+    ! special cases : BLYP (note, BLYP=>B88)
+    else IF ('BLYP' .EQ. TRIM(dftout) ) THEN
+       dft_defined = set_dft_values(1,3,1,3,0,0)
+       
+    else if ('OPTBK88' .EQ. TRIM(dftout)) then
+    ! Special case optB88
+       dft_defined = set_dft_values(1,4,23,1,0,0)
+       
+    else if ('OPTB86B' .EQ. TRIM(dftout)) then
+    ! Special case optB86b
+       dft_defined = set_dft_values(1,4,24,1,0,0)
+       
+    else if ('PBC'.EQ. TRIM(dftout) ) then
+    ! special case : PBC  = PW + PBC 
+       dft_defined = set_dft_values(1,4,0,4,0,0)
+       
+    ! special case : HCTH
+    else if ('HCTH'.EQ. TRIM(dftout)) then
+       dft_defined = set_dft_values(0,0,5,5,0,0)
+              
+    ! special case : OLYP = OPTX + LYP
+    else if ('OLYP'.EQ. TRIM(dftout)) then
+       dft_defined = set_dft_values(0,3,6,3,0,0)
+       
+    else if ('WC' .EQ. TRIM(dftout) ) then
+    ! special case : Wu-Cohen
+       dft_defined = set_dft_values(1,4,11,4,0,0)
+       
+    elseif ('PW86PBE' .EQ. TRIM(dftout) ) then
+       ! special case : PW86PBE 
+       dft_defined = set_dft_values(1,4,21,4,0,0)
+
+    elseif ('B86BPBE' .EQ. TRIM(dftout) ) then
+       ! special case : B86BPBE
+       dft_defined = set_dft_values(1,4,22,4,0,0)
+
+    else if ('PBEQ2D' .EQ. TRIM(dftout) .OR. 'Q2D'.EQ. TRIM(dftout) ) then
+    ! special case : PBEQ2D
+       dft_defined = set_dft_values(1,4,19,12,0,0)
+
+    ! special case : SOGGA = SOX + PBEc       
+    else if ('SOGGA' .EQ. TRIM(dftout) ) then
+       dft_defined = set_dft_values(1,4,17,4,0,0)
+    
+    ! special case : Engel-Vosko
+    else if ( 'EV93' .EQ. TRIM(dftout) ) THEN
+       dft_defined = set_dft_values(1,4,25,0,0,0)
+
+    else if ('RPBE' .EQ. TRIM(dftout) ) then
     ! special case : RPBE
          call errore('set_dft_from_name', &
      &   'RPBE (Hammer-Hansen-Norskov) not implemented (revPBE is)',1)
      
     else if ('PBE0'.EQ. TRIM(dftout) ) then
     ! special case : PBE0
-       call set_dft_value (iexch,6)
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx, 8)
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
+       dft_defined = set_dft_values(6,4,8,4,0,0)
        
    else if ('HSE' .EQ. TRIM( dftout) ) then
     ! special case : HSE
-       call set_dft_value (iexch,1) !Default
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx, 12)
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
-       
-    else if ('PBESOL'.EQ. TRIM(dftout) ) then
-    ! special case : PBEsol
-       call set_dft_value (iexch,1) !Default    
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx,10)
-       call set_dft_value (igcc, 8)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
+       dft_defined = set_dft_values(1,4,12,4,0,0)
 
-    else if ('PBEQ2D' .EQ. TRIM(dftout) .OR. 'Q2D'.EQ. TRIM(dftout) ) then
-    ! special case : PBEQ2D
-       call set_dft_value (iexch,1) !Default    
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx,19)
-       call set_dft_value (igcc,12)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
-       
-    else if ('VDW-DF2-C09' .EQ. TRIM(dftout) ) then
-    ! Special case vdW-DF2 with C09 exchange
-       call set_dft_value (iexch, 1)
-       call set_dft_value (icorr, 4)
-       call set_dft_value (igcx, 16)
-       call set_dft_value (igcc, 0)
-       call set_dft_value (inlc, 2)
-       dft_defined = .true.
-
-    else if ('VDW-DF-C09'  .EQ. TRIM(dftout) ) then
-    ! Special case vdW-DF with C09 exchange
-       call set_dft_value (iexch, 1)
-       call set_dft_value (icorr, 4)
-       call set_dft_value (igcx, 16)
-       call set_dft_value (igcc, 0)
-       call set_dft_value (inlc, 1)
-       dft_defined = .true.
-
-   else if ('VDW-DF2' .EQ. TRIM(dftout) ) then
-    ! Special case vdW-DF2
-       call set_dft_value (iexch, 1)
-       call set_dft_value (icorr, 4)
-       call set_dft_value (igcx, 13)
-       call set_dft_value (igcc, 0)
-       call set_dft_value (inlc, 2)
-       dft_defined = .true.
+   else if ( 'GAUP' .EQ. TRIM(dftout) .OR. 'GAUPBE' .EQ. TRIM(dftout) ) then
+    ! special case : GAUPBE
+       dft_defined = set_dft_values(1,4,20,4,0,0)
        
     else if ('VDW-DF' .EQ. TRIM(dftout)) then
     ! Special case vdW-DF
-       call set_dft_value (iexch, 1)
-       call set_dft_value (icorr, 4)
-       call set_dft_value (igcx, 4)
-       call set_dft_value (igcc, 0)
-       call set_dft_value (inlc, 1)       
-       dft_defined = .true.
+       dft_defined = set_dft_values(1,4,4,0,1,0)
+
+    else if ('VDW-DF-CX' .EQ. TRIM(dftout)) then
+    ! Special case vdW-DF-CX
+       dft_defined = set_dft_values(1,4,27,0,1,0)
+
+    else if ('VDW-DF-C09'  .EQ. TRIM(dftout) ) then
+    ! Special case vdW-DF with C09 exchange
+       dft_defined = set_dft_values(1,4,16,0,1,0)
        
-    else if ('PBE' .EQ. TRIM(dftout) ) then
-    ! special case : PBE
-       call set_dft_value (iexch,1) !Default    
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx, 3)
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
-       
-    else if ('WC' .EQ. TRIM(dftout) ) then
-    ! special case : Wu-Cohen
-       call set_dft_value (iexch,1) !Default       
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx,11)
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
+    else if ('VDW-DF-OBK8' .EQ. TRIM(dftout)) then
+    ! Special case vdW-DF-obk8, or vdW-DF + optB88
+       dft_defined = set_dft_values(1,4,23,0,1,0)
+    else if ('VDW-DF3' .EQ. TRIM(dftout) ) then
+       call errore('set_dft_from_name','obsolete XC label, use VDW-DF-OBK8',1)
+
+    else if ('VDW-DF-OB86' .EQ. TRIM(dftout) ) then
+    ! Special case vdW-DF-ob86, or vdW-DF + optB86
+       dft_defined = set_dft_values(1,4,24,0,1,0)
+    else if ('VDW-DF4'.EQ.TRIM(dftout) .OR. 'OPTB86B-VDW'.EQ.TRIM(dftout) ) then
+       call errore('set_dft_from_name','obsolete XC label, use VDW-DF-OB86',1)
+
+    else if ('VDW-DF2-C09' .EQ. TRIM(dftout) ) then
+    ! Special case vdW-DF2 with C09 exchange
+       dft_defined = set_dft_values(1,4,16,0,2,0)
+
+   else if ('VDW-DF2' .EQ. TRIM(dftout) ) then
+    ! Special case vdW-DF2
+       dft_defined = set_dft_values(1,4,13,0,2,0)
+
+    else if ('VDW-DF2-B86R' .EQ. TRIM(dftout) ) then
+    ! Special case vdW-DF2 with B86R
+       dft_defined = set_dft_values(1,4,26,0,2,0)
+    else if ('REV-VDW-DF2' .EQ. TRIM(dftout) ) then
+       call errore('set_dft_from_name','obsolete XC label, use VDW-DF2-B86R',1)
+
+    else if ('RVV10' .EQ. TRIM(dftout) ) then
+    ! Special case rVV10
+       dft_defined = set_dft_values(1,4,13,4,3,0)
        
     else if ('B3LYP'.EQ. TRIM(dftout) ) then
     ! special case : B3LYP hybrid
-       call set_dft_value (iexch,7)
-       call set_dft_value (icorr,2)
-       call set_dft_value (igcx, 9)
-       call set_dft_value (igcc, 7)
-       call set_dft_value (inlc,0) !Default       
-       dft_defined = .true.
-       
-    else if ('PBC'.EQ. TRIM(dftout) ) then
-    ! special case : PBC  = PW + PBC 
-       call set_dft_value (iexch,1) !Default
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx,0) !Default       
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-       
-    ! special case : BP = B88 + P86
-    else if ('BP'.EQ. TRIM(dftout) ) then
-       call set_dft_value (iexch,1) !Default
-       call set_dft_value (icorr,1) !Default
-       call set_dft_value (igcx, 1)
-       call set_dft_value (igcc, 1)
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-                     
-    ! special case : PW91 = GGX + GGC
-    else if ('PW91'.EQ. TRIM(dftout) ) then
-       call set_dft_value (iexch,1) !Default
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx, 2)
-       call set_dft_value (igcc, 2)
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-       
-    ! special case : HCTH
-    else if ('HCTH'.EQ. TRIM(dftout)) then
-       call set_dft_value(iexch,0) ! contained in hcth
-       call set_dft_value(icorr,0) ! contained in hcth
-       call set_dft_value (igcx,5)
-       call set_dft_value (igcc,5)
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-              
-    ! special case : OLYP = OPTX + LYP
-    else if ('OLYP'.EQ. TRIM(dftout)) then
-       call set_dft_value(iexch,0) ! contained in optx
-       call set_dft_value(icorr,3)
-       call set_dft_value(igcx, 6)
-       call set_dft_value(igcc, 3)
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-       
+       dft_defined = set_dft_values(7,2,9,7,0,0)
+     
     ! special case : TPSS meta-GGA Exc
     else IF ('TPSS'.EQ. TRIM(dftout ) ) THEN
-       CALL set_dft_value( iexch, 1 )
-       CALL set_dft_value( icorr, 4 )
-       CALL set_dft_value( igcx,  7 )
-       CALL set_dft_value( igcc,  6 )
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-              
-    ! special cases : OEP no GC part (nor LDA...) and no correlation by default
-    else IF ('OEP' .EQ. TRIM(dftout) ) THEN
-       call set_dft_value (iexch,4) 
-       call set_dft_value (icorr, 0)
-       CALL set_dft_value( igcx,  0 )
-       call set_dft_value (igcc, 0) !Default       
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
+       dft_defined = set_dft_values(1,4,7,6,0,1)
 
-    ! special cases : HF no GC part (nor LDA...) and no correlation by default
-    else IF ('HF' .EQ. TRIM(dftout) ) THEN
-       call set_dft_value (iexch,5) 
-       call set_dft_value (icorr, 0)
-       CALL set_dft_value( igcx,  0 )
-       call set_dft_value (igcc, 0) !Default       
-       call set_dft_value (inlc,0) !Default    
-       dft_defined = .true.
-
-    ! special cases : BLYP (note, BLYP=>B88)
-    else IF ('BLYP' .EQ. TRIM(dftout) ) THEN
-       call set_dft_value (iexch,1) !Default
-       call set_dft_value (icorr,3)
-       CALL set_dft_value( igcx, 1 )
-       call set_dft_value (igcc, 3)
-       call set_dft_value (inlc, 0) !Default    
-       dft_defined = .true.
-
-    ! special cases : PZ  (LDA is equivalent to PZ)
-    else IF (('PZ' .EQ. TRIM(dftout) ).OR.('LDA' .EQ. TRIM(dftout) )) THEN
-       call set_dft_value (iexch,1) 
-       call set_dft_value (icorr, 1) 
-       CALL set_dft_value( igcx,  0)
-       call set_dft_value (igcc, 0)      
-       call set_dft_value (inlc,0)    
-       dft_defined = .true.
-
-    ! special case : SOGGA = SOX + PBEc       
-    else if (matches ('SOGGA', dftout) ) then
-       call set_dft_value (iexch, 1)
-       call set_dft_value (icorr,4)
-       call set_dft_value (igcx,17)
-       call set_dft_value (igcc, 4)
-       call set_dft_value (inlc,0) ! Default    
-       dft_defined = .true.
-     
     ! special case : M06L Meta GGA
-    else if ( matches( 'M06L', dftout ) ) THEN
-       !
-       CALL set_dft_value( iexch, 0 ) ! contained in m6lx
-       CALL set_dft_value( icorr, 0 ) ! contained in m6lc
-       CALL set_dft_value( igcx,  18 )
-       CALL set_dft_value( igcc,  11)
-       call set_dft_value (inlc,0) ! Default  
-       dft_defined = .true.
-    
+    else if ( 'M06L' .EQ. TRIM(dftout) ) THEN
+       dft_defined = set_dft_values(0,0,0,0,0,2)
+
+    ! special case : TB09 meta-GGA Exc
+    else IF ('TB09'.EQ. TRIM(dftout ) ) THEN
+       dft_defined = set_dft_values(0,0,0,0,0,3)
+
     END IF
 
     !
@@ -553,69 +513,38 @@ CONTAINS
     !
     if (.not. dft_defined) then
     
-      ! write(*,"(A,A)") "Setting by parts: ", TRIM(dftout)      
-
-      !  exchange
-      iexch = notset
-      do i = 0, nxc
-         if (matches (exc (i), dftout) ) call set_dft_value (iexch, i)
-      enddo
-      if (iexch .eq. notset) call set_dft_value (iexch,0)
-
-      !  correlation
-      icorr = notset
-      do i = 0, ncc
-         if (matches (corr (i), dftout) ) call set_dft_value (icorr, i)
-      enddo
-      if (icorr .eq. notset) call set_dft_value (icorr,0)
-
-      !  gradient correction, exchange
-      igcx = notset
-      do i = 0, ngcx
-         if (matches (gradx (i), dftout) ) call set_dft_value (igcx, i)
-      enddo
-      if (igcx .eq. notset) call set_dft_value (igcx,0)
-    
-      !  gradient correction, correlation
-      igcc = notset
-      do i = 0, ngcc
-         if (matches (gradc (i), dftout) ) call set_dft_value (igcc, i)
-      enddo
-      if (igcc .eq. notset) call set_dft_value (igcc,0)
-    
-      !  non-local correlation
-      !     THE LOOP IS REVERSED TO HANDLE THE VDW2 CASE BEFORE THE VDW
-      inlc = notset
-      do i = ncnl ,1, -1
-         if (matches (nonlocc (i), dftout) ) call set_dft_value (inlc, i)
-      enddo
-      if (inlc .eq. notset) call set_dft_value (inlc,0)
-        
+      iexch = matching (dftout,  nxc, exc) 
+      icorr = matching (dftout,  ncc, corr) 
+      igcx  = matching (dftout, ngcx,gradx) 
+      igcc  = matching (dftout, ngcc,gradc) 
+      imeta = matching (dftout,nmeta, meta) 
+      inlc  = matching (dftout, ncnl, nonlocc) 
+ 
     endif
 
     ! ----------------------------------------------------------------
     ! Last check
-    ! No more defaults, the code exit if the dft is not defined
+    ! No more defaults, the code exits if the dft is not defined
     ! ----------------------------------------------------------------
 
     ! Back compatibility - TO BE REMOVED
- 
-    if (igcx == 14) igcx = 3 ! PBE -> PBX
-    if (igcc == 9) igcc = 4  ! PBE -> PBC
 
-    if (igcx == 15) igcx = 7 ! TPSS -> META
-    if (igcc == 10) igcc = 6 ! TPSS -> META
+    if (igcx == 14) igcx = 3 ! PBE -> PBX
+    if (igcc ==  9) igcc = 4 ! PBE -> PBC
 
     if (igcx == 6) &
          call errore('set_dft_from_name','OPTX untested! please test',-igcx)
-         
-    if (iexch <=0 .and. &
-       icorr <=0 .and. &
-       igcx <= 0 .and. &
-       igcc <= 0 .and. &
-       inlc <= 0) &
-           call errore('set_dft_from_name','No dft definition was found',0)
 
+    ! check for unrecognized labels
+
+    if ( iexch<=0.and.icorr<=0.and.igcx<=0.and.igcc<= 0.and.imeta<=0 ) then
+        if ( inlc <= 0 .and. trim(dftout) /= 'NOX-NOC') then
+           call errore('set_dft_from_name',trim(dftout)//': unrecognized dft',1)
+        else
+           ! if inlc is the only nonzero index the label is likely wrong
+           call errore('set_dft_from_name',trim(dftout)//': strange dft, please check',inlc)
+        endif
+    endif
     !
     ! Fill variables and exit
     !
@@ -623,7 +552,6 @@ CONTAINS
 
     dftout = exc (iexch) //'-'//corr (icorr) //'-'//gradx (igcx) //'-' &
          &//gradc (igcc) //'-'// nonlocc(inlc)
-
 
     call set_auxiliary_flags
     !
@@ -645,6 +573,10 @@ CONTAINS
        write (stdout,*) igcc, save_igcc
        call errore('set_dft_from_name',' conflicting values for igcc',1)
     end if
+    if (save_meta .ne. notset .and. save_meta .ne. imeta) then
+       write (stdout,*) inlc, save_meta
+       call errore('set_dft_from_name',' conflicting values for imeta',1)
+    end if
     if (save_inlc .ne. notset .and. save_inlc .ne. inlc) then
        write (stdout,*) inlc, save_inlc
        call errore('set_dft_from_name',' conflicting values for inlc',1)
@@ -653,21 +585,41 @@ CONTAINS
     return
   end subroutine set_dft_from_name
   !
+  integer function matching(dft, n, name)
+  implicit none
+  integer, intent(in):: n
+  character(len=*), intent(in):: name(0:n)
+  character(len=*), intent(in):: dft
+  logical, external :: matches
+  integer :: i
+ 
+  matching = notset
+  do i = n, 0, -1
+     if (matches (name (i), trim(dft)) ) then
+        if ( matching == notset ) then
+           ! write(*, '("matches",i2,2X,A,2X,A)') i, name(i), trim(dft)
+           matching = i 
+        else
+           write(*, '(2(2X,i2,2X,A))') i, trim(name(i)), &
+                                   matching, trim(name(matching))
+           call errore ('set_dft', 'two conflicting matching values', 1)
+        end if
+     endif
+  end do
+  if (matching == notset) matching = 0
+  !
+  end function matching
+  !
   !-----------------------------------------------------------------------
   subroutine set_auxiliary_flags
     !-----------------------------------------------------------------------
     ! set logical flags describing the complexity of the xc functional
     ! define the fraction of exact exchange used by hybrid fuctionals
     !
-    logical, external :: matches
-
-    !! Reversed as before VDW
-    isgradient =  ( (igcx > 0) .or. ( igcc > 0) )
-
     isnonlocc = (inlc > 0)
-
-    ismeta     =  (igcx == 7) .or. (igcx == 18)
-
+    ismeta    = (imeta > 0)
+    isgradient= (igcx > 0) .or. (igcc > 0) .or. ismeta .or. isnonlocc
+    islda     = (iexch> 0) .and. (icorr > 0) .and. .not. isgradient
     ! PBE0
     IF ( iexch==6 .or. igcx ==8 ) exx_fraction = 0.25_DP
     ! HSE
@@ -675,34 +627,41 @@ CONTAINS
        exx_fraction = 0.25_DP
        screening_parameter = 0.106_DP
     END IF
+    ! gau-pbe
+    IF ( igcx ==20 ) THEN
+       exx_fraction = 0.24_DP
+       gau_parameter = 0.150_DP
+    END IF
     ! HF or OEP
     IF ( iexch==4 .or. iexch==5 ) exx_fraction = 1.0_DP
     !B3LYP
-    IF ( matches( 'B3LP',dft ) .OR. matches( 'B3LYP',dft ) ) &
-                                  exx_fraction = 0.2_DP
+    IF ( iexch == 7 ) exx_fraction = 0.2_DP
+    !
     ishybrid = ( exx_fraction /= 0.0_DP )
 
-    has_finite_size_correction = ( iexch==8 .or. icorr==11)
+    has_finite_size_correction = ( iexch==8 .or. icorr==10)
 
     return
   end subroutine set_auxiliary_flags
   !
   !-----------------------------------------------------------------------
-  subroutine set_dft_value (m, i)
+  logical function set_dft_values (i1,i2,i3,i4,i5,i6)
     !-----------------------------------------------------------------------
     !
     implicit none
-    integer :: m, i
-    ! local
+    integer :: i1,i2,i3,i4,i5,i6
+   
+    iexch=i1
+    icorr=i2
+    igcx =i3
+    igcc =i4
+    inlc =i5
+    imeta=i6
+    set_dft_values = .true.
 
-    if ( m /= notset .and. m /= i) then
-         write(*, '(A,2I4)') "parameters", m, i
-         call errore ('set_dft_value', 'two conflicting matching values', 1)
-    end if
-    m = i
     return
 
-  end subroutine set_dft_value
+  end function set_dft_values
 
   !-----------------------------------------------------------------------
   subroutine enforce_input_dft (dft_, nomsg)
@@ -803,6 +762,20 @@ CONTAINS
      return
   end function get_screening_parameter
   !-----------------------------------------------------------------------
+  subroutine set_gau_parameter (gauparm_)
+     implicit none
+     real(DP):: gauparm_
+     gau_parameter = gauparm_
+     write (stdout,'(5x,a,f12.7)') 'EXX Gau parameter changed: ', &
+          & gau_parameter
+  end subroutine set_gau_parameter
+  !----------------------------------------------------------------------
+  function get_gau_parameter ()
+     real(DP):: get_gau_parameter
+     get_gau_parameter = gau_parameter
+     return
+  end function get_gau_parameter
+  !-----------------------------------------------------------------------
   function get_iexch ()
      integer get_iexch
      get_iexch = iexch
@@ -826,6 +799,12 @@ CONTAINS
      get_igcc = igcc
      return
   end function get_igcc
+  !-----------------------------------------------------------------------
+  function get_meta ()
+     integer get_meta
+     get_meta = imeta
+     return
+  end function get_meta
   !-----------------------------------------------------------------------
   function get_inlc ()
      integer get_inlc
@@ -868,6 +847,12 @@ CONTAINS
      dft_is_hybrid = ishybrid
      return
   end function dft_is_hybrid
+  !-----------------------------------------------------------------------
+  function igcc_is_lyp ()
+     logical :: igcc_is_lyp
+     igcc_is_lyp = (get_igcc() == 3 .or. get_igcc() == 7)
+     return
+  end function igcc_is_lyp
   !-----------------------------------------------------------------------
   function dft_has_finite_size_correction ()
      logical :: dft_has_finite_size_correction
@@ -923,17 +908,20 @@ CONTAINS
      call set_auxiliary_flags
      return
   end subroutine set_dft_from_indices
+
   !---------------------------------------------------------------------
-  subroutine dft_name(iexch_, icorr_, igcx_, igcc_, inlc_, longname_, shortname_)
+  subroutine dft_name(iexch_, icorr_, igcx_, igcc_, inlc_, imeta_,  &
+       longname_, shortname_)
   !---------------------------------------------------------------------
   ! convert the four indices iexch, icorr, igcx, igcc
   ! into user-readable strings
   !
   implicit none
-  integer iexch_, icorr_, igcx_, igcc_, inlc_
+  integer iexch_, icorr_, igcx_, igcc_, imeta_, inlc_
   character (len=6) :: shortname_
   character (len=25):: longname_
   !
+  shortname_ = ' '
   if (iexch_==1.and.igcx_==0.and.igcc_==0) then
      shortname_ = corr(icorr_)
   else if (iexch_==1.and.icorr_==3.and.igcx_==1.and.igcc_==3) then
@@ -956,39 +944,68 @@ CONTAINS
      shortname_ = 'Q2D'
   else if (iexch_==1.and.icorr_==4.and.igcx_==12.and.igcc_==4) then
      shortname_ = 'HSE'
+  else if (iexch_==1.and.icorr_==4.and.igcx_==20.and.igcc_==4) then
+     shortname_ = 'GAUPBE'
   else if (iexch_==1.and.icorr_==4.and.igcx_==11.and.igcc_==4) then
      shortname_ = 'WC'
-  else if (iexch_==7.and.(icorr_==10.or.icorr_==2).and.igcx_==9.and. &
-           igcc_==7) then
+  else if (iexch_==7.and.icorr_==2.and.igcx_==9.and. igcc_==7) then
      shortname_ = 'B3LYP'
   else if (iexch_==0.and.icorr_==3.and.igcx_==6.and.igcc_==3) then
      shortname_ = 'OLYP'
-  else if (iexch_==1.and.icorr_==4.and.igcx_==4.and.igcc_==0.and.inlc_==1) then
-     shortname_ = 'VDW-DF'
-  else if (iexch_==1.and.icorr_==4.and.igcx_==13.and.igcc_==0.and.inlc_==2) then
-     shortname_ = 'VDW-DF2'
-  else if (iexch_==1.and.icorr_==4.and.igcx_==16.and.igcc_==0.and.inlc_==1) then
-     shortname_ = 'VDW-DF-C09'
-  else if (iexch_==1.and.icorr_==4.and.igcx_==16.and.igcc_==0.and.inlc_==2) then
-     shortname_ = 'VDW-DF2-C09'
-  else if (iexch_==0.and.icorr_==0.and.igcx_==18.and.igcc_==11) then
-     shortname_ = 'M06L'
   else if (iexch_==1.and.icorr_==4.and.igcx_==17.and.igcc_==4) then
      shortname_ = 'SOGGA'
-  else
-     shortname_ = ' '
+  else if (iexch_==1.and.icorr_==4.and.igcx_==25.and.igcc_==0) then
+     shortname_ = 'EV93'
   end if
-  write(longname_,'(5a5)') exc(iexch_),corr(icorr_),gradx(igcx_),gradc(igcc_),nonlocc(inlc_)
-  
+
+  if (imeta_ == 1 ) then
+     shortname_ = 'TPSS'
+  else if (imeta_ == 2) then
+     shortname_ = 'M06L'
+  else if (imeta_ == 3) then
+     shortname_ = 'TB09'
+  end if
+
+  if ( inlc_==1) then
+     if (iexch_==1.and.icorr_==4.and.igcx_==4.and.igcc_==0) then
+        shortname_ = 'VDW-DF'
+     else if (iexch_==1.and.icorr_==4.and.igcx_==27.and.igcc_==0) then
+        shortname_ = 'VDW-DF-CX'
+     else if (iexch_==1.and.icorr_==4.and.igcx_==16.and.igcc_==0) then
+        shortname_ = 'VDW-DF-C09'
+     else if (iexch_==1.and.icorr_==4.and.igcx_==24.and.igcc_==0) then
+        shortname_ = 'VDW-DF-OB86'
+     else if (iexch_==1.and.icorr_==4.and.igcx_==23.and.igcc_==0) then
+        shortname_ = 'VDW-DF-OBK8'
+     end if
+  else if ( inlc_==2) then
+     if (iexch_==1.and.icorr_==4.and.igcx_==13.and.igcc_==0) then
+        shortname_ = 'VDW-DF2'
+     else if (iexch_==1.and.icorr_==4.and.igcx_==16.and.igcc_==0) then
+        shortname_ = 'VDW-DF2-C09'
+     else if (iexch_==1.and.icorr_==4.and.igcx_==26.and.igcc_==0) then
+        shortname_ = 'VDW-DF2-B86R'
+     else if ( inlc_==3) then
+        shortname_ = 'RVV10'
+     end if
+  end if
+
+  write(longname_,'(4a5)') exc(iexch_),corr(icorr_),gradx(igcx_),gradc(igcc_)
+  if ( imeta > 0 ) then
+     longname_=longname_(1:20)//trim(meta(imeta_))
+  else if ( inlc_ > 0 ) then
+     longname_=longname_(1:20)//trim(nonlocc(inlc_))
+  end if
+
   return
 end subroutine dft_name
 
 subroutine write_dft_name
 !-----------------------------------------------------------------------
    WRITE( stdout, '(5X,"Exchange-correlation      = ",A, &
-        &  " (",5I2,")")') TRIM( dft ), iexch, icorr, igcx, igcc, inlc
-   WRITE( stdout, '(5X,"EXX-fraction              =",F12.2)') &
-        get_exx_fraction()
+        &  " (",I2,3I3,2I2,")")') TRIM( dft ), iexch,icorr,igcx,igcc,inlc,imeta
+   IF ( get_exx_fraction() > 0.0_dp ) WRITE( stdout, &
+        '(5X,"EXX-fraction              =",F12.2)') get_exx_fraction()
    return
 end subroutine write_dft_name
 
@@ -1091,9 +1108,7 @@ subroutine xc (rho, ex, ec, vx, vc)
      call pw (rs, 2, ec, vc)
   elseif (icorr == 9) then
      call gl (rs, ec, vc)
-  elseif (icorr ==10) then ! b3lyp
-     call vwn (rs, ec, vc)
-  elseif (icorr ==11) then
+  elseif (icorr ==10) then
      if (.NOT. finite_size_cell_volume_set) call errore ('XC',&
           'finite size corrected correlation used w/o initialization',1)
      call pzKZK (rs, ec, vc, finite_size_cell_volume)
@@ -1360,8 +1375,34 @@ subroutine gcxc (rho, grho, sx, sc, v1x, v2x, v1c, v2c)
      call rPW86 (rho, grho, sx, v1x, v2x)
   elseif (igcx ==16) then ! 'C09x'
      call c09x (rho, grho, sx, v1x, v2x)
-  elseif (igcx ==19) then ! 'pbesol'
+  elseif (igcx ==17) then ! 'sogga'
+     call sogga(rho, grho, sx, v1x, v2x)
+  elseif (igcx ==19) then ! 'pbeq2d'
      call pbex (rho, grho, 4, sx, v1x, v2x)
+  elseif (igcx ==20) then ! 'gau-pbe'
+     call pbex (rho, grho, 1, sx, v1x, v2x)
+     if(exx_started) then
+       call pbexgau (rho, grho, sxsr, v1xsr, v2xsr, gau_parameter)
+       sx = sx - exx_fraction * sxsr
+       v1x = v1x - exx_fraction * v1xsr
+       v2x = v2x - exx_fraction * v2xsr
+     endif
+  elseif (igcx == 21) then ! 'pw86'
+     call pw86 (rho, grho, sx, v1x, v2x)
+  elseif (igcx == 22) then ! 'b86b'
+     call becke86b (rho, grho, sx, v1x, v2x)
+     ! call b86b (rho, grho, 1, sx, v1x, v2x)
+  elseif (igcx == 23) then ! 'optB88'
+     call pbex (rho, grho, 5, sx, v1x, v2x)
+  elseif (igcx == 24) then ! 'optB86b'
+     call pbex (rho, grho, 6, sx, v1x, v2x)
+     ! call b86b (rho, grho, 2, sx, v1x, v2x)
+  elseif (igcx == 25) then ! 'ev93'
+     call pbex (rho, grho, 7, sx, v1x, v2x)
+  elseif (igcx == 26) then ! 'b86r'
+     call b86b (rho, grho, 3, sx, v1x, v2x)
+  elseif (igcx == 27) then ! 'cx13'
+     call cx13 (rho, grho, sx, v1x, v2x)
   else
      sx = 0.0_DP
      v1x = 0.0_DP
@@ -1473,13 +1514,15 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
      v2xup = 2.0_DP * v2xup
      v2xdw = 2.0_DP * v2xdw
   elseif (igcx == 3 .or. igcx == 4 .or. igcx == 8 .or. &
-          igcx == 10 .or. igcx == 12) then
+          igcx == 10 .or. igcx == 12 .or. igcx == 20 .or. igcx == 25) then
      ! igcx=3: PBE, igcx=4: revised PBE, igcx=8: PBE0, igcx=10: PBEsol
-     ! igcx=12: HSE
+     ! igcx=12: HSE,  igcx=20: gau-pbe, igcx=25: ev93
      if (igcx == 4) then
         iflag = 2
      elseif (igcx == 10) then
         iflag = 3
+     elseif (igcx == 25) then
+        iflag = 7
      else
         iflag = 1
      endif
@@ -1512,13 +1555,25 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
         call pbexsr_lsd (rhoup, rhodw, grhoup2, grhodw2, sxsr,  &
                          v1xupsr, v2xupsr, v1xdwsr, v2xdwsr, &
                          screening_parameter)
-!        write(*,*) sxsr,v1xsr,v2xsr
         sx  = sx - exx_fraction*sxsr
         v1xup = v1xup - exx_fraction*v1xupsr
         v2xup = v2xup - exx_fraction*v2xupsr
         v1xdw = v1xdw - exx_fraction*v1xdwsr
         v2xdw = v2xdw - exx_fraction*v2xdwsr
      end if
+
+     if (igcx == 20 .and. exx_started ) then
+        ! gau-pbe
+        call pbexgau_lsd (rhoup, rhodw, grhoup2, grhodw2, sxsr,  &
+                         v1xupsr, v2xupsr, v1xdwsr, v2xdwsr, &
+                         gau_parameter)
+        sx  = sx - exx_fraction*sxsr
+        v1xup = v1xup - exx_fraction*v1xupsr
+        v2xup = v2xup - exx_fraction*v2xupsr
+        v1xdw = v1xdw - exx_fraction*v1xdwsr
+        v2xdw = v2xdw - exx_fraction*v2xdwsr
+     end if
+
   elseif (igcx == 9) then
      if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
         call becke88_spin (rhoup, grhoup2, sxup, v1xup, v2xup)
@@ -1544,7 +1599,7 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
        v2xdw = 0.72_DP * v2xdw
      end if
 
-   elseif (igcx == 11) then ! 'Wu-Cohen'
+  elseif (igcx == 11) then ! 'Wu-Cohen'
      if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
         call wcx (2.0_DP * rhoup, 4.0_DP * grhoup2, sxup, v1xup, v2xup)
      else
@@ -1562,6 +1617,83 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
      sx = 0.5_DP * (sxup + sxdw)
      v2xup = 2.0_DP * v2xup
      v2xdw = 2.0_DP * v2xdw
+
+  elseif (igcx == 21) then ! 'PW86'
+     if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
+        call pw86 (2.0_DP * rhoup, 4.0_DP * grhoup2, sxup, v1xup, v2xup)
+     else
+        sxup = 0.0_DP
+        v1xup = 0.0_DP
+        v2xup = 0.0_DP
+     endif
+     if (rhodw > small .and. sqrt (abs (grhodw2) ) > small) then
+        call pw86 (2.0_DP * rhodw, 4.0_DP * grhodw2, sxdw, v1xdw, v2xdw)
+     else
+        sxdw = 0.0_DP
+        v1xdw = 0.0_DP
+        v2xdw = 0.0_DP
+     endif
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+  elseif (igcx == 22) then ! 'B86B'
+     if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
+        call becke86b (2.0_DP * rhoup, 4.0_DP * grhoup2, sxup, v1xup, v2xup)
+     else
+        sxup = 0.0_DP
+        v1xup = 0.0_DP
+        v2xup = 0.0_DP
+     endif
+     if (rhodw > small .and. sqrt (abs (grhodw2) ) > small) then
+        call becke86b (2.0_DP * rhodw, 4.0_DP * grhodw2, sxdw, v1xdw, v2xdw)
+     else
+        sxdw = 0.0_DP
+        v1xdw = 0.0_DP
+        v2xdw = 0.0_DP
+     endif
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+   elseif (igcx == 26) then ! 'B86R for rev-vdW-DF2'
+     if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
+        call b86b (2.0_DP * rhoup, 4.0_DP * grhoup2, 3, sxup, v1xup, v2xup)
+     else
+        sxup = 0.0_DP
+        v1xup = 0.0_DP
+        v2xup = 0.0_DP
+     endif
+     if (rhodw > small .and. sqrt (abs (grhodw2) ) > small) then
+        call b86b (2.0_DP * rhodw, 4.0_DP * grhodw2, 3, sxdw, v1xdw, v2xdw)
+     else
+        sxdw = 0.0_DP
+        v1xdw = 0.0_DP
+        v2xdw = 0.0_DP
+     endif
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+  elseif (igcx == 27) then ! 'cx13 for vdw-df-cx'
+     if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
+        call cx13 (2.0_DP * rhoup, 4.0_DP * grhoup2, sxup, v1xup, v2xup)
+     else
+        sxup = 0.0_DP
+        v1xup = 0.0_DP
+        v2xup = 0.0_DP
+     endif
+     if (rhodw > small .and. sqrt (abs (grhodw2) ) > small) then
+        call cx13 (2.0_DP * rhodw, 4.0_DP * grhodw2, sxdw, v1xdw, v2xdw)
+     else
+        sxdw = 0.0_DP
+        v1xdw = 0.0_DP
+        v2xdw = 0.0_DP
+     endif
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
 
   ! case igcx == 5 (HCTH) and 6 (OPTX) not implemented
   ! case igcx == 7 (meta-GGA) must be treated in a separate call to another
@@ -1600,6 +1732,8 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
   real(DP) :: rho(length), sxup(length), sxdw(length)
   integer :: iflag
   integer :: i
+  ! only used for HSE (igcx == 12):
+  real(DP) :: sxsr, v1xupsr, v2xupsr, v1xdwsr, v2xdwsr
   !
   !
   ! exchange
@@ -1649,12 +1783,15 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
      sx = 0.5_DP * (sxup + sxdw)
      v2xup = 2.0_DP * v2xup
      v2xdw = 2.0_DP * v2xdw
-  case(3,4,8,10)
-     ! igcx=3: PBE, igcx=4: revised PBE, igcx=8 PBE0, igcx=10: PBEsol
+  case(3,4,8,10,12,25)
+     ! igcx=3: PBE, igcx=4: revised PBE, igcx=8 PBE0, igcx=10: PBEsol, 
+     ! igcx=25: EV93
      if (igcx == 4) then
         iflag = 2
      elseif (igcx == 10) then
         iflag = 3
+     elseif (igcx == 25) then
+        iflag = 7
      else
         iflag = 1
      endif
@@ -1670,6 +1807,19 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
         v1xdw = (1.0_DP - exx_fraction) * v1xdw
         v2xup = (1.0_DP - exx_fraction) * v2xup
         v2xdw = (1.0_DP - exx_fraction) * v2xdw
+     end if
+     if (igcx == 12 .and. exx_started ) then
+        ! in this case the subroutine is not really "vector"
+        DO i = 1, length
+          call pbexsr_lsd (rhoup(i), rhodw(i), grhoup2(i), grhodw2(i), sxsr,  &
+                           v1xupsr, v2xupsr, v1xdwsr, v2xdwsr, &
+                           screening_parameter)
+        sx(i)  = sx(i) - exx_fraction*sxsr
+        v1xup(i) = v1xup(i) - exx_fraction*v1xupsr
+        v2xup(i) = v2xup(i) - exx_fraction*v2xupsr
+        v1xdw(i) = v1xdw(i) - exx_fraction*v1xdwsr
+        v2xdw(i) = v2xdw(i) - exx_fraction*v2xdwsr
+        ENDDO
      end if
   case(9)
      do i=1,length
@@ -1709,6 +1859,90 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
         endif
         if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then
            call wcx (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i))
+        else
+           sxdw(i) = 0.0_DP
+           v1xdw(i) = 0.0_DP
+           v2xdw(i) = 0.0_DP
+        endif
+     end do
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+  case(21) ! 'pw86'
+     do i=1,length
+        if (rhoup(i) > small .and. sqrt(abs(grhoup2(i))) > small) then
+           call pw86 (2.0_DP * rhoup(i), 4.0_DP * grhoup2(i), sxup(i), v1xup(i), v2xup(i))
+        else
+           sxup(i) = 0.0_DP
+           v1xup(i) = 0.0_DP
+           v2xup(i) = 0.0_DP
+        endif
+        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then
+           call pw86 (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i))
+        else
+           sxdw(i) = 0.0_DP
+           v1xdw(i) = 0.0_DP
+           v2xdw(i) = 0.0_DP
+        endif
+     end do
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+  case(22) ! 'b86b'
+     do i=1,length
+        if (rhoup(i) > small .and. sqrt(abs(grhoup2(i))) > small) then
+           call becke86b (2.0_DP * rhoup(i), 4.0_DP * grhoup2(i), sxup(i), v1xup(i), v2xup(i))
+        else
+           sxup(i) = 0.0_DP
+           v1xup(i) = 0.0_DP
+           v2xup(i) = 0.0_DP
+        endif
+        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then
+           call becke86b (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i))
+        else
+           sxdw(i) = 0.0_DP
+           v1xdw(i) = 0.0_DP
+           v2xdw(i) = 0.0_DP
+        endif
+     end do
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+  case(26) ! 'B86R for rev-vdW-DF2'
+     do i=1,length
+        if (rhoup(i) > small .and. sqrt(abs(grhoup2(i))) > small) then
+           call b86b (2.0_DP * rhoup(i), 4.0_DP * grhoup2(i), 3, sxup(i), v1xup(i), v2xup(i))
+        else
+           sxup(i) = 0.0_DP
+           v1xup(i) = 0.0_DP
+           v2xup(i) = 0.0_DP
+        endif
+        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then
+           call b86b (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), 3, sxdw(i), v1xdw(i), v2xdw(i))
+        else
+           sxdw(i) = 0.0_DP
+           v1xdw(i) = 0.0_DP
+           v2xdw(i) = 0.0_DP
+        endif
+     end do
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+
+  case(27) ! 'cx13 for vdw-df-cx'
+     do i=1,length
+        if (rhoup(i) > small .and. sqrt(abs(grhoup2(i))) > small) then
+           call cx13 (2.0_DP * rhoup(i), 4.0_DP * grhoup2(i), sxup(i), v1xup(i), v2xup(i))
+        else
+           sxup(i) = 0.0_DP
+           v1xup(i) = 0.0_DP
+           v2xup(i) = 0.0_DP
+        endif
+        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then
+           call cx13 (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i))
         else
            sxdw(i) = 0.0_DP
            v1xdw(i) = 0.0_DP
@@ -1842,7 +2076,7 @@ end subroutine gcc_spin
 !-----------------------------------------------------------------------
 ! 
 !-----------------------------------------------------------------------
-subroutine nlc (rho_valence, rho_core, enl, vnl, v)
+subroutine nlc (rho_valence, rho_core, nspin, enl, vnl, v)
   !-----------------------------------------------------------------------
   !     non local correction for the correlation
   !
@@ -1854,17 +2088,23 @@ subroutine nlc (rho_valence, rho_core, enl, vnl, v)
   !
 
   USE vdW_DF, ONLY: xc_vdW_DF, vdw_type
+  USE rVV10,  ONLY: xc_rVV10
  
   implicit none
   
   REAL(DP), INTENT(IN) :: rho_valence(:,:), rho_core(:)
+  INTEGER, INTENT(IN)  :: nspin
   REAL(DP), INTENT(INOUT) :: v(:,:)
   REAL(DP), INTENT(INOUT) :: enl, vnl
 
   if (inlc == 1 .or. inlc == 2) then
      
      vdw_type = inlc
-     call xc_vdW_DF(rho_valence, rho_core, enl, vnl, v)
+     call xc_vdW_DF(rho_valence, rho_core, nspin, enl, vnl, v)
+
+  elseif (inlc == 3) then
+
+      call xc_rVV10(rho_valence, rho_core, nspin, enl, vnl, v)
   
   else
      enl = 0.0_DP
@@ -1903,18 +2143,14 @@ subroutine tau_xc (rho, grho, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c)
   
   !_________________________________________________________________________
   
-  if     (igcx == 7  .and. igcc == 6) then
-  
+  if     (imeta == 1) then
      call tpsscxc (rho, grho, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c)
-     
-  elseif (igcx == 18 .and. igcc == 11) then
-  
+  elseif (imeta == 2) then
      call   m06lxc (rho, grho, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c)
-     
+  elseif (imeta == 3) then
+     call  tb09cxc (rho, grho, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c)
   else
-  
      call errore('v_xc_meta','wrong igcx and/or igcc',1)
-     
   end if
   
   return
@@ -1924,9 +2160,9 @@ end subroutine tau_xc
 !
 !
 !-----------------------------------------------------------------------
-subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,       &
-           &            v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw, v1cup, v1cdw,   &
-           &            v2cup, v2cdw, v2cup_vec, v2cdw_vec, v3cup, v3cdw)
+subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,   &
+           &            v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw, v1cup, v1cdw,&
+           &            v2cup, v2cdw, v3cup, v3cdw)
 
 !-----------------------------------------------------------------------
   !
@@ -1938,8 +2174,8 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,     
   real(dp), dimension (3), intent(in) :: grhoup, grhodw
   
   real(dp), intent(out)               :: ex, ec, v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw,  &
-                                      &  v1cup, v1cdw, v2cup, v2cdw, v3cup, v3cdw
-  real(dp), dimension(3), intent(out) :: v2cup_vec, v2cdw_vec
+                                      &  v1cup, v1cdw, v3cup, v3cdw
+  real(dp), dimension(3), intent(out) :: v2cup, v2cdw
   
   !
   !  Local variables
@@ -1955,17 +2191,14 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,     
   
   v2cup         = zero
   v2cdw         = zero
-  v2cup_vec (:) = zero
-  v2cdw_vec (:) = zero
-  
-  
+
   do ipol=1,3
      grhoup2 = grhoup2 + grhoup(ipol)**2
      grhodw2 = grhodw2 + grhodw(ipol)**2
   end do
 
   
-  if (igcx == 7 .and. igcc == 6) then
+  if (imeta == 1) then
 
      call tpsscx_spin(rhoup, rhodw, grhoup2, grhodw2, tauup,   &
               &  taudw, ex, v1xup,v1xdw,v2xup,v2xdw,v3xup,v3xdw)
@@ -1976,14 +2209,14 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,     
      atau =  tauup + taudw    ! KE-density in Hartree
 
      call tpsscc_spin(rh,zeta,grhoup,grhodw, atau,ec,              &
-     &                v1cup,v1cdw,v2cup_vec,v2cdw_vec,v3cup, v3cdw) 
+     &                v1cup,v1cdw,v2cup,v2cdw,v3cup, v3cdw) 
   
   
-  elseif (igcx == 18 .and. igcc == 11) then
+  elseif (imeta == 2) then
   
      call   m06lxc_spin (rhoup, rhodw, grhoup2, grhodw2, tauup, taudw,      &
             &            ex, ec, v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw,  &
-            &            v1cup, v1cdw, v2cup, v2cdw, v3cup, v3cdw)
+            &            v1cup, v1cdw, v2cup(1), v2cdw(1), v3cup, v3cdw)
      
   else
   
@@ -2483,95 +2716,6 @@ end subroutine tau_xc_spin
 !------- VECTOR AND GENERAL XC DRIVERS -------------------------------
 !-----------------------------------------------------------------------
 !
-!---------------------------------------------------------------
-subroutine vxc_t(rho,rhoc,lsd,vxc)
-  !---------------------------------------------------------------
-  !
-  !  this function returns the XC potential in LDA or LSDA approximation
-  !
-  use io_global, only : stdout
-  use kinds, only : DP
-  implicit none
-  integer:: lsd
-  real(DP):: vxc(2), rho(2),rhoc,arho,zeta
-  real(DP):: vx(2), vc(2), ex, ec
-  !
-  real(DP), parameter :: e2=2.0_dp, eps=1.e-30_dp
-
-  vxc(1)=0.0_dp
-  if (lsd.eq.1) vxc(2)=0.0_dp
-
-  if (lsd.eq.0) then
-     !
-     !     LDA case
-     !
-     arho=abs(rho(1)+rhoc)
-     if (arho.gt.eps) then      
-        call xc(arho,ex,ec,vx(1),vc(1))
-        vxc(1)=e2*(vx(1)+vc(1))
-     endif
-  else
-     !
-     !     LSDA case
-     !
-     arho = abs(rho(1)+rho(2)+rhoc)
-     if (arho.gt.eps) then      
-        zeta = (rho(1)-rho(2)) / arho
-        ! zeta has to stay between -1 and 1, but can get a little
-        ! out the bound during the first iterations.
-        if (abs(zeta).gt.1.0_dp) zeta = sign(1._dp, zeta)
-        call xc_spin(arho,zeta,ex,ec,vx(1),vx(2),vc(1),vc(2))
-        vxc(1) = e2*(vx(1)+vc(1))
-        vxc(2) = e2*(vx(2)+vc(2))
-     endif
-  endif
-
-  return
-end subroutine vxc_t
-
-
-!---------------------------------------------------------------
-function exc_t(rho,rhoc,lsd)
-  !---------------------------------------------------------------
-  !
-  use kinds, only : DP
-  implicit none
-  integer:: lsd
-  real(DP) :: exc_t, rho(2),arho,rhot, zeta,rhoc
-  real(DP) :: ex, ec, vx(2), vc(2)
-
-  real(DP),parameter:: e2 =2.0_DP
-
-  exc_t=0.0_DP
-
-  if(lsd == 0) then
-     !
-     !     LDA case
-     !
-     rhot = rho(1) + rhoc
-     arho = abs(rhot)
-     if (arho.gt.1.e-30_DP) then      
-        call xc(arho,ex,ec,vx(1),vc(1))
-        exc_t=e2*(ex+ec)
-     endif
-  else
-     !
-     !     LSDA case
-     !
-     rhot = rho(1)+rho(2)+rhoc
-     arho = abs(rhot)
-     if (arho.gt.1.e-30_DP) then      
-        zeta = (rho(1)-rho(2)) / arho
-        ! In atomic this cannot happen, but in PAW zeta can become
-        ! a little larger than 1, or smaller than -1:
-        if( abs(zeta) > 1._dp) zeta = sign(1._dp, zeta)
-        call xc_spin(arho,zeta,ex,ec,vx(1),vx(2),vc(1),vc(2))
-        exc_t=e2*(ex+ec)
-     endif
-  endif
-
-  return
-end function exc_t
 
 subroutine evxc_t_vec(rho,rhoc,lsd,length,vxc,exc)
   !---------------------------------------------------------------
@@ -2632,5 +2776,5 @@ subroutine evxc_t_vec(rho,rhoc,lsd,length,vxc,exc)
 
 end subroutine evxc_t_vec
 
-
 end module funct
+

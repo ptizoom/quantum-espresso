@@ -1,5 +1,5 @@
 
-! Copyright (C) 2001-2011 Quantum ESPRESSO group
+! Copyright (C) 2001-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -7,7 +7,7 @@
 !
 !
 !----------------------------------------------------------------------------
-SUBROUTINE c_bands( iter, ik_, dr2 )
+SUBROUTINE c_bands( iter )
   !----------------------------------------------------------------------------
   !
   ! ... Driver routine for Hamiltonian diagonalization routines
@@ -17,64 +17,47 @@ SUBROUTINE c_bands( iter, ik_, dr2 )
   !
   USE kinds,                ONLY : DP
   USE io_global,            ONLY : stdout
-  USE io_files,             ONLY : iunigk, nwordatwfc, iunsat, iunwfc, &
-                                   nwordwfc
-  USE buffers,              ONLY : get_buffer, save_buffer
+  USE io_files,             ONLY : iunigk, iunhub, iunwfc, nwordwfc, nwordwfcU
+  USE buffers,              ONLY : get_buffer, save_buffer, close_buffer
   USE klist,                ONLY : nkstot, nks, xk, ngk
   USE uspp,                 ONLY : vkb, nkb
   USE gvect,                ONLY : g
   USE wvfct,                ONLY : et, nbnd, npwx, igk, npw, current_k
-  USE control_flags,        ONLY : ethr, isolve, io_level
-  USE ldaU,                 ONLY : lda_plus_u, swfcatom, U_projection
+  USE control_flags,        ONLY : ethr, isolve, restart
+  USE ldaU,                 ONLY : lda_plus_u, U_projection, wfcU
   USE lsda_mod,             ONLY : current_spin, lsda, isk
   USE wavefunctions_module, ONLY : evc
   USE bp,                   ONLY : lelfield
-  USE mp_global,            ONLY : inter_pool_comm
+  USE mp_pools,             ONLY : npool, kunit, inter_pool_comm
   USE mp,                   ONLY : mp_sum
+  USE check_stop,           ONLY : check_stop_now
   !
   IMPLICIT NONE
   !
-  ! ... First the I/O variables
-  !
-  INTEGER :: ik_, iter
-  ! k-point already done
-  ! current iterations
-  REAL(DP),INTENT(IN) :: dr2
-  ! current accuracy of self-consistency
+  INTEGER, INTENT (in) :: iter
   !
   ! ... local variables
   !
   REAL(DP) :: avg_iter
   ! average number of H*psi products
-  INTEGER :: ik
-  ! counter on k points
-  !
-  IF ( ik_ == nks ) THEN
-     !
-     ik_ = 0
-     !
-     RETURN
-     !
-  END IF
+  INTEGER :: ik_, ik, nkdum, ios
+  ! ik : counter on k points
+  ! ik_: k-point already done in a previous run
+  LOGICAL :: exst
   !
   CALL start_clock( 'c_bands' )
   !
-  IF ( isolve == 0 ) THEN
-     !
-     WRITE( stdout, '(5X,"Davidson diagonalization with overlap")' )
-     !
-  ELSE IF ( isolve == 1 ) THEN
-     !
-     WRITE( stdout, '(5X,"CG style diagonalization")')
-     !
-  ELSE
-     !
-     CALL errore ( 'c_bands', 'invalid type of diagonalization', isolve)
-     !!! WRITE( stdout, '(5X,"DIIS style diagonalization")')
-     !
-  END IF
-  !
+  ik_ = 0
   avg_iter = 0.D0
+  IF ( restart ) CALL restart_in_cbands(ik_, ethr, avg_iter, et )
+  !
+  IF ( isolve == 0 ) THEN
+     WRITE( stdout, '(5X,"Davidson diagonalization with overlap")' )
+  ELSE IF ( isolve == 1 ) THEN
+     WRITE( stdout, '(5X,"CG style diagonalization")')
+  ELSE
+     CALL errore ( 'c_bands', 'invalid type of diagonalization', isolve)
+  END IF
   !
   if ( nks > 1 ) REWIND( iunigk )
   !
@@ -83,21 +66,23 @@ SUBROUTINE c_bands( iter, ik_, dr2 )
   k_loop: DO ik = 1, nks
      !
      current_k = ik
-     !
      IF ( lsda ) current_spin = isk(ik)
+     npw = ngk(ik)
      !
      ! ... Reads the list of indices k+G <-> G of this k point
      !
      IF ( nks > 1 ) READ( iunigk ) igk
      !
-     npw = ngk(ik)
+     ! ... Dirty restart trick: iunigk is sequential so it has to be read
+     ! ... for all k-points, or else the wrong igk would be read.
+     ! ... Calculated wavefunctions have to be read from buffer.
+     ! ... (not for a single k-point: this is done in wfcinit, 
+     ! ...  directly from file, in order to avoid wasting memory)
      !
-     ! ... do not recalculate k-points if restored from a previous run
-     !
-     IF ( ik <= ik_ ) THEN
-        !
+     IF ( ik < ik_+1 ) THEN
+        IF ( nks > 1 .OR. lelfield ) &
+           CALL get_buffer ( evc, nwordwfc, iunwfc, ik )
         CYCLE k_loop
-        !
      END IF
      !
      ! ... various initializations
@@ -110,13 +95,13 @@ SUBROUTINE c_bands( iter, ik_, dr2 )
      !
      ! ... read in wavefunctions from the previous iteration
      !
-     IF ( nks > 1 .OR. (io_level > 1) .OR. lelfield ) &
+     IF ( nks > 1 .OR. lelfield ) &
           CALL get_buffer ( evc, nwordwfc, iunwfc, ik )
      !
      ! ... Needed for LDA+U
      !
-     IF ( lda_plus_u .AND. (U_projection .NE. 'pseudo') ) &
-        CALL davcio( swfcatom, nwordatwfc, iunsat, ik, -1 )
+     IF ( nks > 1 .AND. lda_plus_u .AND. (U_projection .NE. 'pseudo') ) &
+          CALL get_buffer ( wfcU, nwordwfcU, iunhub, ik )
      !
      ! ... diagonalization of bands for k-point ik
      !
@@ -126,19 +111,25 @@ SUBROUTINE c_bands( iter, ik_, dr2 )
      ! ... iterative diagonalization of the next scf iteration
      ! ... and for rho calculation
      !
-     IF ( nks > 1 .OR. (io_level > 1) .OR. lelfield ) &
+     IF ( nks > 1 .OR. lelfield ) &
           CALL save_buffer ( evc, nwordwfc, iunwfc, ik )
      !
-     ! ... save restart information
+     ! ... beware: with pools, if the number of k-points on different
+     ! ... pools differs, make sure that all processors are still in
+     ! ... the loop on k-points before checking for stop condition
      !
-     IF ( io_level > 1 ) CALL save_in_cbands( iter, ik, dr2 )
+     nkdum  = kunit * ( nkstot / kunit / npool )
+     !
+     IF (ik .le. nkdum) THEN
+        IF (check_stop_now()) THEN
+           CALL save_in_cbands(ik, ethr, avg_iter, et )
+           RETURN
+        END IF
+     ENDIF
      !
   END DO k_loop
   !
-  ik_ = 0
-  !
   CALL mp_sum( avg_iter, inter_pool_comm )
-  !
   avg_iter = avg_iter / nkstot
   !
   WRITE( stdout, &
@@ -162,14 +153,15 @@ SUBROUTINE diag_bands( iter, ik, avg_iter )
   ! ...
   ! ... internal procedures :
   !
-  ! ... c_bands_gamma()   : optimized algorithms for gamma sampling of the BZ
-  ! ...                     (real Hamiltonian)
-  ! ... c_bands_k()       : general algorithm for arbitrary BZ sampling
+  ! ... diag_bands_gamma(): optimized algorithms for gamma sampling of the BZ
+  ! ...                    (real Hamiltonian)
+  ! ... diag_bands_k()    : general algorithm for arbitrary BZ sampling
   ! ...                     (complex Hamiltonian)
   ! ... test_exit_cond()  : the test on the iterative diagonalization
   !
   !
   USE kinds,                ONLY : DP
+  USE buffers,              ONLY : get_buffer
   USE io_global,            ONLY : stdout
   USE io_files,             ONLY : nwordwfc, iunefieldp, iunefieldm
   USE uspp,                 ONLY : vkb, nkb, okvan
@@ -182,12 +174,13 @@ SUBROUTINE diag_bands( iter, ik, avg_iter )
   USE wavefunctions_module, ONLY : evc
   USE g_psi_mod,            ONLY : h_diag, s_diag
   USE scf,                  ONLY : v_of_0
-  USE bp,                   ONLY : lelfield, evcel, evcelp, evcelm, bec_evcel, gdir, l3dstring, &
-                                   & efield, efield_cry
+  USE bp,                   ONLY : lelfield, evcel, evcelp, evcelm, bec_evcel,&
+                                   gdir, l3dstring, efield, efield_cry
   USE becmod,               ONLY : bec_type, becp, calbec, &
                                    allocate_bec_type, deallocate_bec_type
   USE klist,                ONLY : nks
-  USE mp_global,            ONLY : nproc_bgrp, intra_bgrp_comm
+  USE mp_bands,             ONLY : nproc_bgrp, intra_bgrp_comm
+  USE mp,                   ONLY : mp_sum
   !
   IMPLICIT NONE
   !
@@ -201,7 +194,7 @@ SUBROUTINE diag_bands( iter, ik, avg_iter )
   ! number of iterations in Davidson
   ! number or repeated call to diagonalization in case of non convergence
   ! number of notconverged elements
-  INTEGER :: ierr
+  INTEGER :: ierr, ipw
   !
   LOGICAL :: lrot
   ! .TRUE. if the wfc have already be rotated
@@ -216,18 +209,20 @@ SUBROUTINE diag_bands( iter, ik, avg_iter )
   !
   ! ... allocate space for <beta_i|psi_j> - used in h_psi and s_psi
   !
-  IF ( nbndx > npwx*nproc_bgrp ) &
+  ipw=npwx
+  CALL mp_sum(ipw, intra_bgrp_comm)
+  IF ( nbndx > ipw ) &
      CALL errore ( 'diag_bands', 'too many bands, or too few plane waves',1)
   !
   CALL allocate_bec_type ( nkb, nbnd, becp, intra_bgrp_comm )
   !
   IF ( gamma_only ) THEN
      !
-     CALL c_bands_gamma()
+     CALL diag_bands_gamma()
      !
   ELSE
      !
-     CALL c_bands_k()
+     CALL diag_bands_k()
      !
   END IF
   !
@@ -256,7 +251,7 @@ CONTAINS
   ! ... internal procedures
   !
   !-----------------------------------------------------------------------
-  SUBROUTINE c_bands_gamma()
+  SUBROUTINE diag_bands_gamma()
     !-----------------------------------------------------------------------
     !
     ! ... Diagonalization of a real Hamiltonian
@@ -349,10 +344,10 @@ CONTAINS
     !
     RETURN
     !
-  END SUBROUTINE c_bands_gamma
+  END SUBROUTINE diag_bands_gamma
   !
   !-----------------------------------------------------------------------
-  SUBROUTINE c_bands_k()
+  SUBROUTINE diag_bands_k()
     !-----------------------------------------------------------------------
     !
     ! ... Complex Hamiltonian diagonalization
@@ -376,22 +371,21 @@ CONTAINS
        !... read projectors from disk
        !
        if(.not.l3dstring .and. ABS(efield)>eps ) then
-          CALL davcio(evcelm(:,:,gdir), 2*nwordwfc,iunefieldm,ik+(gdir-1)*nks,-1)
-          CALL davcio(evcelp(:,:,gdir), 2*nwordwfc,iunefieldp,ik+(gdir-1)*nks,-1)
+          CALL get_buffer (evcelm(:,:,gdir), nwordwfc, iunefieldm, ik+(gdir-1)*nks)
+          CALL get_buffer (evcelp(:,:,gdir), nwordwfc, iunefieldp, ik+(gdir-1)*nks)
        else
           do ipol=1,3
              if(ABS(efield_cry(ipol))>eps) then
-                CALL davcio(evcelm(:,:,ipol), 2*nwordwfc,iunefieldm,ik+(ipol-1)*nks,-1)
-                CALL davcio(evcelp(:,:,ipol), 2*nwordwfc,iunefieldp,ik+(ipol-1)*nks,-1)
+                CALL get_buffer (evcelm(:,:,ipol), nwordwfc, iunefieldm, ik+(ipol-1)*nks)
+                CALL get_buffer (evcelp(:,:,ipol), nwordwfc, iunefieldp, ik+(ipol-1)*nks)
              endif
           enddo
        endif
        !
        IF ( okvan ) THEN
           !
-          ALLOCATE( bec_evcel ( nkb, nbnd ), STAT=ierr )
-          IF( ierr /= 0 ) &
-             CALL errore( ' c_bands_k ', ' cannot allocate bec_evcel ', ABS( ierr ) )
+          call allocate_bec_type(nkb,nbnd,bec_evcel)
+          
           !
           CALL calbec(npw, vkb, evcel, bec_evcel)
           !
@@ -493,11 +487,11 @@ CONTAINS
        !
     END IF
     !
-    IF ( lelfield .AND. okvan ) DEALLOCATE( bec_evcel )
+    IF ( lelfield .AND. okvan ) call deallocate_bec_type( bec_evcel) 
     !
     RETURN
     !
-  END SUBROUTINE c_bands_k
+  END SUBROUTINE diag_bands_k
   !
   !-----------------------------------------------------------------------
   FUNCTION test_exit_cond()
@@ -520,7 +514,7 @@ CONTAINS
 END SUBROUTINE diag_bands
 !
 !----------------------------------------------------------------------------
-SUBROUTINE c_bands_efield ( iter, ik_, dr2 )
+SUBROUTINE c_bands_efield ( iter )
   !----------------------------------------------------------------------------
   !
   ! ... Driver routine for Hamiltonian diagonalization under an electric field
@@ -536,8 +530,7 @@ SUBROUTINE c_bands_efield ( iter, ik_, dr2 )
   !
   IMPLICIT NONE
   !
-  INTEGER, INTENT (in) :: iter, ik_
-  REAL(DP), INTENT (in) :: dr2
+  INTEGER, INTENT (in) :: iter
   !
   INTEGER :: inberry, ipol, ierr
   !
@@ -569,7 +562,7 @@ SUBROUTINE c_bands_efield ( iter, ik_, dr2 )
      endif
      call flush_unit(stdout)
      !
-     CALL c_bands( iter, ik_, dr2 )
+     CALL c_bands( iter )
      !
   END DO
   !
@@ -582,8 +575,7 @@ SUBROUTINE c_bands_efield ( iter, ik_, dr2 )
   !
 END SUBROUTINE c_bands_efield
 !
-!----------------------------------------------------------------------------
-SUBROUTINE c_bands_nscf( ik_ )
+SUBROUTINE c_bands_nscf( )
   !----------------------------------------------------------------------------
   !
   ! ... Driver routine for Hamiltonian diagonalization routines
@@ -591,89 +583,69 @@ SUBROUTINE c_bands_nscf( ik_ )
   !
   USE kinds,                ONLY : DP
   USE io_global,            ONLY : stdout
-  USE io_files,             ONLY : iunigk, nwordatwfc, iunsat, iunwfc, &
-                                   nwordwfc
-  USE buffers,              ONLY : get_buffer, save_buffer
+  USE io_files,             ONLY : iunigk, iunhub, iunwfc, nwordwfc, nwordwfcU
+  USE buffers,              ONLY : get_buffer, save_buffer, close_buffer
   USE basis,                ONLY : starting_wfc
   USE klist,                ONLY : nkstot, nks, xk, ngk
   USE uspp,                 ONLY : vkb, nkb
   USE gvect,                ONLY : g
   USE wvfct,                ONLY : et, nbnd, npwx, igk, npw, current_k
-  USE control_flags,        ONLY : ethr, lbands, isolve, io_level, iverbosity
-  USE ldaU,                 ONLY : lda_plus_u, swfcatom, U_projection
+  USE control_flags,        ONLY : ethr, restart, isolve, io_level, iverbosity
+  USE ldaU,                 ONLY : lda_plus_u, U_projection, wfcU
   USE lsda_mod,             ONLY : current_spin, lsda, isk
   USE wavefunctions_module, ONLY : evc
-  USE mp_global,            ONLY : npool, kunit, inter_pool_comm
+  USE mp_pools,             ONLY : npool, kunit, inter_pool_comm
   USE mp,                   ONLY : mp_sum
   USE check_stop,           ONLY : check_stop_now
   !
   IMPLICIT NONE
   !
-  ! ... First the I/O variables
-  !
-  INTEGER :: ik_
-  ! k-point already done
-  !
-  ! ... local variables
-  !
-  REAL(DP) :: avg_iter, dr2=0.d0
+  REAL(DP) :: avg_iter, ethr_
   ! average number of H*psi products
-  INTEGER :: ik, nkdum, iter=1
-  ! counter on k points
+  INTEGER :: ik_, ik, nkdum, ios
+  ! ik_: k-point already done in a previous run
+  ! ik : counter on k points
+  LOGICAL :: exst
   !
   REAL(DP), EXTERNAL :: get_clock
   !
-  IF ( ik_ == nks ) THEN
-     !
-     ik_ = 0
-     !
-     RETURN
-     !
-  END IF
-  !
   CALL start_clock( 'c_bands' )
   !
-  IF ( isolve == 0 ) THEN
-     !
-     WRITE( stdout, '(5X,"Davidson diagonalization with overlap")' )
-     !
-  ELSE IF ( isolve == 1 ) THEN
-     !
-     WRITE( stdout, '(5X,"CG style diagonalization")')
-     !
-  ELSE
-     !
-     CALL errore ( 'c_bands', 'invalid type of diagonalization', isolve)
-     !!! WRITE( stdout, '(5X,"DIIS style diagonalization")')
-     !
-  END IF
-  !
+  ik_ = 0
   avg_iter = 0.D0
+  IF ( restart ) CALL restart_in_cbands(ik_, ethr, avg_iter, et )
+  !
+  IF ( isolve == 0 ) THEN
+     WRITE( stdout, '(5X,"Davidson diagonalization with overlap")' )
+  ELSE IF ( isolve == 1 ) THEN
+     WRITE( stdout, '(5X,"CG style diagonalization")')
+  ELSE
+     CALL errore ( 'c_bands', 'invalid type of diagonalization', isolve)
+  END IF
   !
   if ( nks > 1 ) REWIND( iunigk )
   !
-  ! ... For each k point diagonalizes the hamiltonian
+  ! ... For each k point (except those already calculated if restarting)
+  ! ... diagonalizes the hamiltonian
   !
   k_loop: DO ik = 1, nks
      !
      current_k = ik
-     !
      IF ( lsda ) current_spin = isk(ik)
+     npw = ngk(ik)
      !
      ! ... Reads the list of indices k+G <-> G of this k point
      !
      IF ( nks > 1 ) READ( iunigk ) igk
      !
-     npw = ngk(ik)
+     ! ... Dirty restart trick: iunigk is sequential so it has to be read
+     ! ... for all k-points, or else the wrong igk would be read.
+     ! ... Calculated wavefunctions have to be read from buffer.
      !
-     ! ... do not recalculate k-points if restored from a previous run
-     !
-     IF ( ik <= ik_ ) THEN
-        !
+     IF ( ik < ik_+1 ) THEN
+        CALL get_buffer ( evc, nwordwfc, iunwfc, ik )
         CYCLE k_loop
-        !
      END IF
-     !
      !
      IF ( iverbosity > 0 ) WRITE( stdout, 9001 ) ik
      !
@@ -687,8 +659,8 @@ SUBROUTINE c_bands_nscf( ik_ )
      !
      ! ... Needed for LDA+U
      !
-     IF ( lda_plus_u .AND. (U_projection .NE. 'pseudo') ) &
-        CALL davcio( swfcatom, nwordatwfc, iunsat, ik, -1 )
+     IF ( nks > 1 .AND. lda_plus_u .AND. (U_projection .NE. 'pseudo') ) &
+          CALL get_buffer ( wfcU, nwordwfcU, iunhub, ik )
      !
      ! ... calculate starting  wavefunctions
      !
@@ -704,42 +676,33 @@ SUBROUTINE c_bands_nscf( ik_ )
      !
      ! ... diagonalization of bands for k-point ik
      !
-     call diag_bands ( iter, ik, avg_iter )
+     call diag_bands ( 1, ik, avg_iter )
      !
-     ! ... save wave-functions (unless instructed not to save them)
+     ! ... save wave-functions (unless disabled in input)
      !
      IF ( io_level > -1 ) CALL save_buffer ( evc, nwordwfc, iunwfc, ik )
      !
-     ! ... save restart information
+     ! ... beware: with pools, if the number of k-points on different
+     ! ... pools differs, make sure that all processors are still in
+     ! ... the loop on k-points before checking for stop condition
      !
-     IF ( io_level > 0 ) CALL save_in_cbands( iter, ik, dr2 )
-     !
-     ! ... check is performed only if not interfering with phonon calc.
-     !
-     IF ( lbands) THEN
-#ifdef __MPI
-        ! ... beware: with pools, if the number of k-points on different
-        ! ... pools differs, make sure that all processors are still in
-        ! ... the loop on k-points before checking for stop condition
+     nkdum  = kunit * ( nkstot / kunit / npool )
+     IF (ik .le. nkdum) THEN
         !
-        nkdum  = kunit * ( nkstot / kunit / npool )
+        ! ... stop requested by user: save restart information,
+        ! ... save wavefunctions to file
         !
-        IF (ik .le. nkdum) THEN
-           IF (check_stop_now())  RETURN
-        ENDIF
-#else
-        IF ( check_stop_now() )  RETURN
-#endif
+        IF (check_stop_now()) THEN
+           CALL save_in_cbands(ik, ethr, avg_iter, et )
+           RETURN
+        END IF
      ENDIF
      !
      ! report about timing
      !
      IF ( iverbosity > 0 ) THEN
-        !
         WRITE( stdout, 9000 ) get_clock( 'PWSCF' )
-        !
         CALL flush_unit( stdout )
-        !
      ENDIF
      !
   END DO k_loop
@@ -747,11 +710,10 @@ SUBROUTINE c_bands_nscf( ik_ )
   CALL mp_sum( avg_iter, inter_pool_comm )
   avg_iter = avg_iter / nkstot
   !
-  WRITE( stdout, '( /,5X,"ethr = ",1PE9.2,",  avg # of iterations =",0PF5.1 )' ) &
+  WRITE( stdout, '(/,5X,"ethr = ",1PE9.2,",  avg # of iterations =",0PF5.1)' ) &
        ethr, avg_iter
   !
   CALL stop_clock( 'c_bands' )
-  !
   !
   RETURN
   !

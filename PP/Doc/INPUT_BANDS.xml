@@ -37,8 +37,13 @@ prefix of files saved by program pw.x
       </var>
       <var name="outdir" type="CHARACTER" >
          <info>
-temporary directory where pw.x files resides
+directory containing the input data,
+i.e. the same as in pw.x
          </info>
+         <default>
+value of the ESPRESSO_TMPDIR environment variable if set;
+current directory (&apos;./&apos;) otherwise
+         </default>
       </var>
       <var name="filband" type="CHARACTER" >
          <info>
@@ -60,6 +65,21 @@ values of the spin operator on the spinor wave-functions.
 (only in the noncollinear case).
          </info>
       </dimension>
+      <var name="lp" type="LOGICAL" >
+         <default> .false.
+         </default>
+         <info>
+If .true. matrix elements of the momentum operator p between
+conduction and valence bands are written to file &quot;filp&quot;
+         </info>
+      </var>
+      <var name="filp" type="CHARACTER" >
+         <default> &apos;p_avg.dat&apos;
+         </default>
+         <info>
+If &quot;lp&quot; is set to .true., file name for matrix elements of p
+         </info>
+      </var>
       <var name="lsym" type="LOGICAL" >
          <info>
 If .true. the bands are classified according to the
@@ -87,7 +107,7 @@ filband.# with the format:
 xk, yk, energy
 xk, yk, energy
 ..  ..  ..
-enegies are written in eV and xk in units 2\pi/a.
+energies are written in eV and xk in units 2\pi/a.
          </info>
       </var>
       <vargroup type="INTEGER" >

@@ -97,7 +97,7 @@
     END SUBROUTINE distribute_b
 !
     SUBROUTINE collect_b( b, b_bgrp )
-      USE mp_global, ONLY : inter_bgrp_comm, mpime
+      USE mp_global, ONLY : inter_bgrp_comm
       USE mp,        ONLY : mp_sum
       REAL(DP), INTENT(OUT) :: b(:,:)
       REAL(DP), INTENT(IN)  :: b_bgrp(:,:)
@@ -132,7 +132,7 @@
     END SUBROUTINE distribute_c
 !
     SUBROUTINE collect_c( c, c_bgrp )
-      USE mp_global, ONLY : inter_bgrp_comm, mpime
+      USE mp_global, ONLY : inter_bgrp_comm
       USE mp,        ONLY : mp_sum
       COMPLEX(DP), INTENT(OUT) :: c(:,:)
       COMPLEX(DP), INTENT(IN)  :: c_bgrp(:,:)
@@ -272,10 +272,8 @@
   30  FORMAT(2X,'STEP:',I7,1X,F10.2)
  1002 FORMAT(/,3X,'Eigenvalues (eV), kp = ',I3, ' , spin = ',I2,/)
  1004 FORMAT(10F8.2)
- 1006 FORMAT(/,3X,'Electronic Gap (eV) = ',F8.2,/)
  1010 FORMAT(3X,'Eigenvalues (eV), kp = ',I3, ' , spin = ',I2)
  1020 FORMAT(10F8.2)
- 1021 FORMAT(3X,'Electronic Gap (eV) = ',F8.2)
       !
       RETURN
    END SUBROUTINE print_eigenvalues

@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,7 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="user_guide.css">
@@ -26,26 +26,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html240"
+<A NAME="tex2html236"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html236"
+<A NAME="tex2html232"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html230"
+<A NAME="tex2html226"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html238"
+<A NAME="tex2html234"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html241"
+<B> Next:</B> <A NAME="tex2html237"
   HREF="node11.html">2.4 Libraries</A>
-<B> Up:</B> <A NAME="tex2html237"
+<B> Up:</B> <A NAME="tex2html233"
   HREF="node7.html">2 Installation</A>
-<B> Previous:</B> <A NAME="tex2html231"
+<B> Previous:</B> <A NAME="tex2html227"
   HREF="node9.html">2.2 Prerequisites</A>
- &nbsp; <B>  <A NAME="tex2html239"
+ &nbsp; <B>  <A NAME="tex2html235"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -54,7 +54,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
 <UL>
-<LI><A NAME="tex2html242"
+<LI><A NAME="tex2html238"
   HREF="node10.html#SECTION00033100000000000000">2.3.1 Manual configuration</A>
 </UL>
 <!--End of Table of Child-Links-->
@@ -71,7 +71,9 @@ your machine, and set up things accordingly. Presently it is expected
 to work on most Linux 32- and 64-bit PCs (all Intel and AMD CPUs) and 
 PC clusters, SGI Altix, IBM SP and BlueGene machines, NEC SX, Cray XT
 machines, Mac OS X, MS-Windows PCs, and (for experts!) on several 
-GPU-accelerated hardware. 
+GPU-accelerated hardware. Detailed installation instructions for some
+specific HPC machines can be found in files <TT>install/README.</TT><EM>sys</EM>,
+where <EM>sys</EM> is the machine name.
 
 <P>
 Instructions for the impatient:
@@ -230,6 +232,12 @@ for NEC SX6 on a PC). Currently supported architectures are:
 <TR><TD ALIGN="LEFT"><TT>cygwin</TT></TD>
 <TD ALIGN="LEFT">MS-Windows PCs with Cygwin</TD>
 </TR>
+<TR><TD ALIGN="LEFT"><TT>mingw32</TT></TD>
+<TD ALIGN="LEFT">Cross-compilation for MS-Windows, using mingw, 32 bits</TD>
+</TR>
+<TR><TD ALIGN="LEFT"><TT>mingw64</TT></TD>
+<TD ALIGN="LEFT">As above, 64 bits</TD>
+</TR>
 <TR><TD ALIGN="LEFT"><TT>necsx</TT></TD>
 <TD ALIGN="LEFT">NEC SX-6 and SX-8 machines</TD>
 </TR>
@@ -241,6 +249,9 @@ for NEC SX6 on a PC). Currently supported architectures are:
 </TR>
 <TR><TD ALIGN="LEFT"><TT>ppc64-bg</TT></TD>
 <TD ALIGN="LEFT">IBM BlueGene</TD>
+</TR>
+<TR><TD ALIGN="LEFT"><TT>arm</TT></TD>
+<TD ALIGN="LEFT">ARM machines (with gfortran)</TD>
 </TR>
 </TABLE>
 <BR><EM>Note</EM>: <TT>x86_64</TT> replaces <TT>amd64</TT> since v.4.1. 
@@ -328,31 +339,31 @@ routines are affected by the changed settings and how to force their recompilati
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html240"
+<A NAME="tex2html236"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html236"
+<A NAME="tex2html232"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html230"
+<A NAME="tex2html226"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html238"
+<A NAME="tex2html234"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html241"
+<B> Next:</B> <A NAME="tex2html237"
   HREF="node11.html">2.4 Libraries</A>
-<B> Up:</B> <A NAME="tex2html237"
+<B> Up:</B> <A NAME="tex2html233"
   HREF="node7.html">2 Installation</A>
-<B> Previous:</B> <A NAME="tex2html231"
+<B> Previous:</B> <A NAME="tex2html227"
   HREF="node9.html">2.2 Prerequisites</A>
- &nbsp; <B>  <A NAME="tex2html239"
+ &nbsp; <B>  <A NAME="tex2html235"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Layla Martin-Samos Colomer
-2012-11-21
+paolo giannozzi
+2015-03-08
 </ADDRESS>
 </BODY>
 </HTML>

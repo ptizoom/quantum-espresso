@@ -23,11 +23,11 @@ subroutine set_rhoc
   USE fft_base,  ONLY : dfftp
   USE fft_interfaces,ONLY : invfft
   USE gvect,     ONLY : ngm, nl, nlm, ngl, gl, igtongl
-  USE scf,       ONLY : rho_core, rhog_core
+  USE scf,       ONLY : rho_core, rhog_core, scf_type
   USE lsda_mod,  ONLY : nspin
   USE vlocal,    ONLY : strf
   USE control_flags, ONLY : gamma_only
-  USE mp_global, ONLY : intra_bgrp_comm
+  USE mp_bands,  ONLY : intra_bgrp_comm
   USE mp,        ONLY : mp_sum
   !
   implicit none
@@ -43,10 +43,7 @@ subroutine set_rhoc
   ! used to check the core charge
   real(DP) ::  vtxcc
   ! dummy xc energy term
-  real(DP) , allocatable ::  dum(:,:)
-  ! dummy array containing rho=0
-  complex(DP) , allocatable ::  dumg(:,:)
-  ! dummy array containing rhog=0
+  type(scf_type) :: dum
 
   integer :: ir, nt, ng
   ! counter on mesh points
@@ -147,7 +144,7 @@ subroutine set_rhoc
   !
   return
 
-9000 format (5x,'core-only xc energy         = ',f15.8,' Ry')
+  ! 9000 format (5x,'core-only xc energy         = ',f15.8,' Ry')
 
 end subroutine set_rhoc
 

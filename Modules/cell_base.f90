@@ -22,7 +22,11 @@
     !  celldm: old-style parameters of the simulation cell (se latgen.f90)
     REAL(DP) :: celldm(6) = (/ 0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP,0.0_DP /)
     !  traditional crystallographic cell parameters (alpha=cosbc and so on)
+    
     REAL(DP) :: a, b, c, cosab, cosac, cosbc
+    ! format of input cell parameters:
+    ! 'alat','bohr','angstrom'
+    CHARACTER(len=80) :: cell_units
     !  alat: lattice parameter - often used to scale quantities, or
     !  in combination to other parameters/constants to define new units
     REAL(DP) :: alat = 0.0_DP
@@ -37,6 +41,15 @@
     !          in tpiba=2pi/alat units: b_i(:) = bg(:,i)/tpiba
     REAL(DP) :: at(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
     REAL(DP) :: bg(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
+    !
+    ! parameters for reference cell 
+    REAL(DP) :: ref_tpiba2 = 0.0_DP
+    REAL(DP) :: ref_at(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
+    REAL(DP) :: ref_bg(3,3) = RESHAPE( (/ 0.0_DP /), (/ 3, 3 /), (/ 0.0_DP /) )
+    !
+    ! parameter to store tpiba2 calculated from the input cell parameter 
+    ! used in emass_preconditioning, required for restarting variable cell calculation correctly in CP
+    REAL(DP) :: init_tpiba2 = 0.0_DP
     !
 ! -------------------------------------------------------------------------
 ! ...  periodicity box
@@ -71,6 +84,7 @@
                                        ! is not allowed to move
         LOGICAL   :: fix_volume = .FALSE.! True if cell volume is kept fixed
         LOGICAL   :: fix_area = .FALSE.  ! True if area in xy plane is kept constant
+        LOGICAL   :: isotropic = .FALSE. ! True if volume option is chosen for cell_dofree 
         REAL(DP) :: wmass = 0.0_DP     ! cell fictitious mass
         REAL(DP) :: press = 0.0_DP     ! external pressure 
 
@@ -99,7 +113,7 @@
 !------------------------------------------------------------------------------!
 !
   SUBROUTINE cell_base_init( ibrav_, celldm_, a_, b_, c_, cosab_, cosac_, &
-               cosbc_, trd_ht, rd_ht, cell_units )
+               cosbc_, trd_ht, rd_ht, cell_units_ )
     !
     ! ... initialize cell_base module variables, set up crystal lattice
     !
@@ -109,20 +123,22 @@
     REAL(DP), INTENT(IN) :: celldm_ (6)
     LOGICAL, INTENT(IN) :: trd_ht
     REAL(DP), INTENT(IN) :: rd_ht (3,3)
-    CHARACTER(LEN=*), INTENT(IN) :: cell_units
+    CHARACTER(LEN=*), INTENT(IN) :: cell_units_
     REAL(DP), INTENT(IN) :: a_ , b_ , c_ , cosab_, cosac_, cosbc_
 
     REAL(DP) :: units
     !
     IF ( ibrav_ == 0 .and. .not. trd_ht ) THEN
        CALL errore('cell_base_init', 'ibrav=0: must read cell parameters', 1)
-    ELSE IF ( ibrav /= 0 .and. trd_ht ) THEN
+    ELSE IF ( ibrav_ /= 0 .and. trd_ht ) THEN
        CALL errore('cell_base_init', 'redundant data for cell parameters', 2)
     END IF
     !
     ibrav  = ibrav_
     celldm = celldm_
     a = a_ ; b = b_ ; c = c_ ; cosab = cosab_ ; cosac = cosac_ ; cosbc = cosbc_
+    cell_units = cell_units_
+    units = 0.0_DP
     !
     IF ( trd_ht ) THEN
       !
@@ -131,20 +147,38 @@
       SELECT CASE ( TRIM( cell_units ) )
         CASE ( 'bohr' )
           IF( celldm( 1 ) /= 0.0_DP .OR. a /= 0.0_dp ) CALL errore &
-              ('cell_base_init','lattice vectors in Bohr or in a0 units?',1)
+              ('cell_base_init','lattice parameter specified twice',1)
           units = 1.0_DP
         CASE ( 'angstrom' )
           IF( celldm( 1 ) /= 0.0_DP .OR. a /= 0.0_dp ) CALL errore &
-              ('cell_base_init','lattice vectors in A or in a0 units?',2)
+              ('cell_base_init','lattice parameter specified twice',2)
           units = 1.0_DP / bohr_radius_angs
-        CASE DEFAULT
+        CASE ( 'alat' ) 
           IF( celldm( 1 ) /= 0.0_DP ) THEN
              units = celldm( 1 )
           ELSE IF ( a /= 0.0_dp ) THEN
              units = a / bohr_radius_angs
           ELSE
-             units = 1.0_DP
+            CALL errore ('cell_base_init', &
+                         'lattice parameter not specified',1) 
           END IF
+          ! following case is deprecated and should be removed
+        CASE ( 'none' ) 
+          ! cell_units is 'none' if nothing was specified
+          IF( celldm( 1 ) /= 0.0_DP ) THEN
+             units = celldm( 1 )
+             cell_units = 'alat'
+          ELSE IF ( a /= 0.0_dp ) THEN
+             units = a / bohr_radius_angs
+             cell_units = 'alat'
+          ELSE
+             units = 1.0_DP
+             cell_units = 'bohr'
+          END IF
+          !
+        CASE DEFAULT
+          CALL errore ('cell_base_init', &
+                       'unexpected cell_units '//TRIM(cell_units),1) 
      END SELECT
      !
      ! ... Beware the transpose operation between matrices ht and at!
@@ -174,6 +208,9 @@
         celldm(1) = a / bohr_radius_angs
         celldm(2) = b / a
         celldm(3) = c / a
+        IF ( (ABS(cosab) > 1.0_dp) .OR. (ABS(cosac) > 1.0_dp) .OR. &
+             (ABS(cosbc) > 1.0_dp) ) CALL errore ('cell_base_init',&
+                         'incorrect values for cosab, cosac, cosbc',1)
         !
         IF ( ibrav == 14 ) THEN
            !
@@ -220,10 +257,74 @@
   !
   tpiba  = 2.0_DP * pi / alat
   tpiba2 = tpiba * tpiba
+  init_tpiba2 = tpiba2 ! BS : this is used in CPV/src/init_run.f90 
   RETURN
   !
   END SUBROUTINE cell_base_init
+  !
+  SUBROUTINE ref_cell_base_init( ref_cell, ref_alat, rd_ref_ht, ref_cell_units )
+      !
+      ! ... initialize cell_base module variables, set up crystal lattice
+      !
 
+      IMPLICIT NONE
+      LOGICAL, INTENT(IN) :: ref_cell
+      REAL(DP), INTENT(IN) :: rd_ref_ht (3,3)
+      REAL(DP), INTENT(INOUT) :: ref_alat
+      CHARACTER(LEN=*), INTENT(IN) :: ref_cell_units
+
+      REAL(DP) :: units, ref_omega
+      !
+      ! ... reference cell lattice vectors read from REF_CELL_PARAMETERS Card: find units
+      !
+      SELECT CASE ( TRIM( ref_cell_units ) )
+      !
+      CASE ( 'bohr' )
+        units = 1.0_DP
+      CASE ( 'angstrom' )
+        units = 1.0_DP / bohr_radius_angs
+      CASE DEFAULT
+        IF( ref_alat .GT. 0.0_DP ) THEN
+          units = ref_alat 
+        ELSE
+          CALL errore('ref_cell_base_init', 'ref_alat must be set to a positive value (in A.U.) in SYSTEM namelist', 1)
+        END IF
+        !
+      END SELECT
+      !
+      ! ... Beware the transpose operation between matrices ht and at!
+      !
+      ref_at = TRANSPOSE( rd_ref_ht ) * units
+      !
+      ! ... ref_at is in atomic units: find ref_alat, bring ref_at to ref_alat units
+      !
+      ref_alat = SQRT ( ref_at(1,1)**2+ref_at(2,1)**2+ref_at(3,1)**2 )
+      !
+      ref_at(:,:) = ref_at(:,:) / ref_alat
+      !
+      ! ... Generate the reciprocal lattice vectors from the reference cell
+      !
+      CALL recips( ref_at(1,1), ref_at(1,2), ref_at(1,3), ref_bg(1,1), ref_bg(1,2), ref_bg(1,3) )
+      !
+      ref_tpiba2  = (2.0_DP * pi / ref_alat)**2
+      !
+      CALL volume( ref_alat, ref_at(1,1), ref_at(1,2), ref_at(1,3), ref_omega )
+      !
+      WRITE( stdout, * )
+      WRITE( stdout, '(3X,"Reference Cell read from REF_CELL_PARAMETERS Card")' )
+      WRITE( stdout, '(3X,"Reference Cell alat  =",F14.8,1X,"A.U.")' ) ref_alat
+      WRITE( stdout, '(3X,"ref_cell_a1 = ",1X,3f14.8)' ) ref_at(:,1)*ref_alat
+      WRITE( stdout, '(3X,"ref_cell_a2 = ",1X,3f14.8)' ) ref_at(:,2)*ref_alat
+      WRITE( stdout, '(3X,"ref_cell_a3 = ",1X,3f14.8)' ) ref_at(:,3)*ref_alat
+      WRITE( stdout, * )
+      WRITE( stdout, '(3X,"ref_cell_b1 = ",1X,3f14.8)' ) ref_bg(:,1)/ref_alat
+      WRITE( stdout, '(3X,"ref_cell_b2 = ",1X,3f14.8)' ) ref_bg(:,2)/ref_alat
+      WRITE( stdout, '(3X,"ref_cell_b3 = ",1X,3f14.8)' ) ref_bg(:,3)/ref_alat
+      WRITE( stdout, '(3X,"Reference Cell Volume",F16.8,1X,"A.U.")' ) ref_omega 
+      !
+      RETURN
+      !
+  END SUBROUTINE ref_cell_base_init
 !------------------------------------------------------------------------------!
 ! ...     set box
 ! ...     box%m1(i,1) == b1(i)   COLUMN are B vectors
@@ -532,6 +633,26 @@
 
 !------------------------------------------------------------------------------!
 
+  SUBROUTINE set_h_ainv()
+    !
+    ! CP-PW compatibility: align CP arrays H and ainv to at and bg
+    !
+    IMPLICIT NONE
+    !
+    !write(stdout,*) 'alat=',alat
+    !write(stdout,*) 'at=',at
+    !write(stdout,*) 'bg=',bg
+    !
+    h(:,:) = at(:,:)*alat
+    !
+    ainv(1,:) = bg(:,1)/alat
+    ainv(2,:) = bg(:,2)/alat
+    ainv(3,:) = bg(:,3)/alat
+    !
+  END SUBROUTINE set_h_ainv
+
+!------------------------------------------------------------------------------!
+
   SUBROUTINE cell_dyn_init( trd_ht, rd_ht, wc_ , total_ions_mass , press_ , &
                frich_ , greash_ , cell_dofree )
 
@@ -643,8 +764,16 @@
               fix_area = .true.
 ! 2DSHAPE
             CASE ( 'volume' )
-              CALL errore(' init_dofree ', &
-                 ' cell_dofree = '//TRIM(cell_dofree)//' not yet implemented ', 1 )
+              !CALL errore(' init_dofree ', &
+              !   ' cell_dofree = '//TRIM(cell_dofree)//' not yet implemented ', 1 )
+              IF ( ibrav /= 1 ) THEN
+                CALL errore('cell_dofree', 'Isotropic expansion is only allowed for ibrav=1; i.e. for simple cubic', 1)
+              END IF
+              iforceh      = 0
+              iforceh(1,1) = 1
+              iforceh(2,2) = 1
+              iforceh(3,3) = 1
+              isotropic    = .TRUE.
             CASE ('x')
               iforceh      = 0
               iforceh(1,1) = 1
@@ -737,7 +866,6 @@
       WRITE( stdout, 340 ) omega
     END IF
 
-300 FORMAT( 3X, 'ibrav = ',I4)
 305 FORMAT( 3X, 'alat  = ',F14.8)
 310 FORMAT( 3X, 'a1    = ',3F14.8)
 320 FORMAT( 3X, 'a2    = ',3F14.8)
@@ -761,13 +889,31 @@
     INTEGER,      INTENT(IN) :: iforceh(3,3)
     REAL(DP), INTENT(IN) :: delt
     INTEGER      :: i, j
-    REAL(DP) :: dt2
+    REAL(DP) :: dt2,fiso
     dt2 = delt * delt
-    DO j=1,3
-      DO i=1,3
-        hnew(i,j) = h(i,j) + dt2 * fcell(i,j) * REAL( iforceh(i,j), DP )
+    !
+    IF( isotropic ) THEN
+      !
+      ! Isotropic force on the cell
+      !
+      fiso = (fcell(1,1)+fcell(2,2)+fcell(3,3))/3.0_DP
+      !
+      DO j=1,3
+        DO i=1,3
+          hnew(i,j) = h(i,j) + dt2 * fiso * REAL( iforceh(i,j), DP )
+        ENDDO
       ENDDO
-    ENDDO
+      !
+    ELSE
+      !
+      DO j=1,3
+        DO i=1,3
+          hnew(i,j) = h(i,j) + dt2 * fcell(i,j) * REAL( iforceh(i,j), DP )
+        ENDDO
+      ENDDO
+      !
+    END IF
+    !
     RETURN
   END SUBROUTINE cell_steepest
 
@@ -782,7 +928,7 @@
     LOGICAL,      INTENT(IN) :: tnoseh
 
     REAL(DP) :: htmp(3,3)
-    REAL(DP) :: verl1, verl2, verl3, dt2, ftmp, v1, v2, v3
+    REAL(DP) :: verl1, verl2, verl3, dt2, ftmp, v1, v2, v3, fiso
     INTEGER      :: i, j
   
     dt2 = delt * delt
@@ -800,15 +946,32 @@
     verl3 = dt2 / ( 1.0_DP + ftmp )
     verl1 = verl1 - 1.0_DP
 
-  
-    DO j=1,3
-      DO i=1,3
-        v1 = verl1 * h(i,j)
-        v2 = verl2 * hold(i,j)
-        v3 = verl3 * ( fcell(i,j) - htmp(i,j) )
-        hnew(i,j) = h(i,j) + ( v1 + v2 + v3 ) * REAL( iforceh(i,j), DP )
+    IF( isotropic ) THEN
+      !
+      fiso = (fcell(1,1)+fcell(2,2)+fcell(3,3))/3.0_DP
+      !
+      DO j=1,3
+        DO i=1,3
+          v1 = verl1 * h(i,j)
+          v2 = verl2 * hold(i,j)
+          v3 = verl3 * ( fiso - htmp(i,j) )
+          hnew(i,j) = h(i,j) + ( v1 + v2 + v3 ) * REAL( iforceh(i,j), DP )
+        ENDDO
       ENDDO
-    ENDDO
+      !
+    ELSE
+      !
+      DO j=1,3
+        DO i=1,3
+          v1 = verl1 * h(i,j)
+          v2 = verl2 * hold(i,j)
+          v3 = verl3 * ( fcell(i,j) - htmp(i,j) )
+          hnew(i,j) = h(i,j) + ( v1 + v2 + v3 ) * REAL( iforceh(i,j), DP )
+        ENDDO
+      ENDDO
+      !
+    END IF
+  
     RETURN
   END SUBROUTINE cell_verlet
 

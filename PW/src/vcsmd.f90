@@ -40,7 +40,7 @@ SUBROUTINE vcsmd()
   USE ions_base,       ONLY : amass, if_pos 
   USE relax,           ONLY : epse, epsf, epsp
   USE force_mod,       ONLY : force, sigma
-  USE control_flags,   ONLY : nstep, istep, tolp, conv_ions, lconstrain, lfixatom 
+  USE control_flags,   ONLY : nstep, istep, tolp, conv_ions, lconstrain
   USE parameters,      ONLY : ntypx
   USE ener,            ONLY : etot
   USE io_files,        ONLY : prefix, delete_if_present, seqopn
@@ -96,7 +96,7 @@ SUBROUTINE vcsmd()
            eold,                 & ! DFT energy at previous step
            uta, eka, eta, ekla, utl, etl, ut, ekint, edyn,  & ! other energies
            acu, ack, acp, acpv, avu, avk, avp, avpv,        & ! acc.& avrg. ener
-           tnew, pv,             & ! instantaneous temperature and p*vcell
+           tnew=0.0_dp, pv,      & ! instantaneous temperature and p*vcell
            sigmamet(3,3),        & ! sigma = avec^-1 * vcell = bg/alat*omega
            vx2(ntypx), vy2(ntypx), vz2(ntypx),     & ! work vectors
            vmean(ntypx), rms(ntypx), ekin(ntypx),  & ! work vectors
@@ -244,8 +244,8 @@ SUBROUTINE vcsmd()
   IF ( istep == 1 ) THEN
      !
      IF ( calc(2:2) == 'm' ) THEN
-        WRITE( stdout,'(/5X,A,/,5x,"convergence thresholds EPSE = ",E8.2, &
-             &  "  EPSF = ",E8.2)' ) TRIM(calc_long), epse, epsf
+        WRITE( stdout,'(/5X,A,/,5x,"convergence thresholds EPSE = ",ES8.2, &
+             &  "  EPSF = ",ES8.2)' ) TRIM(calc_long), epse, epsf
      END IF
      !
   END IF

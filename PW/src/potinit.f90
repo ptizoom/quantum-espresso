@@ -43,11 +43,10 @@ SUBROUTINE potinit()
   USE ldaU,                 ONLY : lda_plus_u, Hubbard_lmax, eth, &
                                    niter_with_fixed_ns
   USE noncollin_module,     ONLY : noncolin, report
-  USE io_files,             ONLY : tmp_dir, prefix, iunocc, input_drho
+  USE io_files,             ONLY : tmp_dir, prefix, input_drho
   USE spin_orb,             ONLY : domag
   USE mp,                   ONLY : mp_sum
-  USE mp_global,            ONLY : intra_image_comm, inter_bgrp_comm, &
-                                   intra_bgrp_comm, mpime
+  USE mp_bands ,            ONLY : intra_bgrp_comm
   USE io_global,            ONLY : ionode, ionode_id
   USE pw_restart,           ONLY : pw_readfile
   USE io_rho_xml,           ONLY : read_rho
@@ -176,7 +175,11 @@ SUBROUTINE potinit()
         rho%of_r = rho%of_r / charge * nelec
      ELSE 
         WRITE( stdout, '(/,5X,"Starting from uniform charge")')
-        rho%of_r = nelec / omega
+        IF ( nspin == 2 ) THEN
+           rho%of_r(:,1:nspin) = nelec / omega / nspin
+        ELSE
+           rho%of_r(:,1) = nelec / omega
+        END IF
      ENDIF
      !
   ELSE IF ( .NOT. lscf .AND. ABS( charge - nelec ) > (1.D-3 * charge ) ) THEN

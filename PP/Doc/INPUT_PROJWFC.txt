@@ -39,8 +39,10 @@ NAMELIST: &PROJWFC
    Variable:       outdir
    
    Type:           CHARACTER
-   Description:    directory containing the input file
-   Default:        './'
+   Description:    directory containing the input data,
+                   i.e. the same as in pw.x
+   Default:        value of the ESPRESSO_TMPDIR environment variable if set;
+                   current directory ('./') otherwise
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------

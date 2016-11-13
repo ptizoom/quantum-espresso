@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2007 Quantum ESPRESSO group
+! Copyright (C) 2002-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -12,6 +12,12 @@
 !#define __NORMALIZE_BETAMIX
 !
 #ifdef __GFORTRAN
+#if (__GNUC__<4) || ((__GNUC__==4) && (__GNUC_MINOR__<8))
+#define __GFORTRAN_HACK
+#endif
+#endif
+
+#ifdef __GFORTRAN_HACK   
 ! gfortran hack - for some mysterious reason gfortran doesn't save
 !                 derived-type variables even with the SAVE attribute
 MODULE mix_save
@@ -23,20 +29,21 @@ END MODULE mix_save
 #endif
 
 !----------------------------------------------------------------------------
-SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, conv )
+SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter,&
+                    iunmix, conv )
   !----------------------------------------------------------------------------
   !
   ! ... Modified Broyden's method for charge density mixing
   ! ...         D.D. Johnson PRB 38, 12807 (1988)
-  !
-  ! ... On output: the mixed density is in rhoin, mixed augmentation
-  ! ...            channel occ. is in becin
-  !                input_rhocout, input_becout etc are unchanged
+  ! ... Extended to mix also quantities needed for PAW, meta-GGA, DFT+U,
+  ! ... electric field (all these are included into mix_type)
+  ! ... On output: the mixed density is in rhoin
+  !                input_rhout is unchanged
   !
   USE kinds,          ONLY : DP
   USE ions_base,      ONLY : nat
   USE gvect,          ONLY : ngm
-  USE gvecs,        ONLY : ngms
+  USE gvecs,          ONLY : ngms
   USE lsda_mod,       ONLY : nspin
   USE control_flags,  ONLY : imix, ngm0, tr2, io_level
   ! ... for PAW:
@@ -44,29 +51,29 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
   USE scf,            ONLY : scf_type, create_scf_type, destroy_scf_type, &
                              mix_type, create_mix_type, destroy_mix_type, &
                              assign_scf_to_mix_type, assign_mix_to_scf_type, &
-                             mix_type_AXPY, diropn_mix_file, close_mix_file, &
-                             davcio_mix_type, rho_ddot, high_frequency_mixing, &
+                             mix_type_AXPY, davcio_mix_type, rho_ddot, &
+                             high_frequency_mixing, &
                              mix_type_COPY, mix_type_SCAL
   USE io_global,     ONLY : stdout
-#ifdef __GFORTRAN
+#ifdef __GFORTRAN_HACK
   USE mix_save
 #endif
   !
   IMPLICIT NONE
-  integer :: kilobytes
   !
   ! ... First the I/O variable
   !
   INTEGER, INTENT(IN) :: &
     iter,        &!  counter of the number of iterations
-    n_iter        !  numb. of iterations used in mixing
+    n_iter,      &!  number of iterations used in mixing
+    iunmix        !  I/O unit where data from previous iterations is stored
   REAL(DP), INTENT(IN) :: &
     alphamix,    &! mixing factor
     tr2_min       ! estimated error in diagonalization. If the estimated
                   ! scf error is smaller than this, exit: a more accurate 
                   ! diagonalization is needed
   REAL(DP), INTENT(OUT) :: &
-    dr2           ! the estimated errr on the energy
+    dr2           ! the estimated error on the energy
   LOGICAL, INTENT(OUT) :: &
     conv          ! .true. if the convergence has been reached
 
@@ -79,36 +86,29 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
   INTEGER, PARAMETER :: &
     maxmix = 25             ! max number of iterations for charge mixing
   INTEGER ::    &
-    iunmix,        &! I/O unit number of charge density file in G-space
-    iunmix_paw,    &! I/O unit number of PAW file
     iter_used,     &! actual number of iterations used
     ipos,          &! index of the present iteration
     inext,         &! index of the next iteration
     i, j,          &! counters on number of iterations
     info,          &! flag saying if the exec. of libr. routines was ok
     ldim            ! 2 * Hubbard_lmax + 1
-  type(mix_type) :: rhoin_save, rhout_save
   REAL(DP),ALLOCATABLE :: betamix(:,:), work(:)
   INTEGER, ALLOCATABLE :: iwork(:)
   REAL(DP) :: gamma0
 #ifdef __NORMALIZE_BETAMIX
   REAL(DP) :: norm2, obn
 #endif
-  LOGICAL :: &
-    savetofile,  &! save intermediate steps on file $prefix."mix",...
-    exst          ! if true the file exists
   !
   ! ... saved variables and arrays
   !
   INTEGER, SAVE :: &
     mixrho_iter = 0    ! history of mixing
-#ifndef __GFORTRAN
+#ifndef __GFORTRAN_HACK
   TYPE(mix_type), ALLOCATABLE, SAVE :: &
     df(:),        &! information from preceding iterations
     dv(:)          !     "  "       "     "        "  "
 #endif
   REAL(DP) :: dr2_paw, norm
-!  REAL(DP),ALLOCATABLE :: e(:),v(:,:)
   INTEGER, PARAMETER :: read_ = -1, write_ = +1
   !
   ! ... external functions
@@ -124,9 +124,7 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
   !
   IF ( n_iter > maxmix ) CALL errore( 'mix_rho', 'n_iter too big', 1 )
   !
-  savetofile = (io_level > 1)
-  !
-  ! define rhocout variables and copy input_rhocout in there
+  ! define mix_type variables and copy scf_type variables there
   !
   call create_mix_type(rhout_m)
   call create_mix_type(rhoin_m)
@@ -170,35 +168,17 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
      !
   END IF
   !
-  IF ( savetofile ) THEN
-     !
-     iunmix = find_free_unit()
-     CALL diropn_mix_file( iunmix, 'mix', exst )
-     !
-     IF ( mixrho_iter > 1 .AND. .NOT. exst ) THEN
-        !
-        CALL infomsg( 'mix_rho', 'file not found, restarting' )
-        mixrho_iter = 1
-        !
-     END IF
-     !
+  IF ( .NOT. ALLOCATED( df ) ) THEN
+     ALLOCATE( df( n_iter ) )
+     DO i=1,n_iter
+        CALL create_mix_type( df(i) )
+     END DO
   END IF
-  !
-  IF ( savetofile .OR. mixrho_iter == 1 ) THEN
-     !
-     IF ( .NOT. ALLOCATED( df ) ) THEN
-        ALLOCATE( df( n_iter ) )
-        DO i=1,n_iter
-           CALL create_mix_type( df(i) )
-        END DO
-     END IF
-     IF ( .NOT. ALLOCATED( dv ) ) THEN
-        ALLOCATE( dv( n_iter ) )
-        DO i=1,n_iter
-           CALL create_mix_type( dv(i) )
-        END DO
-     END IF
-     !
+  IF ( .NOT. ALLOCATED( dv ) ) THEN
+     ALLOCATE( dv( n_iter ) )
+     DO i=1,n_iter
+        CALL create_mix_type( dv(i) )
+     END DO
   END IF
   !
   ! ... iter_used = mixrho_iter-1  if  mixrho_iter <= n_iter
@@ -213,12 +193,8 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
   !
   IF ( mixrho_iter > 1 ) THEN
      !
-     IF ( savetofile ) THEN
-        !
-        CALL davcio_mix_type( df(ipos), iunmix, 1, read_ )
-        CALL davcio_mix_type( dv(ipos), iunmix, 2, read_ )
-        !
-     END IF
+     CALL davcio_mix_type( df(ipos), iunmix, 1, read_ )
+     CALL davcio_mix_type( dv(ipos), iunmix, 2, read_ )
      !
      call mix_type_AXPY ( -1.d0, rhout_m, df(ipos) )
      call mix_type_AXPY ( -1.d0, rhoin_m, dv(ipos) )
@@ -232,35 +208,24 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
      !
   END IF
   !
-  IF ( savetofile ) THEN
+  DO i = 1, iter_used
      !
-     DO i = 1, iter_used
+     IF ( i /= ipos ) THEN
         !
-        IF ( i /= ipos ) THEN
-           !
-           CALL davcio_mix_type( df(i), iunmix, 2*i+1, read_ )
-           CALL davcio_mix_type( dv(i), iunmix, 2*i+2, read_ )
-        END IF
-        !
-     END DO
-     !
-     CALL davcio_mix_type( rhout_m, iunmix, 1, write_ )
-     CALL davcio_mix_type( rhoin_m, iunmix, 2, write_ )
-     !
-     IF ( mixrho_iter > 1 ) THEN
-        CALL davcio_mix_type( df(ipos), iunmix, 2*ipos+1, write_ )
-        CALL davcio_mix_type( dv(ipos), iunmix, 2*ipos+2, write_ )
+        CALL davcio_mix_type( df(i), iunmix, 2*i+1, read_ )
+        CALL davcio_mix_type( dv(i), iunmix, 2*i+2, read_ )
      END IF
      !
-  ELSE
-     !
-     call create_mix_type (rhoin_save)
-     call create_mix_type (rhout_save)
-     !
-     call mix_type_COPY( rhoin_m, rhoin_save )
-     call mix_type_COPY( rhout_m, rhout_save )
-     !
+  END DO
+  !
+  CALL davcio_mix_type( rhout_m, iunmix, 1, write_ )
+  CALL davcio_mix_type( rhoin_m, iunmix, 2, write_ )
+  !
+  IF ( mixrho_iter > 1 ) THEN
+     CALL davcio_mix_type( df(ipos), iunmix, 2*ipos+1, write_ )
+     CALL davcio_mix_type( dv(ipos), iunmix, 2*ipos+2, write_ )
   END IF
+  !
   ! Nothing else to do on first iteration
   skip_on_first: &
   IF (iter_used > 0) THEN
@@ -297,9 +262,7 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
             j = 1:iter_used, j > i ) betamix(j,i) = betamix(i,j)
     !
     DO i = 1, iter_used
-        !
         work(i) = rho_ddot( df(i), rhout_m, ngm0 )
-        !
     END DO
     !
     DO i = 1, iter_used
@@ -316,33 +279,17 @@ SUBROUTINE mix_rho( input_rhout, rhoin, alphamix, dr2, tr2_min, iter, n_iter, co
     !
   ENDIF skip_on_first
   !
-  IF ( savetofile ) THEN
-     !
-     call close_mix_file( iunmix )
-     !
-     IF ( ALLOCATED( df ) ) THEN
-         DO i=1, n_iter
-            call destroy_mix_type(df(i))
-         END DO
-         DEALLOCATE( df )
-     END IF
-     IF ( ALLOCATED( dv ) ) THEN
-         DO i=1, n_iter
-            call destroy_mix_type(dv(i))
-         END DO
-         DEALLOCATE( dv )
-     END IF
-     !
-  ELSE
-     !
-     inext = mixrho_iter - ( ( mixrho_iter - 1 ) / n_iter ) * n_iter
-     !
-     call mix_type_COPY( rhout_save, df(inext) )
-     call mix_type_COPY( rhoin_save, dv(inext) )
-     !
-     call destroy_mix_type( rhoin_save )
-     call destroy_mix_type( rhout_save )
-     !
+  IF ( ALLOCATED( df ) ) THEN
+     DO i=1, n_iter
+        call destroy_mix_type(df(i))
+     END DO
+     DEALLOCATE( df )
+  END IF
+  IF ( ALLOCATED( dv ) ) THEN
+     DO i=1, n_iter
+        call destroy_mix_type(dv(i))
+     END DO
+     DEALLOCATE( dv )
   END IF
   !
   ! ... preconditioning the new search direction
@@ -432,7 +379,7 @@ SUBROUTINE approx_screening2( drho, rhobest )
   USE kinds,                ONLY : DP
   USE constants,            ONLY : e2, pi, tpi, fpi, eps8, eps32
   USE cell_base,            ONLY : omega, tpiba2
-  USE gvecs,              ONLY : nls, nlsm
+  USE gvecs,                ONLY : nls, nlsm
   USE gvect,                ONLY : gg, ngm, nl, nlm
   USE wavefunctions_module, ONLY : psic
   USE klist,                ONLY : nelec
@@ -440,7 +387,7 @@ SUBROUTINE approx_screening2( drho, rhobest )
   USE control_flags,        ONLY : ngm0, gamma_only
   USE scf,                  ONLY : mix_type, local_tf_ddot
   USE mp,                   ONLY : mp_sum
-  USE mp_global,            ONLY : intra_bgrp_comm
+  USE mp_bands,             ONLY : intra_bgrp_comm
   USE fft_base,             ONLY : dffts
   USE fft_interfaces,       ONLY : fwfft, invfft
   !
@@ -621,7 +568,7 @@ SUBROUTINE approx_screening2( drho, rhobest )
      !
      dr2_best = local_tf_ddot( wbest, wbest, ngm0 )
      !
-     IF ( target == 0.D0 ) target = 1.D-6 * dr2_best
+     IF ( target == 0.D0 ) target = MAX( 1.D-12, 1.D-6*dr2_best )
      !
      IF ( dr2_best < target ) THEN
         !

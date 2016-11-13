@@ -162,9 +162,13 @@
         USE gvecs, ONLY: ecuts, gcutms
         use betax, only: mmx, refg
         USE io_global, ONLY: stdout
+        USE input_parameters, ONLY: ref_cell, ref_alat
 
         WRITE( stdout, 100 ) ecutwfc, ecutrho, ecuts, sqrt(gcutw), &
                              sqrt(gcutm), sqrt(gcutms)
+
+        IF(ref_cell) WRITE( stdout,'(3X,"Reference Cell alat is",F14.8,1X,"A.U is used to Compute Gcutoffs:")') ref_alat ! BS : debug
+
         IF( qcutz > 0.0d0 ) THEN
           WRITE( stdout, 150 ) qcutz, q2sigma, ecfixed
         END IF
@@ -250,95 +254,15 @@
 
       SUBROUTINE exch_corr_print_info()
 
-        USE funct, ONLY: get_iexch, get_icorr, get_igcx, get_igcc, write_dft_name
+        USE funct, ONLY: write_dft_name
         USE io_global, ONLY: stdout
 
         IMPLICIT NONE
 
-        CHARACTER(LEN = 60) :: exch_info
-        CHARACTER(LEN = 60) :: corr_info
-        CHARACTER(LEN = 60) :: exgc_info
-        CHARACTER(LEN = 60) :: cogc_info
-
         WRITE(stdout,800)
-
-          ! ...     iexch => Exchange functional form
-          ! ...     icorr => Correlation functional form
-          ! ...     igcx  => Gradient Correction to the Exchange potential
-          ! ...     igcc  => Gradient Correction to the Correlation potential
-
-          SELECT CASE ( get_iexch() )
-            CASE (0)
-              exch_info = 'NONE'
-            CASE (1)
-              exch_info = 'SLATER'
-            CASE (2)
-              exch_info = 'SLATER (alpha=1)'
-            CASE DEFAULT
-              exch_info = 'UNKNOWN'
-          END SELECT
-          SELECT CASE ( get_icorr() )
-            CASE (0)
-              corr_info = 'NONE'
-            CASE (1)
-              corr_info = 'PERDEW AND ZUNGER'
-            CASE (2)
-              corr_info = 'VOSKO, WILK AND NUSAIR'
-            CASE (3)
-              corr_info = 'LEE, YANG, AND PARR'
-            CASE (4)
-              corr_info = 'PERDEW AND WANG'
-            CASE (9)
-              corr_info = 'PADE APPROXIMATION'
-            CASE DEFAULT
-              corr_info = 'UNKNOWN'
-          END SELECT
-          SELECT CASE ( get_igcx() )
-            CASE (0)
-              exgc_info = 'NONE'
-            CASE (1)
-              exgc_info = 'BECKE'
-            CASE (2)
-              exgc_info = 'PERDEW'
-            CASE (3)
-              exgc_info = 'PERDEW BURKE ERNZERHOF'
-            CASE (7)
-              exgc_info = 'META-TPSS'
-            CASE DEFAULT
-              exgc_info = 'UNKNOWN'
-          END SELECT
-          SELECT CASE ( get_igcc() )
-            CASE (0)
-              cogc_info = 'NONE'
-            CASE (1)
-              cogc_info = 'PERDEW'
-            CASE (2)
-              cogc_info = 'LEE, YANG AND PARR'
-            CASE (3)
-              cogc_info = 'PERDEW AND WANG'
-            CASE (4)
-              cogc_info = 'PERDEW BURKE ERNZERHOF'
-            CASE (6)
-              cogc_info = 'META-TPSS'
-            CASE DEFAULT
-              cogc_info = 'UNKNOWN'
-          END SELECT
-
-          WRITE(stdout,910)
-          WRITE(stdout,fmt='(5X,"Exchange functional: ",A)') exch_info
-          WRITE(stdout,fmt='(5X,"Correlation functional: ",A)') corr_info
-          IF( ( get_igcx() > 0 ) .OR. ( get_igcc() > 0 ) ) THEN
-            WRITE(stdout,810)
-            WRITE(stdout,fmt='(5X,"Exchange functional: ",A)') exgc_info
-            WRITE(stdout,fmt='(5X,"Correlation functional: ",A)') cogc_info
-          END IF
-
-        call write_dft_name
-
+        call write_dft_name ( )
 800 FORMAT(//,3X,'Exchange and correlations functionals',/ &
              ,3X,'-------------------------------------')
-810 FORMAT(   3X,'Using Generalized Gradient Corrections with')
-910 FORMAT(   3X,'Using Local Density Approximation with')
 
         RETURN
       END SUBROUTINE exch_corr_print_info
@@ -354,8 +278,8 @@
          !  Print info about input parameter for ion dynamic
 
          USE io_global,     ONLY: ionode, stdout
-         USE control_flags, ONLY: tranp, amprp, tnosep, tolp, tfor, tsdp, tzerop, &
-                                  tv0rd, taurdr, nv0rd, nbeg, tcp, tcap
+         USE control_flags, ONLY: tranp, amprp, tnosep, tolp, tfor, tsdp, &
+                                  tzerop, tv0rd, taurdr, nbeg, tcp, tcap
          USE ions_base,     ONLY: tau_srt, if_pos, ind_srt, nsp, na, &
                                   amass, nat, fricp, greasp, rcmax
          USE ions_nose,     ONLY: tempw, ndega
@@ -379,12 +303,10 @@
            END IF
            WRITE( stdout, 523 ) ndega
            WRITE( stdout, 524 ) fricp, greasp
-           IF( tzerop ) then
-             IF( tv0rd ) THEN
-               WRITE( stdout, 850 ) nv0rd
-             ELSE
+           IF( tv0rd ) THEN
+              WRITE( stdout, 850 ) 
+           ELSE IF ( tzerop ) THEN
                WRITE( stdout, 635 )
-             ENDIF 
            ENDIF
          END IF 
               
@@ -492,7 +414,7 @@
   661 FORMAT(   3X,'Ionic position will be re-read from restart file')
   662 FORMAT(   3X,'Ionic position read from input file')
 
-  850 FORMAT(   3X,'Initial ion velocities read from unit : ',I4)
+  850 FORMAT(   3X,'Initial ion velocities read from input')
 
  1000 FORMAT(3X,'Species ',I3,' atoms = ',I4,' mass = ',F12.2, ' (a.u.), ', &
                & F12.2, ' (amu)', ' rcmax = ', F6.2, ' (a.u.)' )
@@ -1020,9 +942,15 @@ subroutine nlfh_x( stress, bec_bgrp, dbec, lambda, descla )
 
   CALL mp_sum( bec, inter_bgrp_comm )
   !
-  IF( ( descla( 1 )%active_node > 0 ) .OR. ( descla( 2 )%active_node > 0 ) ) THEN
-     ALLOCATE ( tmpbec(nhm,nrcx), tmpdh(nrcx,nhm), temp(nrcx,nrcx) )
-  END IF
+  IF (nspin == 1) THEN
+     IF( ( descla( 1 )%active_node > 0 ) ) THEN
+        ALLOCATE ( tmpbec(nhm,nrcx), tmpdh(nrcx,nhm), temp(nrcx,nrcx) )
+     ENDIF
+  ELSEIF (nspin == 2) THEN
+     IF( ( descla( 1 )%active_node > 0 ) .OR. ( descla( 2 )%active_node > 0 ) ) THEN
+        ALLOCATE ( tmpbec(nhm,nrcx), tmpdh(nrcx,nhm), temp(nrcx,nrcx) )
+     END IF
+  ENDIF
   !
   fpre = 0.d0
   !
@@ -1100,7 +1028,7 @@ subroutine nlfh_x( stress, bec_bgrp, dbec, lambda, descla )
      enddo
   enddo
 
-  IF( ( descla( 1 )%active_node > 0 ) .OR. ( descla( 2 )%active_node > 0 ) ) THEN
+  IF (allocated(tmpbec)) THEN
      DEALLOCATE ( tmpbec, tmpdh, temp )
   END IF
 

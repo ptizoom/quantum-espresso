@@ -167,12 +167,12 @@ SUBROUTINE c_phase
    USE klist,                ONLY : nelec, degauss, nks, xk, wk
    USE wvfct,                ONLY : npwx, npw, nbnd, ecutwfc, wg
    USE wavefunctions_module, ONLY : evc
-   USE bp,                   ONLY : gdir, nppstr, mapgm_global
+   USE bp,                   ONLY : gdir, nppstr, mapgm_global, pdl_tot
    USE becmod,               ONLY : calbec, bec_type, allocate_bec_type, &
                                     deallocate_bec_type
    USE noncollin_module,     ONLY : noncolin, npol, nspin_lsda
    USE spin_orb,             ONLY : lspinorb
-   USE mp_global,            ONLY : intra_bgrp_comm, nproc_bgrp
+   USE mp_bands,             ONLY : intra_bgrp_comm, nproc_bgrp
    USE mp,                   ONLY : mp_sum
 
 !  --- Avoid implicit definitions ---
@@ -254,7 +254,6 @@ SUBROUTINE c_phase
    REAL(DP) :: pdl_elec_up
    REAL(DP) :: pdl_ion(nat)
    REAL(DP) :: pdl_ion_tot
-   REAL(DP) :: pdl_tot
    REAL(DP) :: phidw
    REAL(DP) :: phiup
    REAL(DP) :: rmod
@@ -283,7 +282,6 @@ SUBROUTINE c_phase
 !  -------------------------------------------------------------------------   !
 !                               INITIALIZATIONS
 !  -------------------------------------------------------------------------   !
-
    ALLOCATE (psi(npwx*npol,nbnd))
    ALLOCATE (aux(ngm*npol))
    ALLOCATE (aux0(ngm*npol))
@@ -983,7 +981,6 @@ SUBROUTINE c_phase
       CALL deallocate_bec_type ( becp_bp )
       IF (lspinorb) DEALLOCATE(q_dk_so)
    END IF
-
 
 !------------------------------------------------------------------------------!
 

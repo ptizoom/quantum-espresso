@@ -1,4 +1,4 @@
-# LaTeX2HTML 2002-2-1 (1.71)
+# LaTeX2HTML 2008 (1.71)
 # Associate images original text with physical files.
 
 
@@ -40,21 +40,21 @@ $cached_env_img{$key} = q|<IMG
 
 $key = q/cal{O};MSF=1.6;LFS=12;AAT/;
 $cached_env_img{$key} = q|<IMG
- WIDTH="20" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ WIDTH="20" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
  SRC="|."$dir".q|img5.png"
  ALT="$ \cal {O}$">|; 
-
-$key = q/displaystylealpha;MSF=1.6;LFS=12;AAT/;
-$cached_env_img{$key} = q|<IMG
- WIDTH="17" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="|."$dir".q|img1.png"
- ALT="$\displaystyle \alpha$">|; 
 
 $key = q/displaystyle{<BW|PW>oversqrt{<BW|BW><PW|PW>}};MSF=1.6;LFS=12;AAT/;
 $cached_env_img{$key} = q|<IMG
  WIDTH="255" HEIGHT="63" ALIGN="MIDDLE" BORDER="0"
  SRC="|."$dir".q|img2.png"
  ALT="$\displaystyle {&lt;BW\vert PW&gt; \over \sqrt{&lt;BW\vert BW&gt;&lt;PW\vert PW&gt;}}$">|; 
+
+$key = q/displaystylealpha;MSF=1.6;LFS=12;AAT/;
+$cached_env_img{$key} = q|<IMG
+ WIDTH="17" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="|."$dir".q|img1.png"
+ ALT="$\displaystyle \alpha$">|; 
 
 $key = q/beta;MSF=1.6;LFS=12;AAT/;
 $cached_env_img{$key} = q|<IMG

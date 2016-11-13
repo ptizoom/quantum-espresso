@@ -7,28 +7,20 @@
 !
 !
 !----------------------------------------------------------------------------
-SUBROUTINE stop_run( flag )
+SUBROUTINE stop_run()
   !----------------------------------------------------------------------------
   !
   ! ... Close all files and synchronize processes before stopping.
   !
-  USE io_global,          ONLY : stdout, ionode
-  USE control_flags,      ONLY : lpath, lconstrain
-  USE io_files,           ONLY : prefix
   USE environment,        ONLY : environment_end
-  USE image_io_routines,   ONLY : io_image_stop
+  USE control_flags,      ONLY : lconstrain
   USE constraints_module, ONLY : deallocate_constraint
   USE mp_global,          ONLY : mp_global_end
   !
   IMPLICIT NONE
   !
-  LOGICAL, INTENT(IN) :: flag
-  LOGICAL             :: exst
-  !
   !
   CALL environment_end( 'CP' )
-  !
-  IF ( lpath ) CALL io_image_stop()
   !
   CALL deallocate_modules_var()
   !
@@ -36,14 +28,17 @@ SUBROUTINE stop_run( flag )
   !
   CALL mp_global_end()
   !
+END SUBROUTINE stop_run
+
+SUBROUTINE do_stop( flag )
+  IMPLICIT NONE
+  !
+  LOGICAL, INTENT(IN) :: flag
+  !
   IF ( flag ) THEN
-     !
      STOP
-     !
   ELSE
-     !
      STOP 1
-     !
   END IF
   !
-END SUBROUTINE stop_run
+END SUBROUTINE do_stop

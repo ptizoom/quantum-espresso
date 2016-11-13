@@ -10,7 +10,6 @@
 !==----------------------------------------------==!
 
     USE kinds,     ONLY : DP
-    USE io_global, ONLY : stdout
     USE parallel_include
 
     IMPLICIT NONE
@@ -2607,9 +2606,9 @@ SUBROUTINE cyc2blk_redist( n, a, lda, nca, b, ldb, ncb, desc )
    IF( np /= desc%npc ) &
       CALL errore( ' cyc2blk_redist ', ' works only with square processor mesh ', 1 )
    IF( n < 1 ) &
-      CALL errore( ' cyc2blk_redist ', ' n less or equal zero ', 1 )
+      CALL errore( ' cyc2blk_redist ', ' incorrect first argument (n <= 0)', 1 )
    IF( desc%n < nproc ) &
-      CALL errore( ' cyc2blk_redist ', ' nb less than the number of proc ', 1 )
+      CALL errore( ' cyc2blk_redist ', ' number of bands < number of proc ', 1 )
 
    nbuf = (nb/nproc+2) * nb
    !
@@ -4482,7 +4481,7 @@ SUBROUTINE sqr_dsetmat( what, n, alpha, a, lda, desc )
            END DO
         ELSE IF( desc%myc == desc%myr ) THEN
            DO j = 1, desc%nc
-              DO i = j - 1, desc%nr
+              DO i = j + 1, desc%nr
                  a( i, j ) = alpha
               END DO
            END DO
@@ -4565,7 +4564,7 @@ SUBROUTINE sqr_zsetmat( what, n, alpha, a, lda, desc )
            END DO
         ELSE IF( desc%myc == desc%myr ) THEN
            DO j = 1, desc%nc
-              DO i = j - 1, desc%nr
+              DO i = j + 1, desc%nr
                  a( i, j ) = alpha
               END DO
            END DO

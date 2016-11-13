@@ -61,15 +61,15 @@ SUBROUTINE init_clocks( go )
   !
   USE kinds,  ONLY : DP
   USE mytime, ONLY : called, t0cpu, cputime, no, notrunning, maxclock, &
-       clock_label, walltime, t0wall
+       clock_label, walltime, t0wall, nclock
   !
   IMPLICIT NONE
   !
   LOGICAL :: go
   INTEGER :: n
   !
-  !
   no = .not. go
+  nclock = 0
   !
   DO n = 1, maxclock
      !
@@ -93,7 +93,7 @@ SUBROUTINE start_clock( label )
   USE kinds,     ONLY : DP
   USE io_global, ONLY : stdout
 #if defined (__TRACE)
-  USE mp_global, ONLY : mpime
+  USE mp_world,  ONLY : mpime
 #endif
   USE mytime,    ONLY : nclock, clock_label, notrunning, no, maxclock, &
                         t0cpu, t0wall, trace_depth
@@ -164,7 +164,7 @@ SUBROUTINE stop_clock( label )
   USE kinds,     ONLY : DP
   USE io_global, ONLY : stdout
 #if defined (__TRACE)
-  USE mp_global, ONLY : mpime
+  USE mp_world,  ONLY : mpime
 #endif
   USE mytime,    ONLY : no, nclock, clock_label, cputime, walltime, &
                         notrunning, called, t0cpu, t0wall, trace_depth
@@ -285,7 +285,7 @@ SUBROUTINE print_this_clock( n )
 ! ... See comments below about parallel case
 !
 !  USE mp,        ONLY : mp_max
-!  USE mp_global, ONLY : intra_image_comm, my_image_id
+!  USE mp_images, ONLY : intra_image_comm, my_image_id
   !
   IMPLICIT NONE
   !
@@ -333,6 +333,14 @@ SUBROUTINE print_this_clock( n )
      !
      ! ... The first clock is written as days/hour/min/sec
      !
+#if defined(__CLOCK_SECONDS)
+     !
+     WRITE( stdout, &
+        '(5X,A12," : ",F9.2,"s CPU ",F9.2,"s WALL"/)' ) &
+        clock_label(n), elapsed_cpu_time, elapsed_wall_time
+     !
+#else
+     !
      nday  = elapsed_cpu_time / 86400
      nsec  = elapsed_cpu_time - 86400 * nday
      nhour = nsec / 3600
@@ -377,6 +385,7 @@ SUBROUTINE print_this_clock( n )
              clock_label(n), nsec, msec
         !
      ENDIF
+#endif
      !
   ELSEIF ( nmax == 1 .or. t0cpu(n) /= notrunning ) THEN
      !
@@ -420,7 +429,7 @@ FUNCTION get_clock( label )
 ! ... See comments in subroutine print_this_clock about parallel case
 !
 !  USE mp,        ONLY : mp_max
-!  USE mp_global, ONLY : intra_image_comm
+!  USE mp_images, ONLY : intra_image_comm
   !
   IMPLICIT NONE
   !

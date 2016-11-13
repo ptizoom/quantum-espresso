@@ -38,16 +38,15 @@ SUBROUTINE forces()
   USE ldaU,          ONLY : lda_plus_u, U_projection
   USE extfield,      ONLY : tefield, forcefield
   USE control_flags, ONLY : gamma_only, remove_rigid_rot, textfor, &
-                            iverbosity, llondon
-#ifdef __ENVIRON
-  USE environ_base,  ONLY : do_environ, env_static_permittivity, rhopol
-  USE fft_interfaces,  ONLY : fwfft
-#endif
+                            iverbosity, llondon, lxdm, ts_vdw
+  USE plugin_flags
   USE bp,            ONLY : lelfield, gdir, l3dstring, efield_cart, &
                             efield_cry,efield
   USE uspp,          ONLY : okvan
   USE martyna_tuckerman, ONLY: do_comp_mt, wg_corr_force
   USE london_module, ONLY : force_london
+  USE xdm_module,    ONLY : force_xdm
+  USE tsvdw_module,  ONLY : FtsvdW
   !
   IMPLICIT NONE
   !
@@ -56,16 +55,18 @@ SUBROUTINE forces()
                            forcecc(:,:), &
                            forceion(:,:), &
                            force_disp(:,:),&
+                           force_disp_xdm(:,:),&
                            force_mt(:,:), &
                            forcescc(:,:), &
                            forces_bp_efield(:,:), &
                            forceh(:,:)
     ! nonlocal, local, core-correction, ewald, scf correction terms, and hubbard
-#ifdef __ENVIRON
-  REAL(DP), ALLOCATABLE :: force_environ(:,:)
-  COMPLEX(DP), ALLOCATABLE :: aux(:)
-#endif
-
+!
+! aux is used to store a possible additional density
+! now defined in real space
+!
+  COMPLEX(DP), ALLOCATABLE :: auxg(:), auxr(:)
+!
   REAL(DP) :: sumfor, sumscf, sum_mm
   REAL(DP),PARAMETER :: eps = 1.e-12_dp
   INTEGER  :: ipol, na
@@ -80,6 +81,7 @@ SUBROUTINE forces()
   !    
   forcescc(:,:) = 0.D0
   forceh(:,:)   = 0.D0
+  force (:,:)   = 0.D0
   !
   WRITE( stdout, '(/,5x,"Forces acting on atoms (Ry/au):", / )')
   !
@@ -116,7 +118,12 @@ SUBROUTINE forces()
     force_disp = force_london( alat , nat , ityp , at , bg , tau )
     !
   END IF
-
+  IF (lxdm) THEN
+     ALLOCATE (force_disp_xdm(3,nat))
+     force_disp_xdm = 0._dp
+     force_disp_xdm = force_xdm(nat)
+  end if
+     
   !
   ! ... The SCF contribution
   !
@@ -125,46 +132,13 @@ SUBROUTINE forces()
   IF (do_comp_mt) THEN
     !
     ALLOCATE ( force_mt ( 3 , nat ) )
-#ifdef __ENVIRON
-    IF ( do_environ .AND. env_static_permittivity .GT. 1.D0 ) THEN
-      ALLOCATE( aux( dfftp%nnr ) )
-      aux(:) = CMPLX(rhopol( : ),0.D0,kind=dp) 
-      CALL fwfft ('Dense', aux, dfftp)
-      rho%of_g(:,1) = rho%of_g(:,1) + aux(nl(:))
-    ENDIF
-#endif
-    CALL wg_corr_force( omega, nat, ntyp, ityp, ngm, g, tau, zv, strf, &
+    CALL wg_corr_force( .true.,omega, nat, ntyp, ityp, ngm, g, tau, zv, strf, &
                         nspin, rho%of_g, force_mt )
-#ifdef __ENVIRON
-    IF ( do_environ .AND. env_static_permittivity .GT. 1.D0  ) THEN
-      rho%of_g(:,1) = rho%of_g(:,1) - aux(nl(:))
-      DEALLOCATE(aux)
-    ENDIF
-#endif
-
-  END IF
-#ifdef __ENVIRON
-  IF (do_environ) THEN
-    !
-    ! ... The external environment contribution
-    !
-    ALLOCATE ( force_environ ( 3 , nat ) )
-    force_environ = 0.0_DP
-    ! 
-    ! ... Computes here the solvent contribution
-    !
-    IF ( env_static_permittivity .GT. 1.D0 ) & 
-    CALL force_lc( nat, tau, ityp, alat, omega, ngm, ngl, igtongl, &
-                   g, rhopol, nl, 1, gstart, gamma_only, vloc, &
-                   force_environ )
-    !
-    ! ... Add the other environment contributions
-    !
-    CALL calc_fenviron( dfftp%nnr, nat, force_environ )
-    !
   END IF
   !
-#endif
+  ! ... call void routine for user define/ plugin patches on internal forces
+  !
+  call plugin_int_forces()
   !
   ! Berry's phase electric field terms
   !
@@ -187,7 +161,7 @@ SUBROUTINE forces()
   endif
   !
   ! ... here we sum all the contributions and compute the total force acting
-  ! ... on the crstal
+  ! ... on the crystal
   !
   DO ipol = 1, 3
      !
@@ -195,7 +169,8 @@ SUBROUTINE forces()
      !
      DO na = 1, nat
         !
-        force(ipol,na) = forcenl(ipol,na)  + &
+        force(ipol,na) = force(ipol,na)    + &
+                         forcenl(ipol,na)  + &
                          forceion(ipol,na) + &
                          forcelc(ipol,na)  + &
                          forcecc(ipol,na)  + &
@@ -203,14 +178,12 @@ SUBROUTINE forces()
                          forcescc(ipol,na)
         !
         IF ( llondon ) force(ipol,na) = force(ipol,na) + force_disp(ipol,na)
+        IF ( lxdm )    force(ipol,na) = force(ipol,na) + force_disp_xdm(ipol,na)
+        ! factor 2 converts from Ha to Ry a.u.
+        IF ( ts_vdw )  force(ipol,na) = force(ipol,na) + 2.0_dp*FtsvdW(ipol,na)
         IF ( tefield ) force(ipol,na) = force(ipol,na) + forcefield(ipol,na)
         IF (lelfield)  force(ipol,na) = force(ipol,na) + forces_bp_efield(ipol,na)
         IF (do_comp_mt)force(ipol,na) = force(ipol,na) + force_mt(ipol,na) 
-! DCC
-!        IF (do_comp) force(ipol,na) = force(ipol,na) + force_vcorr(ipol,na)
-#ifdef __ENVIRON
-        IF (do_environ) force(ipol,na) = force(ipol,na) + force_environ(ipol,na)
-#endif
 
         sumfor = sumfor + force(ipol,na)
         !
@@ -220,7 +193,7 @@ SUBROUTINE forces()
      !
      DO na = 1, nat
         !
-        force(ipol,na) = force(ipol,na) - sumfor / DBLE( nat )
+        force(ipol,na) = force(ipol,na) - sumfor / DBLE( nat )  
         !
      END DO
      !
@@ -247,9 +220,9 @@ SUBROUTINE forces()
   !
   IF( textfor ) force(:,:) = force(:,:) + extfor(:,:)
   !
-  ! ... call void routine for user define/ plugin patches on forces
+  ! ... call void routine for user define/ plugin patches on external forces
   !
-  CALL plugin_forces()
+  CALL plugin_ext_forces()
   !
   ! ... write on output the forces
   !
@@ -296,19 +269,25 @@ SUBROUTINE forces()
      DO na = 1, nat
         WRITE( stdout, 9035) na, ityp(na), ( forcescc(ipol,na), ipol = 1, 3 )
      END DO
-#ifdef __ENVIRON
-     IF ( do_environ ) THEN
-        WRITE( stdout, '(5x,"The external environment correction to forces")')
-        DO na = 1, nat
-           WRITE( stdout, 9035) na, ityp(na), ( force_environ(ipol,na), ipol = 1, 3 )
-        END DO
-     END IF  
-#endif
      !
      IF ( llondon) THEN
         WRITE( stdout, '(/,5x,"Dispersion contribution to forces:")')
         DO na = 1, nat
            WRITE( stdout, 9035) na, ityp(na), (force_disp(ipol,na), ipol = 1, 3)
+        END DO
+     END IF
+     !
+     IF (lxdm) THEN
+        WRITE( stdout, '(/,5x,"XDM contribution to forces:")')
+        DO na = 1, nat
+           WRITE( stdout, 9035) na, ityp(na), (force_disp_xdm(ipol,na), ipol = 1, 3)
+        END DO
+     END IF
+     !
+     IF ( ts_vdw) THEN
+        WRITE( stdout, '(/,5x,"TS-VDW contribution to forces:")')
+        DO na = 1, nat
+           WRITE( stdout, 9035) na, ityp(na), (2.0d0*FtsvdW(ipol,na), ipol=1,3)
         END DO
      END IF
      !
@@ -342,8 +321,21 @@ SUBROUTINE forces()
      !
   END IF
   !
+  IF ( lxdm .AND. iverbosity > 0 ) THEN
+     !
+     sum_mm = 0.D0
+     DO na = 1, nat
+        sum_mm = sum_mm + &
+                 force_disp_xdm(1,na)**2 + force_disp_xdm(2,na)**2 + force_disp_xdm(3,na)**2
+     END DO
+     sum_mm = SQRT( sum_mm )
+     WRITE ( stdout, '(/,5x, "Total XDM Force = ",F12.6)') sum_mm
+     !
+  END IF
+  !
   DEALLOCATE( forcenl, forcelc, forcecc, forceh, forceion, forcescc )
   IF ( llondon )  DEALLOCATE ( force_disp )
+  IF ( lxdm ) DEALLOCATE( force_disp_xdm ) 
   IF ( lelfield ) DEALLOCATE ( forces_bp_efield )
   !
   lforce = .TRUE.
@@ -355,9 +347,6 @@ SUBROUTINE forces()
                    &  "reduce conv_thr to get better values")')
   !
   IF(ALLOCATED(force_mt))   DEALLOCATE( force_mt )
-#ifdef __ENVIRON
-  IF(ALLOCATED(force_environ)) DEALLOCATE( force_environ )
-#endif
 
   RETURN
   !

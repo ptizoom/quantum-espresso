@@ -20,8 +20,10 @@ PROGRAM pw2gw
   USE io_files,   ONLY : prefix, outdir, tmp_dir
   USE io_global,  ONLY : ionode, ionode_id
   USE mp,         ONLY : mp_bcast
-  USE mp_global,  ONLY : kunit, nproc, mp_startup
-  USE environment,ONLY : environment_start
+  USE mp_world,   ONLY : world_comm, nproc
+  USE mp_global,  ONLY : mp_startup
+  USE mp_pools,   ONLY : kunit
+  USE environment,ONLY : environment_start, environment_end
   USE us,         ONLY : spline_ps
   !
   IMPLICIT NONE
@@ -59,15 +61,15 @@ PROGRAM pw2gw
      !
   ENDIF
   !
-  CALL mp_bcast( ios, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
   IF (ios /= 0)   CALL errore('pw2gw', 'reading inputpp namelist', abs(ios))
   !
   ! ... Broadcast variables
   !
-  CALL mp_bcast( prefix, ionode_id )
-  CALL mp_bcast(tmp_dir, ionode_id )
-  CALL mp_bcast( what, ionode_id )
-  CALL mp_bcast( use_gmaps, ionode_id )
+  CALL mp_bcast( prefix, ionode_id, world_comm )
+  CALL mp_bcast(tmp_dir, ionode_id, world_comm )
+  CALL mp_bcast( what, ionode_id, world_comm )
+  CALL mp_bcast( use_gmaps, ionode_id, world_comm )
   !
 
   spline_ps = .false.
@@ -75,7 +77,7 @@ PROGRAM pw2gw
   CALL read_file
   CALL openfil_pp
   !
-  CALL mp_bcast(spline_ps, ionode_id)
+  CALL mp_bcast(spline_ps, ionode_id, world_comm)
 #if defined __MPI
   kunittmp = kunit
 #else
@@ -87,6 +89,8 @@ PROGRAM pw2gw
   ELSE
     CALL write_gmaps ( kunittmp )
   ENDIF
+  !
+  CALL environment_end ( 'PW2GW' )
   !
   CALL stop_pp
 
@@ -113,9 +117,10 @@ SUBROUTINE compute_gw( use_gmaps )
   USE lsda_mod,      ONLY : nspin
   USE io_files,      ONLY : nwordwfc, iunwfc
   USE wavefunctions_module, ONLY : evc, psic
-  USE mp_global, ONLY : mpime, kunit, nproc, intra_image_comm, npool
+  USE mp_global, ONLY : intra_image_comm, npool
   USE io_global, ONLY : ionode, ionode_id
   USE mp,        ONLY : mp_sum , mp_max
+  USE mp_world,  ONLY : world_comm, mpime, nproc
   USE mp_wave,   ONLY : mergewf
   USE parallel_include
   USE scf,       ONLY : rho, rho_core, rhog_core
@@ -330,12 +335,12 @@ SUBROUTINE compute_gw( use_gmaps )
   ENDDO
 
   igwxx = maxval( ig_l2g( 1:ngw ) )
-  CALL mp_max( igwxx )
+  CALL mp_max( igwxx, world_comm )
   IF (ionode) WRITE(*,*) "NDIMCP = ", igwxx
 
   igwx_p = 0
   igwx_p( mpime + 1 ) = igwx
-  CALL mp_sum( igwx_p )
+  CALL mp_sum( igwx_p, world_comm )
 
   IF( mpime == 0 ) THEN
      !
@@ -643,7 +648,7 @@ SUBROUTINE compute_gw( use_gmaps )
       !
     ELSE
       !
-      CALL davcio( evc, nwordwfc, iunwfc, ik, -1 )
+      CALL davcio( evc, 2*nwordwfc, iunwfc, ik, -1 )
       !
       ! copy coefficient from array evc(:,n) (ordered as |k+G|)
       ! into array c0 with |G| ordering
@@ -701,7 +706,7 @@ SUBROUTINE compute_gw( use_gmaps )
                     rhotwx(3) = rhotwx(3) + xkgk(3) * ctemp
                  ENDDO
 
-                 CALL mp_sum( rhotwx )
+                 CALL mp_sum( rhotwx, world_comm )
 
                  IF (mpime == 0) THEN
                     rrhotwx(1)=tpiba2* real(rhotwx(1)*conjg(rhotwx(1)))
@@ -737,7 +742,7 @@ SUBROUTINE compute_gw( use_gmaps )
    CALL v_xc (rho, rho_core, rhog_core, etxc, vtxc, vxc)
    DO ik=1,nkpt
       CALL gk_sort (xk (1, ik), ngm, g, ecutwfc / tpiba2, npw, igk, g2kin)
-      CALL davcio( evc, nwordwfc, iunwfc, ik, -1 )
+      CALL davcio( evc, 2*nwordwfc, iunwfc, ik, -1 )
       DO iband1 = 1, nbnd
          psic(:) = (0.d0, 0.d0)
          DO ig = 1, npw
@@ -754,7 +759,7 @@ SUBROUTINE compute_gw( use_gmaps )
          ENDDO
  ! PG: this is the correct integral - 27/8/2010
          vxcdiag = vxcdiag * rytoev / (dfftp%nr1*dfftp%nr2*dfftp%nr3)
-         CALL mp_sum( vxcdiag ) !, intra_pool_comm )
+         CALL mp_sum( vxcdiag, world_comm ) !, intra_pool_comm )
          ! ONLY FOR DEBUG!
          !IF (norma /= 1.0) THEN
          !   WRITE(*,*) "norma =", norma
@@ -846,9 +851,10 @@ SUBROUTINE write_gmaps ( kunit)
   USE wavefunctions_module,  ONLY : evc
   USE io_files,  ONLY : nd_nmbr, tmp_dir, prefix, iunwfc, nwordwfc
   USE io_global, ONLY : ionode
-  USE mp_global, ONLY : nproc, nproc_pool, mpime
-  USE mp_global, ONLY : my_pool_id, my_image_id, intra_pool_comm
+  USE mp_images, ONLY : my_image_id
+  USE mp_global, ONLY : nproc_pool, my_pool_id, my_image_id, intra_pool_comm
   USE mp,        ONLY : mp_sum, mp_max
+  USE mp_world,  ONLY : world_comm, nproc, mpime
 
 
   IMPLICIT NONE
@@ -926,11 +932,11 @@ SUBROUTINE write_gmaps ( kunit)
   ALLOCATE( ngk_gw( nkstot/nspin ) )
   ngk_g = 0
   ngk_g( iks:ike ) = ngk( 1:nks )
-  CALL mp_sum( ngk_g )
+  CALL mp_sum( ngk_g, world_comm )
 
   ! compute the Maximum G vector index among all G+k an processors
   npw_g = maxval( ig_l2g(:) ) ! ( igk_l2g(:,:) )
-  CALL mp_max( npw_g )
+  CALL mp_max( npw_g, world_comm )
 
   ! compute the Maximum number of G vector among all k points
   npwx_g = maxval( ngk_g( 1:nkstot ) )
@@ -947,7 +953,7 @@ SUBROUTINE write_gmaps ( kunit)
         itmp( ig_l2g( ig ), 1 ) = ig_l2g( ig )
       ENDDO
     ENDIF
-    CALL mp_sum( itmp )
+    CALL mp_sum( itmp, world_comm )
     ngg = 0
     DO  ig = 1, npw_g
       IF( itmp( ig, 1 ) == ig ) THEN
@@ -970,7 +976,7 @@ SUBROUTINE write_gmaps ( kunit)
      IF( (ik >= iks) .and. (ik <= ike) ) THEN
         ispin = isk( ik )
         WRITE( 100 + mpime ) ik, iks, ike, nkstot, kunit, nproc, ispin, nspin, npw_g, &
-                             nbnd, ngk(ik-iks+1), nwordwfc, npwx, iunwfc, nd_nmbr
+                             nbnd, ngk(ik-iks+1), 2*nwordwfc, npwx, iunwfc, nd_nmbr
         WRITE( 100 + mpime ) ( igk_l2g( i, ik-iks+1 ), i = 1, ngk(ik-iks+1) )
      ENDIF
   ENDDO
@@ -1016,8 +1022,8 @@ SUBROUTINE read_and_collect( c, ldc, n, ik )
       ALLOCATE( evc( npwx, nbnd ) )
       ALLOCATE( igk_l2g( ngk ) )
       READ( 100 + ip )  ( igk_l2g( i ), i = 1, ngk )
-      CALL diropn_gw ( 99, trim( prefix )//'.wfc', nwordwfc, exst, ip, nd_nmbr )
-      CALL davcio ( evc, nwordwfc, 99, (ik-iks+1), - 1 )
+      CALL diropn_gw ( 99, trim( prefix )//'.wfc', 2*nwordwfc, exst, ip, nd_nmbr )
+      CALL davcio ( evc, 2*nwordwfc, 99, (ik-iks+1), - 1 )
       CLOSE( 99 )
       DO j = 1, n
         DO i = 1, ngk

@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2009 Quantum ESPRESSO group
+! Copyright (C) 2002-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -9,7 +9,10 @@
 #if defined __HPM
 #  include "/cineca/prod/hpm/include/f_hpm.h"
 #endif
-
+!
+! This module contains interfaces to most low-level MPI operations:
+! initialization and stopping, broadcast, parallel sum, etc.
+!
 !------------------------------------------------------------------------------!
     MODULE mp
 !------------------------------------------------------------------------------!
@@ -18,12 +21,16 @@
       USE parallel_include
       !
       IMPLICIT NONE
+      PRIVATE
 
-      PUBLIC :: mp_start, mp_end, &
+      PUBLIC :: mp_start, mp_abort, mp_stop, mp_end, &
         mp_bcast, mp_sum, mp_max, mp_min, mp_rank, mp_size, &
-        mp_gather, mp_get, mp_put, mp_barrier, mp_report, mp_group_free, &
+        mp_gather, mp_alltoall, mp_get, mp_put, mp_barrier, mp_report, mp_group_free, &
         mp_root_sum, mp_comm_free, mp_comm_create, mp_comm_group, &
-        mp_group_create, mp_comm_split, mp_set_displs
+        mp_group_create, mp_comm_split, mp_set_displs, &
+        mp_circular_shift_left, &
+        mp_get_comm_null, mp_get_comm_self
+
 !
       INTERFACE mp_bcast
         MODULE PROCEDURE mp_bcast_i1, mp_bcast_r1, mp_bcast_c1, &
@@ -69,11 +76,12 @@
         MODULE PROCEDURE mp_alltoall_c3d, mp_alltoall_i3d
       END INTERFACE
       INTERFACE mp_circular_shift_left
-        MODULE PROCEDURE mp_circular_shift_left_d2d_int,mp_circular_shift_left_d2d_double,mp_circular_shift_left_d2d_complex
+        MODULE PROCEDURE mp_circular_shift_left_i0, &
+          mp_circular_shift_left_i1, &
+          mp_circular_shift_left_i2, &
+          mp_circular_shift_left_r2d, &
+          mp_circular_shift_left_c2d
       END INTERFACE
-
-
-      CHARACTER(LEN=80), PRIVATE :: err_msg = ' '
 
 !------------------------------------------------------------------------------!
 !
@@ -86,17 +94,16 @@
       SUBROUTINE mp_gather_i1(mydata, alldata, root, gid)
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: mydata, root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER, INTENT(OUT) :: alldata(:)
         INTEGER :: ierr
 
 
 #if defined (__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         CALL MPI_GATHER(mydata, 1, MPI_INTEGER, alldata, 1, MPI_INTEGER, root, group, IERR)
-        IF (ierr/=0) CALL mp_stop( 8001 )
+        IF (ierr/=0) CALL mp_stop( 8013 )
 #else
         alldata(1) = mydata
 #endif
@@ -109,7 +116,7 @@
       SUBROUTINE mp_gather_iv(mydata, alldata, root, gid)
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: mydata(:), root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER, INTENT(OUT) :: alldata(:,:)
         INTEGER :: msglen, ierr
@@ -117,14 +124,13 @@
 
 #if defined (__MPI)
         msglen = SIZE(mydata)
-        IF( msglen .NE. SIZE(alldata, 1) ) CALL mp_stop( 8000 )
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        IF( msglen .NE. SIZE(alldata, 1) ) CALL mp_stop( 8014 )
+        group = gid
         CALL MPI_GATHER(mydata, msglen, MPI_INTEGER, alldata, msglen, MPI_INTEGER, root, group, IERR)
-        IF (ierr/=0) CALL mp_stop( 8001 )
+        IF (ierr/=0) CALL mp_stop( 8014 )
 #else
         msglen = SIZE(mydata)
-        IF( msglen .NE. SIZE(alldata, 1) ) CALL mp_stop( 8002 )
+        IF( msglen .NE. SIZE(alldata, 1) ) CALL mp_stop( 8014 )
         alldata(:,1) = mydata(:)
 #endif
         RETURN
@@ -133,58 +139,69 @@
 !
 !------------------------------------------------------------------------------!
 !..mp_start
-      SUBROUTINE mp_start(numtask, taskid, groupid)
+      SUBROUTINE mp_start(numtask, taskid, group)
 
 ! ...
         IMPLICIT NONE
-        INTEGER, INTENT (OUT) :: numtask, taskid, groupid
+        INTEGER, INTENT (OUT) :: numtask, taskid
+        INTEGER, INTENT (IN)  :: group
         INTEGER :: ierr
 ! ...
         ierr = 0
         numtask = 1
         taskid = 0
-        groupid = 0
 
 #  if defined(__MPI)
-        CALL mpi_init(ierr)
-        IF (ierr/=0) CALL mp_stop( 8003 )
-        CALL mpi_comm_rank(mpi_comm_world,taskid,ierr)
+        IF (ierr/=0) CALL mp_stop( 8004 )
+        CALL mpi_comm_rank(group,taskid,ierr)
         IF (ierr/=0) CALL mp_stop( 8005 )
 #if defined __HPM
-        !   initialize the IBM Harware performance monitor
+        !   initialize the IBM Hardware performance monitor
         CALL f_hpminit( taskid, 'profiling' )
 #endif
-        CALL mpi_comm_size(mpi_comm_world,numtask,ierr)
-        groupid = mpi_comm_world
+        CALL mpi_comm_size(group,numtask,ierr)
         IF (ierr/=0) CALL mp_stop( 8006 )
 #  endif
 
+#if defined(__CUDA) || defined(__PHIGEMM )
+        CALL InitCudaEnv()
+#endif
+
         RETURN
       END SUBROUTINE mp_start
+!------------------------------------------------------------------------------!
+!..mp_abort
+
+      SUBROUTINE mp_abort(errorcode,gid)
+        IMPLICIT NONE
+        INTEGER :: ierr
+        INTEGER, INTENT(IN):: errorcode, gid
+#ifdef __MPI
+        CALL mpi_abort(gid, errorcode, ierr)
+#endif
+      END SUBROUTINE mp_abort
 !
 !------------------------------------------------------------------------------!
 !..mp_end
 
-      SUBROUTINE mp_end
+      SUBROUTINE mp_end(groupid)
         IMPLICIT NONE
+        INTEGER, INTENT(IN) :: groupid
         INTEGER :: ierr, taskid
 
         ierr = 0
         taskid = 0
 
-#if defined __HPM
-
-        !   terminate the IBM Harware performance monitor
+#if defined(__CUDA) || defined(__PHIGEMM )
+        CALL CloseCudaEnv()
+#endif
 
 #if defined(__MPI)
-        CALL mpi_comm_rank( mpi_comm_world, taskid, ierr)
-#endif
+        CALL mpi_comm_rank( groupid, taskid, ierr)
+#if defined __HPM
+        !   terminate the IBM Hardware performance monitor
         CALL f_hpmterminate( taskid )
 #endif
-
-#if defined(__MPI)
-        CALL mpi_finalize(ierr)
-        IF (ierr/=0) CALL mp_stop( 8004 )
 #endif
         RETURN
       END SUBROUTINE mp_end
@@ -287,15 +304,14 @@
         IMPLICIT NONE
         INTEGER :: msg
         INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: msglen
 
 #if defined(__MPI)
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL BCAST_INTEGER( msg, msglen, source, group )
+        group = gid
+        CALL bcast_integer( msg, msglen, source, group )
 #endif
       END SUBROUTINE mp_bcast_i1
 !
@@ -303,15 +319,12 @@
       SUBROUTINE mp_bcast_iv(msg,source,gid)
         IMPLICIT NONE
         INTEGER :: msg(:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL BCAST_INTEGER( msg, msglen, source, group )
+        CALL bcast_integer( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_iv
 !
@@ -319,15 +332,12 @@
       SUBROUTINE mp_bcast_im( msg, source, gid )
         IMPLICIT NONE
         INTEGER :: msg(:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL BCAST_INTEGER( msg, msglen, source, group )
+        CALL bcast_integer( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_im
 !
@@ -335,34 +345,29 @@
 !
 ! Carlo Cavazzoni
 !
-      SUBROUTINE mp_bcast_it(msg,source,gid)
+      SUBROUTINE mp_bcast_it( msg, source, gid )
         IMPLICIT NONE
         INTEGER :: msg(:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL BCAST_INTEGER( msg, msglen, source, group )
+        CALL bcast_integer( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_it
 !
 !------------------------------------------------------------------------------!
 !
-      SUBROUTINE mp_bcast_r1(msg,source,gid)
+      SUBROUTINE mp_bcast_r1( msg, source, gid )
         IMPLICIT NONE
         REAL (DP) :: msg
-        INTEGER :: msglen, source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, msglen, source, group )
+        CALL bcast_real( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_r1
 !
@@ -371,16 +376,12 @@
       SUBROUTINE mp_bcast_rv(msg,source,gid)
         IMPLICIT NONE
         REAL (DP) :: msg(:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
-
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, msglen, source, group )
+        CALL bcast_real( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_rv
 !
@@ -389,15 +390,12 @@
       SUBROUTINE mp_bcast_rm(msg,source,gid)
         IMPLICIT NONE
         REAL (DP) :: msg(:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, msglen, source, group )
+        CALL bcast_real( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_rm
 !
@@ -408,15 +406,12 @@
       SUBROUTINE mp_bcast_rt(msg,source,gid)
         IMPLICIT NONE
         REAL (DP) :: msg(:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, msglen, source, group )
+        CALL bcast_real( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_rt
 !
@@ -427,15 +422,12 @@
       SUBROUTINE mp_bcast_r4d(msg, source, gid)
         IMPLICIT NONE
         REAL (DP) :: msg(:,:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, msglen, source, group )
+        CALL bcast_real( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_r4d
 
@@ -447,15 +439,12 @@
       SUBROUTINE mp_bcast_r5d(msg, source, gid)
         IMPLICIT NONE
         REAL (DP) :: msg(:,:,:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, msglen, source, group )
+        CALL bcast_real( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_r5d
 
@@ -464,15 +453,12 @@
       SUBROUTINE mp_bcast_c1(msg,source,gid)
         IMPLICIT NONE
         COMPLEX (DP) :: msg
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, 2 * msglen, source, group )
+        CALL bcast_real( msg, 2 * msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_c1
 !
@@ -480,15 +466,12 @@
       SUBROUTINE mp_bcast_cv(msg,source,gid)
         IMPLICIT NONE
         COMPLEX (DP) :: msg(:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, 2 * msglen, source, group )
+        CALL bcast_real( msg, 2 * msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_cv
 !
@@ -496,15 +479,12 @@
       SUBROUTINE mp_bcast_cm(msg,source,gid)
         IMPLICIT NONE
         COMPLEX (DP) :: msg(:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, 2 * msglen, source, group )
+        CALL bcast_real( msg, 2 * msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_cm
 !
@@ -512,15 +492,12 @@
       SUBROUTINE mp_bcast_ct(msg,source,gid)
         IMPLICIT NONE
         COMPLEX (DP) :: msg(:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, 2 * msglen, source, group )
+        CALL bcast_real( msg, 2 * msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_ct
 
@@ -529,30 +506,24 @@
       SUBROUTINE mp_bcast_c4d(msg,source,gid)
         IMPLICIT NONE
         COMPLEX (DP) :: msg(:,:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, 2 * msglen, source, group )
+        CALL bcast_real( msg, 2 * msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_c4d
 
       SUBROUTINE mp_bcast_c5d(msg,source,gid)
         IMPLICIT NONE
         COMPLEX (DP) :: msg(:,:,:,:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_real( msg, 2 * msglen, source, group )
+        CALL bcast_real( msg, 2 * msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_c5d
 
@@ -562,15 +533,12 @@
       SUBROUTINE mp_bcast_l(msg,source,gid)
         IMPLICIT NONE
         LOGICAL :: msg
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_logical( msg, msglen, source, group )
+        CALL bcast_logical( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_l
 !
@@ -581,15 +549,12 @@
       SUBROUTINE mp_bcast_lv(msg,source,gid)
         IMPLICIT NONE
         LOGICAL :: msg(:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_logical( msg, msglen, source, group )
+        CALL bcast_logical( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_lv
 
@@ -600,15 +565,12 @@
       SUBROUTINE mp_bcast_lm(msg,source,gid)
         IMPLICIT NONE
         LOGICAL :: msg(:,:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL bcast_logical( msg, msglen, source, group )
+        CALL bcast_logical( msg, msglen, source, gid )
 #endif
       END SUBROUTINE mp_bcast_lm
 
@@ -619,17 +581,15 @@
       SUBROUTINE mp_bcast_z(msg,source,gid)
         IMPLICIT NONE
         CHARACTER (len=*) :: msg
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: msglen, ierr, i
         INTEGER, ALLOCATABLE :: imsg(:)
 #if defined(__MPI)
         ierr = 0
         msglen = len(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        IF (ierr/=0) CALL mp_stop( 8014 )
+        group = gid
         ALLOCATE (imsg(1:msglen), STAT=ierr)
         IF (ierr/=0) CALL mp_stop( 8015 )
         DO i = 1, msglen
@@ -651,8 +611,8 @@
       SUBROUTINE mp_bcast_zv(msg,source,gid)
         IMPLICIT NONE
         CHARACTER (len=*) :: msg(:)
-        INTEGER :: source
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: source
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: msglen, m1, m2, ierr, i, j
         INTEGER, ALLOCATABLE :: imsg(:,:)
@@ -661,8 +621,7 @@
         m1 = LEN(msg)
         m2 = SIZE(msg)
         msglen = LEN(msg)*SIZE(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         ALLOCATE (imsg(1:m1,1:m2), STAT=ierr)
         IF (ierr/=0) CALL mp_stop( 8017 )
         DO j = 1, m2
@@ -688,7 +647,7 @@
       SUBROUTINE mp_get_i1(msg_dest, msg_sour, mpime, dest, sour, ip, gid)
         INTEGER :: msg_dest, msg_sour
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -697,8 +656,7 @@
         INTEGER :: msglen = 1
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -740,7 +698,7 @@
       SUBROUTINE mp_get_iv(msg_dest, msg_sour, mpime, dest, sour, ip, gid)
         INTEGER :: msg_dest(:), msg_sour(:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -749,8 +707,7 @@
         INTEGER :: msglen
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -787,7 +744,7 @@
       SUBROUTINE mp_get_r1(msg_dest, msg_sour, mpime, dest, sour, ip, gid)
         REAL (DP) :: msg_dest, msg_sour
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -796,8 +753,7 @@
         INTEGER :: msglen
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -836,7 +792,7 @@
       SUBROUTINE mp_get_rv(msg_dest, msg_sour, mpime, dest, sour, ip, gid)
         REAL (DP) :: msg_dest(:), msg_sour(:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -845,8 +801,7 @@
         INTEGER :: msglen
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -885,7 +840,7 @@
       SUBROUTINE mp_get_rm(msg_dest, msg_sour, mpime, dest, sour, ip, gid)
         REAL (DP) :: msg_dest(:,:), msg_sour(:,:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -894,8 +849,7 @@
         INTEGER :: msglen
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -935,7 +889,7 @@
       SUBROUTINE mp_get_cv(msg_dest, msg_sour, mpime, dest, sour, ip, gid)
         COMPLEX (DP) :: msg_dest(:), msg_sour(:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -944,8 +898,7 @@
         INTEGER :: msglen
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -985,7 +938,7 @@
       SUBROUTINE mp_put_i1(msg_dest, msg_sour, mpime, sour, dest, ip, gid)
         INTEGER :: msg_dest, msg_sour
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -994,8 +947,7 @@
         INTEGER :: msglen
 
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
 
         ! processors not taking part in the communication have 0 length message
@@ -1033,7 +985,7 @@
       SUBROUTINE mp_put_iv(msg_dest, msg_sour, mpime, sour, dest, ip, gid)
         INTEGER :: msg_dest(:), msg_sour(:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -1041,8 +993,7 @@
         INTEGER :: ierr, nrcv
         INTEGER :: msglen
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
         ! processors not taking part in the communication have 0 length message
 
@@ -1079,7 +1030,7 @@
       SUBROUTINE mp_put_rv(msg_dest, msg_sour, mpime, sour, dest, ip, gid)
         REAL (DP) :: msg_dest(:), msg_sour(:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -1087,8 +1038,7 @@
         INTEGER :: ierr, nrcv
         INTEGER :: msglen
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
         ! processors not taking part in the communication have 0 length message
 
@@ -1125,7 +1075,7 @@
       SUBROUTINE mp_put_rm(msg_dest, msg_sour, mpime, sour, dest, ip, gid)
         REAL (DP) :: msg_dest(:,:), msg_sour(:,:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -1133,8 +1083,7 @@
         INTEGER :: ierr, nrcv
         INTEGER :: msglen
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
         ! processors not taking part in the communication have 0 length message
 
@@ -1172,7 +1121,7 @@
       SUBROUTINE mp_put_cv(msg_dest, msg_sour, mpime, sour, dest, ip, gid)
         COMPLEX (DP) :: msg_dest(:), msg_sour(:)
         INTEGER, INTENT(IN) :: dest, sour, ip, mpime
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
 #if defined(__MPI)
         INTEGER :: istatus(MPI_STATUS_SIZE)
@@ -1180,8 +1129,7 @@
         INTEGER :: ierr, nrcv
         INTEGER :: msglen
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
 #endif
         ! processors not taking part in the communication have 0 length message
 
@@ -1220,11 +1168,12 @@
       SUBROUTINE mp_stop(code)
         IMPLICIT NONE
         INTEGER, INTENT (IN) :: code
+        INTEGER :: ierr
         WRITE( stdout, fmt='( "*** error in Message Passing (mp) module ***")' )
-        WRITE( stdout, fmt='( "*** error msg:  ",A60)' ) TRIM( err_msg )
         WRITE( stdout, fmt='( "*** error code: ",I5)' ) code
 #if defined(__MPI)
-        CALL mpi_abort(mpi_comm_world,code)
+        ! abort with extreme prejudice across the entire MPI set of tasks
+        CALL mpi_abort(MPI_COMM_WORLD,code,ierr)
 #endif
         STOP
       END SUBROUTINE mp_stop
@@ -1234,14 +1183,11 @@
       SUBROUTINE mp_sum_i1(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_integer( msglen, msg, group, -1 )
+        CALL reduce_base_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_i1
 !
@@ -1249,14 +1195,11 @@
       SUBROUTINE mp_sum_iv(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = size(msg)
-        CALL reduce_base_integer( msglen, msg, group, -1 )
+        CALL reduce_base_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_iv
 !
@@ -1265,14 +1208,11 @@
       SUBROUTINE mp_sum_im(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg(:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = size(msg)
-        CALL reduce_base_integer( msglen, msg, group, -1 )
+        CALL reduce_base_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_im
 !
@@ -1281,14 +1221,11 @@
       SUBROUTINE mp_sum_it(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg(:,:,:)
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT (IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = size(msg)
-        CALL reduce_base_integer( msglen, msg, group, -1 )
+        CALL reduce_base_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_it
 
@@ -1297,14 +1234,11 @@
       SUBROUTINE mp_sum_r1(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT (IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( msglen, msg, group, -1 )
+        CALL reduce_base_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_r1
 
@@ -1314,14 +1248,11 @@
       SUBROUTINE mp_sum_rv(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT (IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( msglen, msg, group, -1 )
+        CALL reduce_base_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_rv
 !
@@ -1331,14 +1262,11 @@
       SUBROUTINE mp_sum_rm(msg, gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:,:)
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT (IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( msglen, msg, group, -1 )
+        CALL reduce_base_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_rm
 
@@ -1348,25 +1276,20 @@
         REAL (DP), INTENT (IN)  :: msg(:,:)
         REAL (DP), INTENT (OUT) :: res(:,:)
         INTEGER,   INTENT (IN)  :: root
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
+        INTEGER,   INTENT (IN) :: gid
+#if defined(__MPI)
         INTEGER :: msglen, ierr, taskid
 
-#if defined(__MPI)
-
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
 
-        CALL mpi_comm_rank( group, taskid, ierr)
+        CALL mpi_comm_rank( gid, taskid, ierr)
         IF( ierr /= 0 ) CALL mp_stop( 8059 )
         !
         IF( taskid == root ) THEN
            IF( msglen > size(res) ) CALL mp_stop( 8060 )
         END IF
 
-        CALL reduce_base_real_to( msglen, msg, res, group, root )
-
+        CALL reduce_base_real_to( msglen, msg, res, gid, root )
 
 #else
 
@@ -1382,26 +1305,20 @@
         COMPLEX (DP), INTENT (IN)  :: msg(:,:)
         COMPLEX (DP), INTENT (OUT) :: res(:,:)
         INTEGER,   INTENT (IN)  :: root
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen, ierr, taskid
-
+        INTEGER,  INTENT (IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen, ierr, taskid
 
         msglen = size(msg)
 
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-
-        CALL mpi_comm_rank( group, taskid, ierr)
+        CALL mpi_comm_rank( gid, taskid, ierr)
         IF( ierr /= 0 ) CALL mp_stop( 8061 )
 
         IF( taskid == root ) THEN
            IF( msglen > size(res) ) CALL mp_stop( 8062 )
         END IF
 
-        CALL reduce_base_real_to( 2 * msglen, msg, res, group, root )
-
+        CALL reduce_base_real_to( 2 * msglen, msg, res, gid, root )
 
 #else
 
@@ -1422,8 +1339,8 @@
         IMPLICIT NONE
         REAL (DP), INTENT (IN) :: msg(:,:)
         REAL (DP), INTENT (OUT) :: res(:,:)
-        INTEGER, OPTIONAL, INTENT (IN) :: root
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
+        INTEGER, INTENT (IN) :: root
+        INTEGER, INTENT (IN) :: gid
         INTEGER :: group
         INTEGER :: msglen
         INTEGER :: taskid, ierr
@@ -1432,28 +1349,17 @@
 
 #if defined(__MPI)
 
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
+        !
+        CALL mpi_comm_rank( group, taskid, ierr)
+        IF( ierr /= 0 ) CALL mp_stop( 8063 )
 
-        IF( PRESENT( root ) ) THEN
-           !
-           CALL mpi_comm_rank( group, taskid, ierr)
-           IF( ierr /= 0 ) CALL mp_stop( 8063 )
-
-           IF( taskid == root ) THEN
-              IF( msglen > size(res) ) CALL mp_stop( 8064 )
-           END IF
-           !
-           CALL reduce_base_real_to( msglen, msg, res, group, root )
-           !
-        ELSE
-           !
-           IF( msglen > size(res) ) CALL mp_stop( 8065 )
-           !
-           CALL reduce_base_real_to( msglen, msg, res, group, -1 )
-           !
+        IF( taskid == root ) THEN
+           IF( msglen > size(res) ) CALL mp_stop( 8064 )
         END IF
-
+        !
+        CALL reduce_base_real_to( msglen, msg, res, group, root )
+        !
 
 #else
         res = msg
@@ -1469,14 +1375,11 @@
       SUBROUTINE mp_sum_rt( msg, gid )
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( msglen, msg, group, -1 )
+        CALL reduce_base_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_rt
 
@@ -1488,14 +1391,11 @@
       SUBROUTINE mp_sum_r4d(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:,:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( msglen, msg, group, -1 )
+        CALL reduce_base_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_r4d
 
@@ -1506,15 +1406,11 @@
       SUBROUTINE mp_sum_c1(msg,gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
-
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_c1
 !
@@ -1523,14 +1419,11 @@
       SUBROUTINE mp_sum_cv(msg,gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_cv
 !
@@ -1539,14 +1432,11 @@
       SUBROUTINE mp_sum_cm(msg, gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg(:,:)
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT (IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_cm
 !
@@ -1557,14 +1447,11 @@
         IMPLICIT NONE
         COMPLEX (DP), INTENT (IN) :: msg(:,:)
         COMPLEX (DP), INTENT (OUT) :: res(:,:)
-        INTEGER, OPTIONAL, INTENT (IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT (IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real_to( 2 * msglen, msg, res, group, -1 )
+        CALL reduce_base_real_to( 2 * msglen, msg, res, gid, -1 )
 #else
         res = msg
 #endif
@@ -1579,14 +1466,11 @@
       SUBROUTINE mp_sum_ct(msg,gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg(:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = SIZE(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_ct
 
@@ -1598,14 +1482,11 @@
       SUBROUTINE mp_sum_c4d(msg,gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg(:,:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_c4d
 !
@@ -1616,14 +1497,11 @@
       SUBROUTINE mp_sum_c5d(msg,gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg(:,:,:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_c5d
 
@@ -1634,14 +1512,11 @@
       SUBROUTINE mp_sum_r5d(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:,:,:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( msglen, msg, group, -1 )
+        CALL reduce_base_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_r5d
 
@@ -1655,14 +1530,11 @@
       SUBROUTINE mp_sum_c6d(msg,gid)
         IMPLICIT NONE
         COMPLEX (DP), INTENT (INOUT) :: msg(:,:,:,:,:,:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = size(msg)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL reduce_base_real( 2 * msglen, msg, group, -1 )
+        CALL reduce_base_real( 2 * msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_sum_c6d
 
@@ -1672,14 +1544,11 @@
       SUBROUTINE mp_max_i(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
+        INTEGER :: msglen
         msglen = 1
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL parallel_max_integer( msglen, msg, group, -1 )
+        CALL parallel_max_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_max_i
 !
@@ -1691,14 +1560,11 @@
       SUBROUTINE mp_max_iv(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = size(msg)
-        CALL parallel_max_integer( msglen, msg, group, -1 )
+        CALL parallel_max_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_max_iv
 !
@@ -1707,14 +1573,11 @@
       SUBROUTINE mp_max_r(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = 1
-        CALL parallel_max_real( msglen, msg, group, -1 )
+        CALL parallel_max_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_max_r
 !
@@ -1722,56 +1585,44 @@
       SUBROUTINE mp_max_rv(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = size(msg)
-        CALL parallel_max_real( msglen, msg, group, -1 )
+        CALL parallel_max_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_max_rv
 !------------------------------------------------------------------------------!
       SUBROUTINE mp_min_i(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = 1
-        CALL parallel_min_integer( msglen, msg, group, -1 )
+        CALL parallel_min_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_min_i
 !------------------------------------------------------------------------------!
       SUBROUTINE mp_min_iv(msg,gid)
         IMPLICIT NONE
         INTEGER, INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = SIZE(msg)
-        CALL parallel_min_integer( msglen, msg, group, -1 )
+        CALL parallel_min_integer( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_min_iv
 !------------------------------------------------------------------------------!
       SUBROUTINE mp_min_r(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = 1
-        CALL parallel_min_real( msglen, msg, group, -1 )
+        CALL parallel_min_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_min_r
 !
@@ -1779,14 +1630,11 @@
       SUBROUTINE mp_min_rv(msg,gid)
         IMPLICIT NONE
         REAL (DP), INTENT (INOUT) :: msg(:)
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
-        INTEGER :: msglen
+        INTEGER, INTENT(IN) :: gid
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        INTEGER :: msglen
         msglen = size(msg)
-        CALL parallel_min_real( msglen, msg, group, -1 )
+        CALL parallel_min_real( msglen, msg, gid, -1 )
 #endif
       END SUBROUTINE mp_min_rv
 
@@ -1794,13 +1642,10 @@
 
       SUBROUTINE mp_barrier(gid)
         IMPLICIT NONE
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
-        INTEGER :: group
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: ierr
 #if defined(__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
-        CALL MPI_BARRIER(group,IERR)
+        CALL MPI_BARRIER(gid,IERR)
         IF (ierr/=0) CALL mp_stop( 8066 )
 #endif
       END SUBROUTINE mp_barrier
@@ -1811,17 +1656,13 @@
       FUNCTION mp_rank( comm )
         IMPLICIT NONE
         INTEGER :: mp_rank
-        INTEGER, OPTIONAL, INTENT(IN) :: comm
+        INTEGER, INTENT(IN) :: comm
         INTEGER :: ierr, taskid
 
         ierr = 0
         taskid = 0
 #if defined(__MPI)
-        IF( PRESENT( comm ) ) THEN
-           CALL mpi_comm_rank(comm,taskid,ierr)
-        ELSE
-           CALL mpi_comm_rank(mpi_comm_world,taskid,ierr)
-        END IF
+        CALL mpi_comm_rank(comm,taskid,ierr)
         IF (ierr/=0) CALL mp_stop( 8067 )
 #endif
         mp_rank = taskid
@@ -1833,17 +1674,13 @@
       FUNCTION mp_size( comm )
         IMPLICIT NONE
         INTEGER :: mp_size
-        INTEGER, OPTIONAL, INTENT(IN) :: comm
+        INTEGER, INTENT(IN) :: comm
         INTEGER :: ierr, numtask
 
         ierr = 0
         numtask = 1
 #if defined(__MPI)
-        IF( PRESENT( comm ) ) THEN
-           CALL mpi_comm_size(comm,numtask,ierr)
-        ELSE
-           CALL mpi_comm_size(mpi_comm_world,numtask,ierr)
-        END IF
+        CALL mpi_comm_size(comm,numtask,ierr)
         IF (ierr/=0) CALL mp_stop( 8068 )
 #endif
         mp_size = numtask
@@ -1855,8 +1692,8 @@
 #if defined(__MPI)
 #  if defined (__MP_STAT)
         WRITE( stdout, 20 )
+20      FORMAT(3X,'please use an MPI profiler to analyze communications ')
 #  endif
-20      FORMAT(3X,'please use an MPI profiler to analisy communications ')
 #else
         WRITE( stdout, *)
 #endif
@@ -1873,13 +1710,12 @@
         REAL(DP) :: mydata(:)
         REAL(DP) :: alldata(:)
         INTEGER, INTENT(IN) :: recvcount(:), displs(:), root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: ierr, npe, myid
 
 #if defined (__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         CALL mpi_comm_size( group, npe, ierr )
         IF (ierr/=0) CALL mp_stop( 8069 )
         CALL mpi_comm_rank( group, myid, ierr )
@@ -1912,13 +1748,12 @@
         COMPLEX(DP) :: mydata(:)
         COMPLEX(DP) :: alldata(:)
         INTEGER, INTENT(IN) :: recvcount(:), displs(:), root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: ierr, npe, myid
 
 #if defined (__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         CALL mpi_comm_size( group, npe, ierr )
         IF (ierr/=0) CALL mp_stop( 8069 )
         CALL mpi_comm_rank( group, myid, ierr )
@@ -1951,13 +1786,12 @@
         INTEGER :: mydata(:)
         INTEGER :: alldata(:)
         INTEGER, INTENT(IN) :: recvcount(:), displs(:), root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: ierr, npe, myid
 
 #if defined (__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         CALL mpi_comm_size( group, npe, ierr )
         IF (ierr/=0) CALL mp_stop( 8069 )
         CALL mpi_comm_rank( group, myid, ierr )
@@ -1991,15 +1825,14 @@
         REAL(DP) :: mydata(:,:)  ! Warning first dimension is supposed constant!
         REAL(DP) :: alldata(:,:)
         INTEGER, INTENT(IN) :: recvcount(:), displs(:), root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: ierr, npe, myid, nsiz
         INTEGER, ALLOCATABLE :: nrecv(:), ndisp(:)
 
 
 #if defined (__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         CALL mpi_comm_size( group, npe, ierr )
         IF (ierr/=0) CALL mp_stop( 8069 )
         CALL mpi_comm_rank( group, myid, ierr )
@@ -2042,15 +1875,14 @@
         INTEGER :: mydata(:,:)  ! Warning first dimension is supposed constant!
         INTEGER :: alldata(:,:)
         INTEGER, INTENT(IN) :: recvcount(:), displs(:), root
-        INTEGER, OPTIONAL, INTENT(IN) :: gid
+        INTEGER, INTENT(IN) :: gid
         INTEGER :: group
         INTEGER :: ierr, npe, myid, nsiz
         INTEGER, ALLOCATABLE :: nrecv(:), ndisp(:)
 
 
 #if defined (__MPI)
-        group = mpi_comm_world
-        IF( PRESENT( gid ) ) group = gid
+        group = gid
         CALL mpi_comm_size( group, npe, ierr )
         IF (ierr/=0) CALL mp_stop( 8069 )
         CALL mpi_comm_rank( group, myid, ierr )
@@ -2119,13 +1951,12 @@ SUBROUTINE mp_alltoall_c3d( sndbuf, rcvbuf, gid )
    IMPLICIT NONE
    COMPLEX(DP) :: sndbuf( :, :, : )
    COMPLEX(DP) :: rcvbuf( :, :, : )
-   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER, INTENT(IN) :: gid
    INTEGER :: nsiz, group, ierr, npe
 
 #if defined (__MPI)
 
-   group = mpi_comm_world
-   IF( PRESENT( gid ) ) group = gid
+   group = gid
 
    CALL mpi_comm_size( group, npe, ierr )
    IF (ierr/=0) CALL mp_stop( 8069 )
@@ -2156,13 +1987,12 @@ SUBROUTINE mp_alltoall_i3d( sndbuf, rcvbuf, gid )
    IMPLICIT NONE
    INTEGER :: sndbuf( :, :, : )
    INTEGER :: rcvbuf( :, :, : )
-   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER, INTENT(IN) :: gid
    INTEGER :: nsiz, group, ierr, npe
 
 #if defined (__MPI)
 
-   group = mpi_comm_world
-   IF( PRESENT( gid ) ) group = gid
+   group = gid
 
    CALL mpi_comm_size( group, npe, ierr )
    IF (ierr/=0) CALL mp_stop( 8069 )
@@ -2186,19 +2016,18 @@ SUBROUTINE mp_alltoall_i3d( sndbuf, rcvbuf, gid )
    RETURN
 END SUBROUTINE mp_alltoall_i3d
 
-SUBROUTINE mp_circular_shift_left_d2d_int( buf, itag, gid )
+SUBROUTINE mp_circular_shift_left_i0( buf, itag, gid )
    IMPLICIT NONE
    INTEGER :: buf
    INTEGER, INTENT(IN) :: itag
-   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER, INTENT(IN) :: gid
    INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
 
 #if defined (__MPI)
 
    INTEGER :: istatus( mpi_status_size )
    !
-   group = mpi_comm_world
-   IF( PRESENT( gid ) ) group = gid
+   group = gid
    !
    CALL mpi_comm_size( group, npe, ierr )
    IF (ierr/=0) CALL mp_stop( 8100 )
@@ -2219,23 +2048,91 @@ SUBROUTINE mp_circular_shift_left_d2d_int( buf, itag, gid )
    ! do nothing
 #endif
    RETURN
-END SUBROUTINE mp_circular_shift_left_d2d_int
+END SUBROUTINE mp_circular_shift_left_i0
 
 
-
-SUBROUTINE mp_circular_shift_left_d2d_double( buf, itag, gid )
+SUBROUTINE mp_circular_shift_left_i1( buf, itag, gid )
    IMPLICIT NONE
-   REAL(DP) :: buf( :, : )
+   INTEGER :: buf(:)
    INTEGER, INTENT(IN) :: itag
-   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER, INTENT(IN) :: gid
    INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
 
 #if defined (__MPI)
 
    INTEGER :: istatus( mpi_status_size )
    !
-   group = mpi_comm_world
-   IF( PRESENT( gid ) ) group = gid
+   group = gid
+   !
+   CALL mpi_comm_size( group, npe, ierr )
+   IF (ierr/=0) CALL mp_stop( 8100 )
+   CALL mpi_comm_rank( group, mype, ierr )
+   IF (ierr/=0) CALL mp_stop( 8101 )
+   !
+   sour = mype + 1
+   IF( sour == npe ) sour = 0
+   dest = mype - 1
+   IF( dest == -1 ) dest = npe - 1
+   !
+   CALL MPI_Sendrecv_replace( buf, SIZE(buf), MPI_INTEGER, &
+        dest, itag, sour, itag, group, istatus, ierr)
+   !
+   IF (ierr/=0) CALL mp_stop( 8102 )
+   !
+#else
+   ! do nothing
+#endif
+   RETURN
+END SUBROUTINE mp_circular_shift_left_i1
+
+
+SUBROUTINE mp_circular_shift_left_i2( buf, itag, gid )
+   IMPLICIT NONE
+   INTEGER :: buf(:,:)
+   INTEGER, INTENT(IN) :: itag
+   INTEGER, INTENT(IN) :: gid
+   INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
+
+#if defined (__MPI)
+
+   INTEGER :: istatus( mpi_status_size )
+   !
+   group = gid
+   !
+   CALL mpi_comm_size( group, npe, ierr )
+   IF (ierr/=0) CALL mp_stop( 8100 )
+   CALL mpi_comm_rank( group, mype, ierr )
+   IF (ierr/=0) CALL mp_stop( 8101 )
+   !
+   sour = mype + 1
+   IF( sour == npe ) sour = 0
+   dest = mype - 1
+   IF( dest == -1 ) dest = npe - 1
+   !
+   CALL MPI_Sendrecv_replace( buf, SIZE(buf), MPI_INTEGER, &
+        dest, itag, sour, itag, group, istatus, ierr)
+   !
+   IF (ierr/=0) CALL mp_stop( 8102 )
+   !
+#else
+   ! do nothing
+#endif
+   RETURN
+END SUBROUTINE mp_circular_shift_left_i2
+
+
+SUBROUTINE mp_circular_shift_left_r2d( buf, itag, gid )
+   IMPLICIT NONE
+   REAL(DP) :: buf( :, : )
+   INTEGER, INTENT(IN) :: itag
+   INTEGER, INTENT(IN) :: gid
+   INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
+
+#if defined (__MPI)
+
+   INTEGER :: istatus( mpi_status_size )
+   !
+   group = gid
    !
    CALL mpi_comm_size( group, npe, ierr )
    IF (ierr/=0) CALL mp_stop( 8100 )
@@ -2256,21 +2153,20 @@ SUBROUTINE mp_circular_shift_left_d2d_double( buf, itag, gid )
    ! do nothing
 #endif
    RETURN
-END SUBROUTINE mp_circular_shift_left_d2d_double
+END SUBROUTINE mp_circular_shift_left_r2d
 
-SUBROUTINE mp_circular_shift_left_d2d_complex( buf, itag, gid )
+SUBROUTINE mp_circular_shift_left_c2d( buf, itag, gid )
    IMPLICIT NONE
    COMPLEX(DP) :: buf( :, : )
    INTEGER, INTENT(IN) :: itag
-   INTEGER, OPTIONAL, INTENT(IN) :: gid
+   INTEGER, INTENT(IN) :: gid
    INTEGER :: nsiz, group, ierr, npe, sour, dest, mype
 
 #if defined (__MPI)
 
    INTEGER :: istatus( mpi_status_size )
    !
-   group = mpi_comm_world
-   IF( PRESENT( gid ) ) group = gid
+   group = gid
    !
    CALL mpi_comm_size( group, npe, ierr )
    IF (ierr/=0) CALL mp_stop( 8100 )
@@ -2291,28 +2187,19 @@ SUBROUTINE mp_circular_shift_left_d2d_complex( buf, itag, gid )
    ! do nothing
 #endif
    RETURN
-END SUBROUTINE mp_circular_shift_left_d2d_complex
+END SUBROUTINE mp_circular_shift_left_c2d
 
+FUNCTION mp_get_comm_null( )
+  IMPLICIT NONE
+  INTEGER :: mp_get_comm_null
+  mp_get_comm_null = MPI_COMM_NULL
+END FUNCTION mp_get_comm_null
 
-      FUNCTION mp_get_comm_null( )
-        IMPLICIT NONE
-        INTEGER :: mp_get_comm_null
-#if defined(__MPI)
-           mp_get_comm_null = MPI_COMM_NULL
-#else
-           mp_get_comm_null = 0
-#endif
-      END FUNCTION mp_get_comm_null
-
-      FUNCTION mp_get_comm_self( )
-        IMPLICIT NONE
-        INTEGER :: mp_get_comm_self
-#if defined(__MPI)
-           mp_get_comm_self = MPI_COMM_SELF
-#else
-           mp_get_comm_self = 0
-#endif
-      END FUNCTION mp_get_comm_self
+FUNCTION mp_get_comm_self( )
+  IMPLICIT NONE
+  INTEGER :: mp_get_comm_self
+  mp_get_comm_self = MPI_COMM_SELF
+END FUNCTION mp_get_comm_self
 
 !------------------------------------------------------------------------------!
     END MODULE mp

@@ -15,7 +15,7 @@ SUBROUTINE gradcorr( rho, rhog, rho_core, rhog_core, etxc, vtxc, v )
   USE gvect,                ONLY : nl, ngm, g
   USE lsda_mod,             ONLY : nspin
   USE cell_base,            ONLY : omega, alat
-  USE funct,                ONLY : gcxc, gcx_spin, gcc_spin, &
+  USE funct,                ONLY : gcxc, gcx_spin, gcc_spin, igcc_is_lyp, &
                                    gcc_spin_more, dft_is_gradient, get_igcc
   USE spin_orb,             ONLY : domag
   USE noncollin_module,     ONLY : ux
@@ -39,7 +39,6 @@ SUBROUTINE gradcorr( rho, rhog, rho_core, rhog_core, etxc, vtxc, v )
 
   COMPLEX(DP), ALLOCATABLE :: rhogsum(:,:)
   !
-  LOGICAL  :: igcc_is_lyp
   REAL(DP) :: grho2(2), sx, sc, v1x, v2x, v1c, v2c, &
               v1xup, v1xdw, v2xup, v2xdw, v1cup, v1cdw , &
               etxcgc, vtxcgc, segno, arho, fac, zeta, rh, grh2, amag 
@@ -50,8 +49,6 @@ SUBROUTINE gradcorr( rho, rhog, rho_core, rhog_core, etxc, vtxc, v )
   !
   !
   IF ( .NOT. dft_is_gradient() ) RETURN
-
-  igcc_is_lyp = (get_igcc() == 3 .or. get_igcc() == 7)
   !
   etxcgc = 0.D0
   vtxcgc = 0.D0
@@ -170,7 +167,7 @@ SUBROUTINE gradcorr( rho, rhog, rho_core, rhog_core, etxc, vtxc, v )
         !
         IF ( rh > epsr ) THEN
            !
-           IF ( igcc_is_lyp ) THEN
+           IF ( igcc_is_lyp() ) THEN
               !
               rup = rhoout(k,1)
               rdw = rhoout(k,2)
@@ -587,6 +584,104 @@ SUBROUTINE hessian( nrxx, a, ngm, g, nl, ga, ha )
   RETURN
   !
 END SUBROUTINE hessian
+
+!--------------------------------------------------------------------
+SUBROUTINE ggradient( nrxx, a, ngm, g, nl, ga, gga )
+!--------------------------------------------------------------------
+  !
+  ! ... Calculates ga = \grad a in R-space 
+  ! ... and gga = \grad \grad a in R-space (a is also in R-space)
+  !
+  USE constants, ONLY : tpi
+  USE cell_base, ONLY : tpiba
+  USE kinds,     ONLY : DP
+  USE gvect,     ONLY : nlm
+  USE control_flags, ONLY : gamma_only
+  USE fft_base,      ONLY : dfftp
+  USE fft_interfaces,ONLY : fwfft, invfft
+  !
+  IMPLICIT NONE
+  !
+  INTEGER,  INTENT(IN)  :: nrxx
+  INTEGER,  INTENT(IN)  :: ngm, nl(ngm)
+  REAL(DP), INTENT(IN)  :: a(nrxx), g(3,ngm)
+  REAL(DP), INTENT(OUT) :: ga( 3, nrxx )
+  REAL(DP), INTENT(OUT) :: gga( 3, 3, nrxx )
+  !
+  INTEGER                  :: ipol, jpol
+  COMPLEX(DP), ALLOCATABLE :: aux(:), gaux(:), ggaux(:)
+  !
+  !
+  ALLOCATE(  aux( nrxx ) )
+  ALLOCATE( gaux( nrxx ) )
+  ALLOCATE( ggaux( nrxx ) )
+  !
+  aux = CMPLX( a(:), 0.D0 ,kind=DP)
+  !
+  ! ... bring a(r) to G-space, a(G) ...
+  !
+  CALL fwfft ('Dense', aux, dfftp)
+  !
+  ! ... multiply by (iG) to get (\grad_ipol a)(G) ...
+  !
+  DO ipol = 1, 3
+     !
+     gaux(:) = CMPLX(0.d0,0.d0, kind=dp)
+     !
+     gaux(nl(:)) = g(ipol,:) * &
+                   CMPLX( -AIMAG( aux(nl(:)) ), REAL( aux(nl(:)) ) ,kind=DP)
+     !
+     IF ( gamma_only ) THEN
+        !
+        gaux(nlm(:)) = CMPLX( REAL( gaux(nl(:)) ), -AIMAG( gaux(nl(:)) ) ,kind=DP)
+        !
+     END IF
+     !
+     ! ... bring back to R-space, (\grad_ipol a)(r) ...
+     !
+     CALL invfft ('Dense', gaux, dfftp)
+     !
+     ! ...and add the factor 2\pi/a  missing in the definition of G
+     !
+     ga(ipol,:) = tpiba * DBLE( gaux(:) )
+     !
+     ! ... compute the second derivatives
+     !
+     DO jpol = 1, ipol
+        !
+        ggaux(:) = CMPLX(0.d0,0.d0, kind=dp)
+        !
+        ggaux(nl(:)) = - g(ipol,:) * g(jpol,:) * &
+                       CMPLX( REAL( aux(nl(:)) ), AIMAG( aux(nl(:)) ) ,kind=DP)
+        !
+        IF ( gamma_only ) THEN
+           !
+           ggaux(nlm(:)) = CMPLX( REAL( ggaux(nl(:)) ), -AIMAG( ggaux(nl(:)) ) ,kind=DP)
+           !
+        END IF
+        !
+        ! ... bring back to R-space, (\grad_ipol a)(r) ...
+        !
+        CALL invfft ('Dense', ggaux, dfftp)
+        !
+        ! ...and add the factor 2\pi/a  missing in the definition of G
+        !
+        gga(ipol, jpol, :) = tpiba * tpiba * DBLE( ggaux(:) )
+        !
+        gga(jpol, ipol, :) = gga(ipol, jpol, :) 
+        !
+     END DO
+     !
+  END DO
+  !
+  DEALLOCATE( ggaux )
+  DEALLOCATE( gaux )
+  DEALLOCATE( aux )
+  !
+  RETURN
+  !
+END SUBROUTINE ggradient
+
 !--------------------------------------------------------------------
 SUBROUTINE external_gradient( a, grada )
 !--------------------------------------------------------------------
@@ -609,6 +704,30 @@ SUBROUTINE external_gradient( a, grada )
   RETURN
 
 END SUBROUTINE external_gradient
+
+!--------------------------------------------------------------------
+SUBROUTINE external_ggradient( a, grada, ggrada )
+!--------------------------------------------------------------------
+  ! 
+  ! Interface for computing gradient and hessian in real 
+  ! space, to be called by an external module
+  !
+  USE kinds,            ONLY : DP
+  USE fft_base,         ONLY : dfftp
+  USE gvect,            ONLY : ngm, nl, g
+  !
+  IMPLICIT NONE
+  !
+  REAL( DP ), INTENT(IN)   :: a( dfftp%nnr )
+  REAL( DP ), INTENT(OUT)  :: grada( 3, dfftp%nnr )
+  REAL( DP ), INTENT(OUT)  :: ggrada( 3, 3, dfftp%nnr )
+
+! A in real space, grad(A) in real space
+  CALL ggradient( dfftp%nnr, a, ngm, g, nl, grada, ggrada )
+
+  RETURN
+
+END SUBROUTINE external_ggradient
 !--------------------------------------------------------------------
 SUBROUTINE external_hessian( a, grada, hessa )
 !--------------------------------------------------------------------

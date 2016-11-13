@@ -94,10 +94,10 @@ CONTAINS
   !
   ! set the energy grid
   !
-  alpha = (wmax - wmin) / REAL(nw, DP)
+  alpha = (wmax - wmin) / REAL(nw-1, KIND=DP)
   !
   DO iw = 1, nw
-      wgrid(iw) = wmin + iw * alpha
+      wgrid(iw) = wmin + (iw-1) * alpha
   ENDDO
   !
 END SUBROUTINE grid_build
@@ -137,6 +137,7 @@ PROGRAM epsilon
   USE kinds,       ONLY : DP
   USE io_global,   ONLY : stdout, ionode, ionode_id
   USE mp,          ONLY : mp_bcast
+  USE mp_world,    ONLY : world_comm
   USE iotk_module
   USE xml_io_base
   USE io_files,    ONLY : tmp_dir, prefix, outdir
@@ -147,7 +148,7 @@ PROGRAM epsilon
   USE wvfct,       ONLY : nbnd
   USE lsda_mod,    ONLY : nspin
   USE mp_global,   ONLY : mp_startup
-  USE environment, ONLY : environment_start
+  USE environment, ONLY : environment_start, environment_end
   !
   IMPLICIT NONE
   !
@@ -208,7 +209,7 @@ PROGRAM epsilon
   !
   IF ( ionode ) READ (5, inputpp, IOSTAT=ios)
   !
-  CALL mp_bcast ( ios, ionode_id )
+  CALL mp_bcast ( ios, ionode_id, world_comm )
   IF (ios/=0) CALL errore('epsilon', 'reading namelist INPUTPP', abs(ios))
   !
   IF ( ionode ) THEN
@@ -219,26 +220,26 @@ PROGRAM epsilon
      !
   ENDIF
   !
-  CALL mp_bcast ( ios, ionode_id )
+  CALL mp_bcast ( ios, ionode_id, world_comm )
   IF (ios/=0) CALL errore('epsilon', 'reading namelist ENERGY_GRID', abs(ios))
   !
   ! ... Broadcast variables
   !
   IF (ionode) WRITE( stdout, "( 5x, 'Broadcasting variables...' ) " )
 
-  CALL mp_bcast( smeartype, ionode_id )
-  CALL mp_bcast( calculation, ionode_id )
-  CALL mp_bcast( prefix, ionode_id )
-  CALL mp_bcast( tmp_dir, ionode_id )
-  CALL mp_bcast( shift, ionode_id )
-  CALL mp_bcast( outdir, ionode_id )
-  CALL mp_bcast( intrasmear, ionode_id )
-  CALL mp_bcast( intersmear, ionode_id)
-  CALL mp_bcast( wmax, ionode_id )
-  CALL mp_bcast( wmin, ionode_id )
-  CALL mp_bcast( nw, ionode_id )
-  CALL mp_bcast( nbndmin, ionode_id )
-  CALL mp_bcast( nbndmax, ionode_id )
+  CALL mp_bcast( smeartype, ionode_id, world_comm )
+  CALL mp_bcast( calculation, ionode_id, world_comm )
+  CALL mp_bcast( prefix, ionode_id, world_comm )
+  CALL mp_bcast( tmp_dir, ionode_id, world_comm )
+  CALL mp_bcast( shift, ionode_id, world_comm )
+  CALL mp_bcast( outdir, ionode_id, world_comm )
+  CALL mp_bcast( intrasmear, ionode_id, world_comm )
+  CALL mp_bcast( intersmear, ionode_id, world_comm)
+  CALL mp_bcast( wmax, ionode_id, world_comm )
+  CALL mp_bcast( wmin, ionode_id, world_comm )
+  CALL mp_bcast( nw, ionode_id, world_comm )
+  CALL mp_bcast( nbndmin, ionode_id, world_comm )
+  CALL mp_bcast( nbndmax, ionode_id, world_comm )
 
   !
   ! read PW simulation parameters from prefix.save/data-file.xml
@@ -310,6 +311,7 @@ PROGRAM epsilon
   IF ( ionode ) WRITE( stdout, *  )
 
   !
+  CALL environment_end ( 'epsilon' )
   !
   CALL stop_pp ()
 
@@ -330,7 +332,7 @@ SUBROUTINE eps_calc ( intersmear,intrasmear, nw, wmax, wmin, nbndmin, nbndmax, s
   USE io_global,            ONLY : ionode, stdout
   !
   USE grid_module,          ONLY : alpha, focc, wgrid, grid_build, grid_destroy
-  USE mp_global,            ONLY : inter_pool_comm, intra_pool_comm
+  USE mp_global,            ONLY : inter_pool_comm
   USE mp,                   ONLY : mp_sum
   !
   IMPLICIT NONE
@@ -1128,7 +1130,7 @@ SUBROUTINE offdiag_calc ( intersmear,intrasmear, nw, wmax, wmin, nbndmin, nbndma
   USE klist,                ONLY : nks, nkstot, degauss
   USE grid_module,          ONLY : focc, wgrid, grid_build, grid_destroy
   USE io_global,            ONLY : ionode, stdout
-  USE mp_global,            ONLY : inter_pool_comm, intra_pool_comm
+  USE mp_global,            ONLY : inter_pool_comm
   USE mp,                   ONLY : mp_sum
 
   !
@@ -1333,7 +1335,7 @@ SUBROUTINE dipole_calc( ik, dipole_aux, metalcalc, nbndmin, nbndmax )
   USE gvect,                ONLY : ngm, g
   USE io_files,             ONLY : nwordwfc, iunwfc
   USE grid_module,          ONLY : focc
-  USE mp_global,            ONLY : intra_pool_comm
+  USE mp_global,            ONLY : intra_bgrp_comm
   USE mp,                   ONLY : mp_sum
 
 IMPLICIT NONE
@@ -1359,7 +1361,7 @@ IMPLICIT NONE
   !
   ! read wfc for the given kpt
   !
-  CALL davcio (evc, nwordwfc, iunwfc, ik, - 1)
+  CALL davcio (evc, 2*nwordwfc, iunwfc, ik, - 1)
   !
   ! compute matrix elements
   !
@@ -1405,9 +1407,9 @@ IMPLICIT NONE
      !
   ENDIF
   !
-  ! recover over G parallelization (intra_pool)
+  ! recover over G parallelization (intra_bgrp)
   !
-  CALL mp_sum( dipole_aux, intra_pool_comm )
+  CALL mp_sum( dipole_aux, intra_bgrp_comm )
   !
   CALL stop_clock( 'dipole_calc' )
   !

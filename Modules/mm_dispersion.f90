@@ -35,7 +35,7 @@ MODULE london_module
   ! r     ( 3 , mxr )     : ordered distance vectors
   ! dist2 ( mxr )         : ordered distances
   !
-  REAL ( DP ) , PUBLIC :: scal6 , lon_rcut
+  REAL ( DP ) , PUBLIC :: scal6=0._dp , lon_rcut=0._dp
   !
   ! scal6    : global scaling factor
   ! lon_rcut : public cut-off radius
@@ -68,16 +68,22 @@ MODULE london_module
       !
 #if defined __MPI
       USE mp,                  ONLY : mp_bcast
+      USE mp_images,           ONLY : intra_image_comm
 #endif
       !
       IMPLICIT NONE
       !
       INTEGER, PARAMETER :: maxZ = 86
       REAL (DP) :: vdw_coeffs(2,maxZ)
+      !
       ! vdw C6 and radii for the first 86 atoms for the DFTD2 method
-      ! data taken from the DFTD2 sections of the dftd3.f file found
-      ! on S.Grimmes home page for the DFTD3 method 
-      ! http://toc.uni-muenster.de/DFTD3/index.html
+      ! Data from the DFT-D2 section of the dftd3.f file found on S.Grimme's home page:
+      ! http://www.thch.uni-bonn.de/tc/index.php?section=downloads&subsection=DFT-D3
+      ! See also S. Grimme, J. Comp. Chem., 27, 1787 (2006)
+      ! First  column: C6, converted to Ry*Bohr^6 units
+      ! (in the paper: J*nm^6/mol, conversion factor: 1 J*nm^6/mol = 34.69 Ry*Bohr^6)
+      ! Second column: radii, in Bohr (in the paper they are in A)
+      ! 
       DATA vdw_coeffs / &
          4.857,    1.892,&
          2.775,    1.912,&
@@ -242,7 +248,7 @@ MODULE london_module
                           & /, 5X, "  atom      VdW radius       C_6     " , / )' )
          DO ata = 1 , ntyp
             !
-            WRITE (stdout , '( 8X, A3 , 6X , F7.3 , 8X , F7.3 )' ) &
+            WRITE (stdout , '( 8X, A3 , 6X , F7.3 , 6X , F9.3 )' ) &
                                atom_label ( ata ) , R_vdw ( ata ) , C6_i ( ata )
             !
          END DO
@@ -264,10 +270,10 @@ MODULE london_module
 #if defined __MPI
       ! broadcast data to all processors
       !
-      CALL mp_bcast ( C6_ij,  ionode_id )
-      CALL mp_bcast ( R_sum,  ionode_id )
-      CALL mp_bcast ( r_cut,  ionode_id )
-      CALL mp_bcast ( mxr  ,  ionode_id )
+      CALL mp_bcast ( C6_ij,  ionode_id, intra_image_comm )
+      CALL mp_bcast ( R_sum,  ionode_id, intra_image_comm )
+      CALL mp_bcast ( r_cut,  ionode_id, intra_image_comm )
+      CALL mp_bcast ( mxr  ,  ionode_id, intra_image_comm )
       !
 #endif
       !
@@ -294,14 +300,11 @@ MODULE london_module
     ! and scal6 is a global scaling factor
     !
 #if defined __MPI
-    USE mp_global,    ONLY : me_image , nproc_image, intra_image_comm
+    USE mp_images,    ONLY : me_image , nproc_image, intra_image_comm
     USE mp,           ONLY : mp_sum
 #endif
     !
     IMPLICIT NONE
-    !
-    !INTEGER , PARAMETER :: mxr = 500000
-    ! local:    max number of r ( see rgen )
     !
     INTEGER :: ata , atb , nrm , nr
     ! locals : 
@@ -371,6 +374,7 @@ MODULE london_module
           !
           CALL rgen ( dtau, r_cut, mxr, at, bg, r, dist2, nrm )
           !
+!$omp parallel do private(nr,dist,dist6,f_damp) default(shared), reduction(-:energy_london)
           DO nr = 1 , nrm
             !
             dist  = alat * sqrt ( dist2 ( nr ) )
@@ -384,6 +388,7 @@ MODULE london_module
                   f_damp
             !
           END DO
+!$omp end parallel do
           !
         END DO
         !
@@ -391,9 +396,8 @@ MODULE london_module
       !
       energy_london = scal6 * 0.5d0 * energy_london
       !
-      !
 #if defined (__MPI)
-999 CALL mp_sum ( energy_london , intra_image_comm )
+    CALL mp_sum ( energy_london , intra_image_comm )
 #endif
     !
     RETURN
@@ -408,14 +412,11 @@ MODULE london_module
     !
     !
 #if defined __MPI
-    USE mp_global,    ONLY : me_image , nproc_image , intra_image_comm
+    USE mp_images,    ONLY : me_image , nproc_image , intra_image_comm
     USE mp,           ONLY : mp_sum
 #endif
     !
     IMPLICIT NONE
-    !
-    !INTEGER , PARAMETER :: mxr = 500000
-    ! local:    max number of r ( see rgen )
     !
     INTEGER :: ata , atb , nrm , nr , ipol
     ! locals :
@@ -435,7 +436,7 @@ MODULE london_module
     ! ityp : type of each atom
     !
     REAL ( DP ) :: dist , f_damp , dtau ( 3 ) , force_london ( 3 , nat ) , &
-                   dist6 , dist7 , exparg , expval , par , fac , add
+                   dist6 , dist7 , exparg , expval , par , fac , add, aux(3)
     ! locals :
     ! dist         : distance R_ij between the current pair of atoms
     ! f_damp       :  damping function
@@ -500,23 +501,23 @@ MODULE london_module
            !
            par = beta / ( R_sum ( ityp ( atb ) , ityp ( ata ) ) )
            !
+           aux(:) = 0.d0
+!$omp parallel do private(nr,dist,dist6,dist7,exparg,expval,fac,add,ipol) default(shared), reduction(+:aux)
            DO nr = 1 , nrm
             !
             dist  = alat * sqrt ( dist2 ( nr ) )
             dist6 = dist ** 6
             dist7 = dist6 * dist
             !
-            exparg = - beta * ( dist / ( R_sum ( ityp ( atb ) , ityp ( ata ) ) ) - 1 )
-            !
+            exparg = - beta * ( dist / ( R_sum ( ityp(atb) , ityp(ata) ) ) - 1 )
             expval = exp ( exparg )
             !
             fac = C6_ij ( ityp ( atb ) , ityp ( ata ) ) / dist6
-            !
             add = 6.d0 / dist
             !
             DO ipol = 1 , 3
-              !
-              force_london ( ipol , ata ) = force_london ( ipol , ata ) + &
+              ! workaround for OpenMP on Intel compilers
+              aux(ipol) = aux(ipol) + &
                            ( scal6 / ( 1 + expval ) * fac * &
                            ( - par * expval / ( 1.d0 + expval ) + add ) * &
                            r ( ipol , nr ) * alat / dist )
@@ -524,6 +525,10 @@ MODULE london_module
             END DO
             !
            END DO
+!$omp end parallel do 
+           DO ipol = 1 , 3
+              force_london ( ipol , ata ) = force_london ( ipol , ata ) + aux(ipol)
+           ENDDO
            !
          END IF
          !
@@ -532,7 +537,7 @@ MODULE london_module
       END DO
       !
 #if defined (__MPI)
-999 CALL mp_sum ( force_london , intra_image_comm )
+    CALL mp_sum ( force_london , intra_image_comm )
 #endif
     !
     RETURN
@@ -548,14 +553,11 @@ MODULE london_module
     !
     !
 #if defined __MPI
-    USE mp_global,    ONLY : me_image , nproc_image , intra_image_comm
+    USE mp_images,    ONLY : me_image , nproc_image , intra_image_comm
     USE mp,           ONLY : mp_sum
 #endif
     !
     IMPLICIT NONE
-    !
-    !INTEGER , PARAMETER :: mxr = 500000
-    ! local:    max number of r ( see rgen )
     !
     INTEGER :: ata , atb , nrm , nr , ipol , lpol , spol
     ! locals :
@@ -688,7 +690,7 @@ MODULE london_module
       stres_london ( : , : ) = - stres_london ( : , : ) / ( 2.d0 * omega )
       !
 #if defined (__MPI)
-999 CALL mp_sum ( stres_london , intra_image_comm )
+    CALL mp_sum ( stres_london , intra_image_comm )
 #endif
     !
     RETURN
@@ -700,8 +702,6 @@ MODULE london_module
    !---------------------------------------------------------------------------
    !
    SUBROUTINE dealloca_london
-   !
-   ! 
    !
    IMPLICIT NONE
    !

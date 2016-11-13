@@ -44,7 +44,7 @@ END SUBROUTINE mp_synchronize
 !=----------------------------------------------------------------------------=!
 !
 
-   SUBROUTINE BCAST_REAL( array, n, root, gid )
+   SUBROUTINE bcast_real( array, n, root, gid )
         USE kinds, ONLY: DP
         USE parallel_include  
         IMPLICIT NONE
@@ -90,10 +90,10 @@ END SUBROUTINE mp_synchronize
 #endif
 
         RETURN
-   END SUBROUTINE BCAST_REAL 
+   END SUBROUTINE bcast_real 
 
 
-   SUBROUTINE BCAST_INTEGER( array, n, root, gid )
+   SUBROUTINE bcast_integer( array, n, root, gid )
         USE parallel_include  
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: n, root, gid
@@ -136,10 +136,10 @@ END SUBROUTINE mp_synchronize
 #endif
 #endif
         RETURN
-   END SUBROUTINE BCAST_INTEGER
+   END SUBROUTINE bcast_integer
 
 
-   SUBROUTINE BCAST_LOGICAL( array, n, root, gid )
+   SUBROUTINE bcast_logical( array, n, root, gid )
         USE parallel_include  
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: n, root, gid
@@ -183,7 +183,7 @@ END SUBROUTINE mp_synchronize
 #endif
 #endif
         RETURN
-   END SUBROUTINE BCAST_LOGICAL
+   END SUBROUTINE bcast_logical
 
 
 !
@@ -947,17 +947,3 @@ SUBROUTINE parallel_max_real( dim, ps, comm, root )
   RETURN
   !
 END SUBROUTINE parallel_max_real
-
-
-SUBROUTINE hangup()
-#if defined (__MPI)  
-  IMPLICIT NONE
-  INCLUDE 'mpif.h'
-  INTEGER IERR
-  CALL MPI_BARRIER( MPI_COMM_WORLD, ierr )
-  IF( ierr /= 0 ) CALL errore( ' hangup ', ' error in mpi_barrier ', ierr )
-  CALL MPI_FINALIZE( ierr )
-  IF( ierr /= 0 ) CALL errore( ' hangup ', ' error in mpi_finalize ', ierr )
-#endif
-  STOP 'hangup'
-END SUBROUTINE hangup

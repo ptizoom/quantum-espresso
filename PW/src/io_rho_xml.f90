@@ -36,10 +36,10 @@ MODULE io_rho_xml
       USE ldaU,             ONLY : lda_plus_u
       USE funct,            ONLY : dft_is_meta
       USE noncollin_module, ONLY : noncolin
-      USE io_files,         ONLY : iunocc, iunpaw, seqopn
+      USE io_files,         ONLY : seqopn
       USE io_global,        ONLY : ionode, ionode_id, stdout
       USE scf,              ONLY : scf_type
-      USE mp_global,        ONLY : intra_image_comm
+      USE mp_images,        ONLY : intra_image_comm
       USE mp,               ONLY : mp_bcast
 
       !
@@ -48,7 +48,8 @@ MODULE io_rho_xml
       INTEGER,          INTENT(IN)           :: nspin
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: extension
       LOGICAL :: lexist
-      INTEGER :: ierr
+      INTEGER :: iunocc, iunpaw, ierr
+      INTEGER, EXTERNAL :: find_free_unit
 
       ! Use the equivalent routine to write real space density
       CALL write_rho_only( rho%of_r, nspin, extension )
@@ -57,6 +58,7 @@ MODULE io_rho_xml
 
       IF ( lda_plus_u ) THEN
          !
+         iunocc = find_free_unit ()
          IF ( ionode ) THEN
             CALL seqopn( iunocc, 'occup', 'FORMATTED', lexist )
             if (noncolin) then
@@ -75,6 +77,7 @@ MODULE io_rho_xml
       !
       IF ( okpaw ) THEN
          !
+         iunpaw = find_free_unit ()
          IF ( ionode ) THEN
             CALL seqopn( iunpaw, 'paw', 'FORMATTED', lexist )
             WRITE( iunpaw, * , iostat = ierr) rho%bec
@@ -99,10 +102,10 @@ MODULE io_rho_xml
       USE ldaU,             ONLY : lda_plus_u
       USE noncollin_module, ONLY : noncolin
       USE funct,            ONLY : dft_is_meta
-      USE io_files,         ONLY : iunocc, iunpaw, seqopn
+      USE io_files,         ONLY : seqopn
       USE io_global,        ONLY : ionode, ionode_id, stdout
       USE scf,              ONLY : scf_type
-      USE mp_global,        ONLY : intra_image_comm
+      USE mp_images,        ONLY : intra_image_comm
       USE mp,               ONLY : mp_bcast, mp_sum
       !
       IMPLICIT NONE
@@ -110,7 +113,8 @@ MODULE io_rho_xml
       INTEGER,          INTENT(IN)           :: nspin
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: extension
       LOGICAL :: lexist
-      INTEGER :: ierr
+      INTEGER :: iunocc, iunpaw, ierr
+      INTEGER, EXTERNAL :: find_free_unit
 
       ! Use the equivalent routine to read real space density
       CALL read_rho_only( rho%of_r, nspin, extension )
@@ -120,6 +124,7 @@ MODULE io_rho_xml
          ! The occupations ns also need to be read in order to build up
          ! the potential
          !
+         iunocc = find_free_unit ()
          IF ( ionode ) THEN
             CALL seqopn( iunocc, 'occup', 'FORMATTED', lexist )
             if (noncolin) then
@@ -133,8 +138,11 @@ MODULE io_rho_xml
          IF ( ionode ) THEN
             CLOSE( UNIT = iunocc, STATUS = 'KEEP')
          ELSE
-            rho%ns(:,:,:,:) = 0.D0
-            rho%ns_nc(:,:,:,:) = 0.D0
+            if (noncolin) then
+              rho%ns_nc(:,:,:,:) = 0.D0
+            else
+              rho%ns(:,:,:,:) = 0.D0
+            endif 
          END IF
          if (noncolin) then
            CALL mp_sum(rho%ns_nc, intra_image_comm)
@@ -147,6 +155,7 @@ MODULE io_rho_xml
          !
          ! Also the PAW coefficients are needed:
          !
+         iunpaw = find_free_unit ()
          IF ( ionode ) THEN
             CALL seqopn( iunpaw, 'paw', 'FORMATTED', lexist )
             READ( UNIT = iunpaw, FMT = *, iostat=ierr ) rho%bec
@@ -180,8 +189,8 @@ MODULE io_rho_xml
       USE io_files, ONLY : tmp_dir, prefix
       USE fft_base, ONLY : dfftp
       USE spin_orb, ONLY : domag
-      USE io_global, ONLY : ionode
-      USE mp_global, ONLY : intra_bgrp_comm, inter_bgrp_comm
+      USE io_global,ONLY : ionode
+      USE mp_bands, ONLY : intra_bgrp_comm, inter_bgrp_comm
       !
       IMPLICIT NONE
       !
@@ -271,8 +280,6 @@ MODULE io_rho_xml
       USE io_files,  ONLY : tmp_dir, prefix
       USE fft_base,  ONLY : dfftp
       USE spin_orb,  ONLY : domag
-      USE mp_global, ONLY : intra_bgrp_comm, inter_bgrp_comm, root_pool, me_pool
-      USE mp_global, ONLY : intra_image_comm
       USE io_global, ONLY : ionode
       !
       IMPLICIT NONE

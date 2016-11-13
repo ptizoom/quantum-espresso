@@ -15,12 +15,10 @@ SUBROUTINE print_clock_pw()
    USE io_global,          ONLY : stdout
    USE control_flags,      ONLY : isolve, iverbosity, gamma_only
    USE paw_variables,      ONLY : okpaw
+   USE uspp,               ONLY : okvan
    USE realus,             ONLY : real_space
    USE ldaU,               ONLY : lda_plus_U
    USE funct,              ONLY : dft_is_hybrid
-#ifdef __ENVIRON
-   USE environ_base,       ONLY : do_environ
-#endif
    !
    IMPLICIT NONE
    !
@@ -153,6 +151,8 @@ SUBROUTINE print_clock_pw()
    CALL print_clock( 'fft' )
    CALL print_clock( 'ffts' )
    CALL print_clock( 'fftw' )
+   CALL print_clock( 'fftc' )
+   CALL print_clock( 'fftcw' )
    CALL print_clock( 'interpolate' )
    CALL print_clock( 'davcio' )
    !    
@@ -167,7 +167,7 @@ SUBROUTINE print_clock_pw()
 #endif
    !
    IF ( lda_plus_U ) THEN
-      WRITE( stdout, '(5X,"Hubbard U routines")' )
+      WRITE( stdout, '(/,5X,"Hubbard U routines")' )
       CALL print_clock( 'new_ns' )
       CALL print_clock( 'vhpsi' )
       CALL print_clock( 'force_hub' )
@@ -175,7 +175,7 @@ SUBROUTINE print_clock_pw()
    ENDIF
    !
    IF ( dft_is_hybrid() ) THEN
-      WRITE( stdout, '(5X,"EXX routines")' )
+      WRITE( stdout, '(/,5X,"EXX routines")' )
       CALL print_clock( 'exx_grid' )
       CALL print_clock( 'exxinit' )
       CALL print_clock( 'vexx' )
@@ -184,11 +184,17 @@ SUBROUTINE print_clock_pw()
       CALL print_clock( 'exxen2' )
       !CALL print_clock( 'exxen2_ngmloop' )
       CALL print_clock ('cycleig')
+      IF( okvan) THEN
+        WRITE( stdout, '(/,5X,"EXX+US routines")' )
+        CALL print_clock( 'becxx' )
+        CALL print_clock( 'addusxx' )
+        CALL print_clock( 'newdxx' )
+        CALL print_clock( 'nlxx_pot' )
+      ENDIF
    ENDIF
    !
    IF ( okpaw ) THEN
-      WRITE( stdout, * )
-      WRITE( stdout, '(5X,"PAW routines")' )
+      WRITE( stdout, '(/,5X,"PAW routines")' )
       ! radial routines:
       CALL print_clock ('PAW_pot')
       CALL print_clock ('PAW_newd')
@@ -208,11 +214,19 @@ SUBROUTINE print_clock_pw()
       CALL print_clock ('PAW_gcxc_v')
       CALL print_clock ('PAW_div')
       CALL print_clock ('PAW_grad')
+      IF ( dft_is_hybrid() ) THEN
+        WRITE( stdout, '(/,5X,"PAW+EXX routines")' )
+        CALL print_clock("PAW_newdxx")
+        CALL print_clock("PAW_xx_nrg")
+        CALL print_clock('PAW_keeq')
+      ENDIF
    END IF
+
+   call print_clock('h_epsi_set')
+   call print_clock('h_epsi_apply')
+   call print_clock('c_phase_field')
    !
-#ifdef __ENVIRON
-   IF ( do_environ ) call environ_clock( stdout )
-#endif
+   CALL plugin_clock()
    !
    RETURN
    !

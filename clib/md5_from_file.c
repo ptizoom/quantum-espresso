@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2005-2008 Quantum ESPRESSO group
+ Copyright (C) 2011-2013 Quantum ESPRESSO group
  This file is distributed under the terms of the
  GNU General Public License. See the file `License'
  in the root directory of the present distribution,
@@ -76,6 +76,7 @@ void get_md5(const char *file, char *md5, int err)
  
      FILE *fp;
      char *data;
+     int i;
      md5_state_t state;
      md5_byte_t digest[16];
      
@@ -100,8 +101,7 @@ void get_md5(const char *file, char *md5, int err)
      md5_append(&state,(const md5_byte_t *)data,strlen(data));
      md5_finish(&state,digest);
 
-     int i=0;
-     for(i;i<16;i++){
+     for(i=0;i<16;i++){
 	   snprintf(md5+i*2,sizeof(md5),"%02x",digest[i]);
      }
      fclose(fp);
@@ -110,22 +110,4 @@ void get_md5(const char *file, char *md5, int err)
      err = 0;
      return;
 }
-
-int F77_FUNC_(file_md5,FILE_MD5)( const int * f_name, const int * f_len, int * out )
-{
-     int i, err = -1 ;
-     char * md5 = ( char * ) xcmalloc( 32 + 1 ) ;
-     char * f = ( char * ) xcmalloc( (*f_len) + 1) ;
-
-     for( i = 0; i < * f_len; i++ ) f[ i ] = (char)f_name[ i ];
-
-     f[*f_len] = '\0' ;
-
-     get_md5( f ,  md5, err) ;
-     for( i = 0; i < 32; i++ ) out[ i ] = md5[ i ]; 
-
-     free(f); 
-     free(md5); 
-     return err;
-} 
 

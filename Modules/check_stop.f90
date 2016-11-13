@@ -1,16 +1,19 @@
 !
-! Copyright (C) 2002-2010 Quantum ESPRESSO group
+! Copyright (C) 2002-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
 ! or http://www.gnu.org/copyleft/gpl.txt .
 !
 !
-! ... This module contains functions to check if the code should
-! ... be smoothly stopped.
-! ... In particular the function check_stop_now returns .TRUE. if
-! ... either the user has created a given file or if the
-! ... elapsed time is larger than max_seconds
+! ... This module contains functions nd variables used to check if the code
+! ... should be smoothly stopped. In order to use this module, function
+! ... check_stop_init must be called (only once) at the beginning of the calc.
+! ... Function check_stop_now returns .TRUE. if either the user has created
+! ... an "exit" file, or if the elapsed wall time is larger than max_seconds,
+! ... or if these conditions have been met in a provious call of check_stop_now.
+! ... Moreover, function check_stop_now removes the exit file and sets variable
+! ... stopped_by_user to .true..
 !
 !------------------------------------------------------------------------------!
 MODULE check_stop
@@ -23,10 +26,9 @@ MODULE check_stop
   SAVE
   !
   REAL(DP) :: max_seconds = 1.E+7_DP
-  !
-  LOGICAL, PRIVATE :: tinit = .FALSE.
-  !
   REAL(DP) :: init_second
+  LOGICAL :: stopped_by_user = .FALSE.
+  LOGICAL, PRIVATE :: tinit = .FALSE.
   !
   CONTAINS
      !
@@ -39,10 +41,9 @@ MODULE check_stop
        USE input_parameters, ONLY : max_seconds_ => max_seconds
        USE io_global,        ONLY : stdout
        USE io_files,         ONLY : prefix, exit_file
-#if defined __TRAP_SIGUSR1
+#if defined(__TRAP_SIGUSR1) || defined(__TERMINATE_GRACEFULLY)
        USE set_signal,       ONLY : signal_trap_init
 #endif
-
        !
        IMPLICIT NONE
        !
@@ -61,7 +62,7 @@ MODULE check_stop
        init_second = cclock()
        tinit   = .TRUE.
        !
-#if defined __TRAP_SIGUSR1
+#if defined(__TRAP_SIGUSR1) || defined(__TERMINATE_GRACEFULLY)
        CALL signal_trap_init ( )
 #endif
        !
@@ -74,10 +75,10 @@ MODULE check_stop
        !-----------------------------------------------------------------------
        !
        USE mp,         ONLY : mp_bcast
-       USE mp_global,  ONLY : intra_image_comm
+       USE mp_images,  ONLY : intra_image_comm
        USE io_global,  ONLY : ionode, ionode_id, meta_ionode, stdout
        USE io_files,   ONLY : tmp_dir, exit_file, iunexit
-#if defined __TRAP_SIGUSR1
+#if defined(__TRAP_SIGUSR1) || defined(__TERMINATE_GRACEFULLY)
        USE set_signal, ONLY : signal_detected
 #endif
        !
@@ -86,11 +87,15 @@ MODULE check_stop
        INTEGER, OPTIONAL, INTENT(IN) :: inunit
        !
        INTEGER            :: unit
-       LOGICAL            :: check_stop_now, tex, tex2
+       LOGICAL            :: check_stop_now, tex=.false.
        LOGICAL            :: signaled
        REAL(DP)           :: seconds
        REAL(DP), EXTERNAL :: cclock
        !
+       IF ( stopped_by_user ) THEN
+          check_stop_now = .TRUE.
+          RETURN
+       END IF
        !
        ! ... cclock is a C function returning the elapsed solar
        ! ... time in seconds since the Epoch ( 00:00:00 1/1/1970 )
@@ -121,9 +126,9 @@ MODULE check_stop
              !
              ! ... Check if exit file exists in scratch directory
              !
-             INQUIRE( FILE = TRIM(tmp_dir) // TRIM( exit_file ), EXIST = tex2 )
+             INQUIRE( FILE = TRIM(tmp_dir) // TRIM( exit_file ), EXIST = tex )
              !
-             IF ( tex2 ) THEN
+             IF ( tex ) THEN
                 !
                 check_stop_now = .TRUE.
                 OPEN( UNIT = iunexit, FILE = TRIM(tmp_dir) // TRIM(exit_file) )
@@ -138,7 +143,7 @@ MODULE check_stop
           !
        END IF
        !
-#if defined __TRAP_SIGUSR1
+#if defined(__TRAP_SIGUSR1) || defined(__TERMINATE_GRACEFULLY)
        signaled = signal_detected()
        check_stop_now = check_stop_now .OR. signaled
        tex = tex .OR. signaled
@@ -165,6 +170,8 @@ MODULE check_stop
           END IF
           !
        END IF
+       !
+       stopped_by_user = check_stop_now
        !
        RETURN
        !

@@ -18,9 +18,10 @@ PROGRAM wannier_ham
   USE io_files,   ONLY : prefix, tmp_dir
   USE wannier_new, ONLY: nwan, use_energy_int
   USE mp,         ONLY : mp_bcast
+  USE mp_world,         ONLY : world_comm
   USE read_cards_module, ONLY : read_cards
   USE mp_global,     ONLY : mp_startup
-  USE environment,   ONLY : environment_start
+  USE environment,   ONLY : environment_start, environment_end
 
   IMPLICIT NONE
   !
@@ -67,7 +68,7 @@ PROGRAM wannier_ham
 
   ENDIF
   !
-  CALL mp_bcast( ios, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
   IF ( ios /= 0 ) CALL errore('wannier_ham','reading inputpp namelist',abs(ios))
   CALL read_file
   CALL openfil_pp
@@ -77,6 +78,8 @@ PROGRAM wannier_ham
   CALL new_hamiltonian(plot_bands)
 
   IF(u_matrix) CALL wannier_u_matrix(U,J)
+
+  CALL environment_end ( 'WANNIER_HAM')
 
   CALL stop_pp
 
@@ -138,8 +141,7 @@ SUBROUTINE new_hamiltonian(plot_bands)
      IF ( nks > 1 ) WRITE( iunigk ) igk
   ENDDO
   !
-
-  CALL orthoatwfc()
+  CALL orthoatwfc( .true. )
 
   wan_func = ZERO
   pp = ZERO

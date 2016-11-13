@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2008 Quantum ESPRESSO group
+! Copyright (C) 2001-2014 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -15,23 +15,25 @@ SUBROUTINE chdens (filplot,plot_num)
   !
   !      DESCRIPTION of the INPUT: see file INPUT_PP in Doc/
   !
+  USE kinds,      ONLY : dp
   USE io_global,  ONLY : stdout, ionode, ionode_id
   USE io_files,   ONLY : nd_nmbr
-  USE mp_global,  ONLY : nproc_pool
+  USE mp_pools,   ONLY : nproc_pool
+  USE mp_world,   ONLY : world_comm
   USE mp,         ONLY : mp_bcast
   USE parameters, ONLY : ntypx
-  USE constants,  ONLY :  pi, fpi
-  USE cell_base
+  USE constants,  ONLY : pi, fpi
+  USE cell_base,  ONLY : at, bg, celldm, ibrav, alat, omega, tpiba, tpiba2
   USE ions_base,  ONLY : nat, ityp, atm, ntyp => nsp, tau, zv
   USE lsda_mod,   ONLY : nspin
   USE fft_base,   ONLY : grid_scatter, dfftp, dffts
   USE fft_interfaces,  ONLY : fwfft
   USE grid_subroutines,ONLY : realspace_grids_init
-  USE gvect
-  USE gvecs
-  USE recvec_subs,   ONLY: ggen 
-  USE wvfct,         ONLY: ecutwfc
-  USE run_info, ONLY: title
+  USE gvect,      ONLY : ngm, nl, g, gcutm
+  USE gvecs,      ONLY : gcutms, doublegrid, dual, ecuts 
+  USE recvec_subs,ONLY: ggen 
+  USE wvfct,      ONLY: ecutwfc
+  USE run_info,   ONLY: title
   USE control_flags, ONLY: gamma_only
   USE wavefunctions_module,  ONLY: psic
 
@@ -48,10 +50,10 @@ SUBROUTINE chdens (filplot,plot_num)
   ! maximum number of files with charge
 
   INTEGER :: ounit, iflag, ios, ipol, nfile, ifile, nx, ny, nz, &
-       na, i, output_format, idum
+       na, i, output_format, idum, direction
 
   real(DP) :: e1(3), e2(3), e3(3), x0 (3), radius, m1, m2, m3, &
-       weight (nfilemax)
+       weight (nfilemax), isovalue,heightmin,heightmax
 
   real(DP), ALLOCATABLE :: aux(:)
 
@@ -79,14 +81,16 @@ SUBROUTINE chdens (filplot,plot_num)
   INTEGER, ALLOCATABLE :: ityps (:)
   CHARACTER (len=3) :: atms(ntypx)
   CHARACTER (len=256) :: filepp(nfilemax)
+  CHARACTER (len=20) :: interpolation
   real(DP) :: rhotot
   COMPLEX(DP), ALLOCATABLE:: rhog (:)
   ! rho or polarization in G space
-  LOGICAL :: fast3d
+  LOGICAL :: fast3d, isostm_flag
 
   NAMELIST /plot/  &
        nfile, filepp, weight, iflag, e1, e2, e3, nx, ny, nz, x0, &
-       radius, output_format, fileout
+       radius, output_format, fileout, interpolation, &
+       isostm_flag, isovalue, heightmin, heightmax, direction
 
   !
   !   set the DEFAULT values
@@ -105,6 +109,12 @@ SUBROUTINE chdens (filplot,plot_num)
   nx            = 0
   ny            = 0
   nz            = 0
+  interpolation = 'fourier'
+  isostm_flag   = .false.
+  isovalue      = 0.d0
+  heightmin     = 0.0d0
+  heightmax     = 1.0d0
+  direction     = 1
   !
   !    read and check input data
   !
@@ -112,8 +122,8 @@ SUBROUTINE chdens (filplot,plot_num)
   !
   IF (ionode) READ (5, plot, iostat = ios)
   !
-  CALL mp_bcast( ios, ionode_id )
-  CALL mp_bcast( nfile, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
+  CALL mp_bcast( nfile, ionode_id, world_comm )
 
   IF (ios /= 0) THEN
      IF (nfile > nfilemax) THEN
@@ -126,19 +136,25 @@ SUBROUTINE chdens (filplot,plot_num)
      RETURN
   ENDIF
 
-  CALL mp_bcast( filepp, ionode_id )
-  CALL mp_bcast( weight, ionode_id )
-  CALL mp_bcast( iflag, ionode_id )
-  CALL mp_bcast( radius, ionode_id )
-  CALL mp_bcast( output_format, ionode_id )
-  CALL mp_bcast( fileout, ionode_id )
-  CALL mp_bcast( e1, ionode_id )
-  CALL mp_bcast( e2, ionode_id )
-  CALL mp_bcast( e3, ionode_id )
-  CALL mp_bcast( x0, ionode_id )
-  CALL mp_bcast( nx, ionode_id )
-  CALL mp_bcast( ny, ionode_id )
-  CALL mp_bcast( nz, ionode_id )
+  CALL mp_bcast( filepp, ionode_id, world_comm )
+  CALL mp_bcast( weight, ionode_id, world_comm )
+  CALL mp_bcast( iflag, ionode_id, world_comm )
+  CALL mp_bcast( radius, ionode_id, world_comm )
+  CALL mp_bcast( output_format, ionode_id, world_comm )
+  CALL mp_bcast( fileout, ionode_id, world_comm )
+  CALL mp_bcast( e1, ionode_id, world_comm )
+  CALL mp_bcast( e2, ionode_id, world_comm )
+  CALL mp_bcast( e3, ionode_id, world_comm )
+  CALL mp_bcast( x0, ionode_id, world_comm )
+  CALL mp_bcast( nx, ionode_id, world_comm )
+  CALL mp_bcast( ny, ionode_id, world_comm )
+  CALL mp_bcast( nz, ionode_id, world_comm )
+  CALL mp_bcast( interpolation, ionode_id, world_comm )
+  CALL mp_bcast( isostm_flag, ionode_id, world_comm )
+  CALL mp_bcast( isovalue, ionode_id, world_comm )
+  CALL mp_bcast( heightmin, ionode_id, world_comm )
+  CALL mp_bcast( heightmax, ionode_id, world_comm )
+  CALL mp_bcast( direction, ionode_id, world_comm )  
 
   IF (output_format == -1 .or. iflag == -1) THEN
      CALL infomsg ('chdens', 'output format not set, exiting' )
@@ -195,6 +211,22 @@ SUBROUTINE chdens (filplot,plot_num)
 
   ENDIF
 
+  ! check interpolation
+  if (trim(interpolation) /= 'fourier' .and. trim(interpolation) /= 'bspline') &
+     call errore('chdens', 'wrong interpolation: ' // trim(interpolation), 1)
+
+  ! if isostm_flag checks whether the input variables are set
+  IF (isostm_flag) THEN
+     IF (heightmax > 1.0 .or. heightmin > 1.0 .or. heightmin < 0.0 &
+               .or. heightmax < 0.0 ) THEN
+         CALL errore('isostm','problem with heightmax/min',1)
+     ENDIF
+      
+     IF (direction /= 1 .and. direction /= -1) THEN
+         CALL errore('isostm','direction not equal to +- 1',1)
+     ENDIF
+  END IF
+
   !
   ! Read the header and allocate objects
   !
@@ -203,21 +235,21 @@ SUBROUTINE chdens (filplot,plot_num)
         CALL read_io_header(filepp (1), title, dfftp%nr1x, dfftp%nr2x, &
                 dfftp%nr3x, dfftp%nr1, dfftp%nr2, dfftp%nr3, nat, ntyp,&
                 ibrav, celldm, at, gcutm, dual, ecutwfc, idum )
-     CALL mp_bcast( title, ionode_id )
-     CALL mp_bcast( dfftp%nr1x, ionode_id )
-     CALL mp_bcast( dfftp%nr2x, ionode_id )
-     CALL mp_bcast( dfftp%nr3x, ionode_id )
-     CALL mp_bcast( dfftp%nr1, ionode_id )
-     CALL mp_bcast( dfftp%nr2, ionode_id )
-     CALL mp_bcast( dfftp%nr3, ionode_id )
-     CALL mp_bcast( nat, ionode_id )
-     CALL mp_bcast( ntyp, ionode_id )
-     CALL mp_bcast( ibrav, ionode_id )
-     CALL mp_bcast( celldm, ionode_id )
-     CALL mp_bcast( at, ionode_id )
-     CALL mp_bcast( gcutm, ionode_id )
-     CALL mp_bcast( dual, ionode_id )
-     CALL mp_bcast( ecutwfc, ionode_id )
+     CALL mp_bcast( title, ionode_id, world_comm )
+     CALL mp_bcast( dfftp%nr1x, ionode_id, world_comm )
+     CALL mp_bcast( dfftp%nr2x, ionode_id, world_comm )
+     CALL mp_bcast( dfftp%nr3x, ionode_id, world_comm )
+     CALL mp_bcast( dfftp%nr1, ionode_id, world_comm )
+     CALL mp_bcast( dfftp%nr2, ionode_id, world_comm )
+     CALL mp_bcast( dfftp%nr3, ionode_id, world_comm )
+     CALL mp_bcast( nat, ionode_id, world_comm )
+     CALL mp_bcast( ntyp, ionode_id, world_comm )
+     CALL mp_bcast( ibrav, ionode_id, world_comm )
+     CALL mp_bcast( celldm, ionode_id, world_comm )
+     CALL mp_bcast( at, ionode_id, world_comm )
+     CALL mp_bcast( gcutm, ionode_id, world_comm )
+     CALL mp_bcast( dual, ionode_id, world_comm )
+     CALL mp_bcast( ecutwfc, ionode_id, world_comm )
      !
      ! ... see comment above
      !
@@ -302,6 +334,16 @@ SUBROUTINE chdens (filplot,plot_num)
      ENDIF
   ENDIF
 
+  ! the isostm subroutine is called only when isostm_flag is true and the
+  ! charge density is related to an STM image (5) or is read from a file 
+  IF ( (isostm_flag) .AND. ( (plot_num == -1) .OR. (plot_num == 5) ) ) THEN
+     IF ( .NOT. (iflag == 2))&
+        CALL errore ('chdens', 'isostm should have iflag = 2', 1)
+     CALL isostm_plot(rhor, dfftp%nr1x, dfftp%nr2x, dfftp%nr3x, &
+           isovalue, heightmin, heightmax, direction)     
+  END IF
+
+  
   !
   !    At this point we start the calculations, first we normalize the
   !    vectors defining the plotting region.
@@ -341,6 +383,8 @@ SUBROUTINE chdens (filplot,plot_num)
        ( at(2,1) == 0.d0  .and.  at(3,1) == 0.d0) .and. &
        ( at(1,2) == 0.d0  .and.  at(3,2) == 0.d0) .and. &
        ( at(1,3) == 0.d0  .and.  at(2,3) == 0.d0)
+
+  fast3d = fast3d .and. (trim(interpolation) == 'fourier')
   !
   !    Initialise FFT for rho(r) => rho(G) conversion if needed
   !
@@ -362,7 +406,7 @@ SUBROUTINE chdens (filplot,plot_num)
         !
      ELSE
         !
-        IF (gamma_only) THEN
+        IF (gamma_only .and. (trim(interpolation) == 'fourier')) THEN
              WRITE(stdout,'(/"BEWARE: plot requiring G-space interpolation",&
                             &" not implemented for Gamma only!",/, &
                             &"SOLUTION: restart this calculation with", &
@@ -392,12 +436,21 @@ SUBROUTINE chdens (filplot,plot_num)
   !
   IF (iflag <= 1) THEN
 
-     CALL plot_1d (nx, m1, x0, e1, ngm, g, rhog, alat, iflag, ounit)
+     IF (TRIM(interpolation) == 'fourier') THEN
+        CALL plot_1d (nx, m1, x0, e1, ngm, g, rhog, alat, iflag, ounit)
+     ELSE
+        CALL plot_1d_bspline (nx, m1, x0, e1, rhor, alat, iflag, ounit)
+     ENDIF
 
   ELSEIF (iflag == 2) THEN
 
-     CALL plot_2d (nx, ny, m1, m2, x0, e1, e2, ngm, g, rhog, alat, &
-          at, nat, tau, atm, ityp, output_format, ounit)
+     IF (TRIM(interpolation) == 'fourier') THEN
+       CALL plot_2d (nx, ny, m1, m2, x0, e1, e2, ngm, g, rhog, alat, &
+            at, nat, tau, atm, ityp, output_format, ounit)
+     ELSE
+       CALL plot_2d_bspline (nx, ny, m1, m2, x0, e1, e2, rhor, alat, &
+            at, nat, tau, atm, ityp, output_format, ounit)
+     ENDIF
      IF (output_format == 2.and.ionode) THEN
         WRITE (ounit, '(i4)') nat
         WRITE (ounit, '(3f8.4,i3)') ( (tau(ipol,na), ipol=1,3), 1, na=1,nat)
@@ -436,26 +489,35 @@ SUBROUTINE chdens (filplot,plot_num)
         !
         ! GAUSSIAN CUBE FORMAT
         !
-        CALL write_cubefile (alat, at, bg, nat, tau, atm, ityp, rhor, &
+        IF (TRIM(interpolation) == 'fourier') THEN
+           CALL write_cubefile (alat, at, bg, nat, tau, atm, ityp, rhor, &
              dfftp%nr1, dfftp%nr2, dfftp%nr3, dfftp%nr1x, dfftp%nr2x, dfftp%nr3x, ounit)
+        ELSE
+           CALL plot_3d_bspline(celldm(1), at, nat, tau, atm, ityp, rhor,&
+                nx, ny, nz, m1, m2, m3, x0, e1, e2, e3, output_format, &
+                ounit, rhotot)
+        END IF
 
-     ELSE
+     ELSEIF (ionode) THEN
         !
-        ! GOPENMOL FORMAT
+        ! GOPENMOL OR XCRYSDEN FORMAT
         !
-        IF (ionode) THEN
-           !
-           IF (fast3d) THEN
+        IF (fast3d) THEN
 
-              CALL plot_fast (celldm (1), at, nat, tau, atm, ityp, &
-                  dfftp%nr1x, dfftp%nr2x, dfftp%nr3x, dfftp%nr1, dfftp%nr2, dfftp%nr3, rhor, &
-                  bg, m1, m2, m3, x0, e1, e2, e3, output_format, ounit, &
-                  rhotot)
-           ELSE
-              IF (nx<=0 .or. ny <=0 .or. nz <=0) &
-                  CALL errore("chdens","nx,ny,nz, required",1)
+           CALL plot_fast (celldm (1), at, nat, tau, atm, ityp, &
+               dfftp%nr1x, dfftp%nr2x, dfftp%nr3x, dfftp%nr1, dfftp%nr2, dfftp%nr3, rhor, &
+               bg, m1, m2, m3, x0, e1, e2, e3, output_format, ounit, &
+               rhotot)
+        ELSE
+           IF (nx<=0 .or. ny <=0 .or. nz <=0) &
+               CALL errore("chdens","nx,ny,nz, required",1)
 
+           IF (TRIM(interpolation) == 'fourier') THEN
               CALL plot_3d (celldm (1), at, nat, tau, atm, ityp, ngm, g, rhog,&
+                   nx, ny, nz, m1, m2, m3, x0, e1, e2, e3, output_format, &
+                   ounit, rhotot)
+           ELSE
+              CALL plot_3d_bspline(celldm(1), at, nat, tau, atm, ityp, rhor,&
                    nx, ny, nz, m1, m2, m3, x0, e1, e2, e3, output_format, &
                    ounit, rhotot)
            ENDIF
@@ -489,7 +551,7 @@ SUBROUTINE plot_1d (nx, m1, x0, e, ngm, g, rhog, alat, iflag, ounit)
   USE kinds, ONLY : DP
   USE constants, ONLY:  pi
   USE io_global, ONLY : stdout, ionode
-  USE mp_global,  ONLY : intra_pool_comm
+  USE mp_bands,  ONLY : intra_bgrp_comm
   USE mp,         ONLY : mp_sum
 
   IMPLICIT NONE
@@ -569,7 +631,7 @@ SUBROUTINE plot_1d (nx, m1, x0, e, ngm, g, rhog, alat, iflag, ounit)
   ELSE
      CALL errore ('plot_1d', ' bad type of plot', 1)
   ENDIF
-  CALL mp_sum( carica, intra_pool_comm )
+  CALL mp_sum( carica, intra_bgrp_comm )
   !
   !    Here we check the value of the resulting charge
   !
@@ -618,7 +680,7 @@ SUBROUTINE plot_2d (nx, ny, m1, m2, x0, e1, e2, ngm, g, rhog, alat, &
   USE kinds, ONLY : DP
   USE constants, ONLY : pi
   USE io_global, ONLY : stdout, ionode
-  USE mp_global,  ONLY : intra_pool_comm
+  USE mp_bands,  ONLY : intra_bgrp_comm
   USE mp,         ONLY : mp_sum
   IMPLICIT NONE
   INTEGER :: nx, ny, ngm, nat, ityp (nat), output_format, ounit
@@ -678,7 +740,7 @@ SUBROUTINE plot_2d (nx, ny, m1, m2, x0, e1, e2, ngm, g, rhog, alat, &
         ENDDO
      ENDDO
   ENDDO
-  CALL mp_sum( carica, intra_pool_comm )
+  CALL mp_sum( carica, intra_bgrp_comm )
   !
   !    Here we check the value of the resulting charge
   !
@@ -764,7 +826,7 @@ SUBROUTINE plot_2ds (nx, ny, x0, ngm, g, rhog, output_format, ounit)
   USE kinds, ONLY : DP
   USE constants, ONLY:  pi
   USE io_global, ONLY : stdout, ionode
-  USE mp_global,  ONLY : intra_pool_comm
+  USE mp_bands,  ONLY : intra_bgrp_comm
   USE mp,         ONLY : mp_sum
   !
   IMPLICIT NONE
@@ -824,7 +886,7 @@ SUBROUTINE plot_2ds (nx, ny, x0, ngm, g, rhog, output_format, ounit)
         ENDDO
      ENDDO
   ENDDO
-  CALL mp_sum( carica, intra_pool_comm )
+  CALL mp_sum( carica, intra_bgrp_comm )
   !
   !    Here we check the value of the resulting charge
   !
@@ -882,7 +944,7 @@ SUBROUTINE plot_3d (alat, at, nat, tau, atm, ityp, ngm, g, rhog, &
   USE kinds, ONLY : DP
   USE constants, ONLY:  pi
   USE io_global, ONLY : stdout, ionode
-  USE mp_global,  ONLY : intra_pool_comm
+  USE mp_bands,  ONLY : intra_bgrp_comm
   USE mp,         ONLY : mp_sum
   IMPLICIT NONE
   INTEGER :: nat, ityp (nat), ngm, nx, ny, nz, output_format, ounit
@@ -953,7 +1015,7 @@ SUBROUTINE plot_3d (alat, at, nat, tau, atm, ityp, ngm, g, rhog, &
      ENDDO
 
   ENDDO
-  CALL mp_sum( carica, intra_pool_comm )
+  CALL mp_sum( carica, intra_bgrp_comm )
   !
   !    Here we check the value of the resulting charge
   !
@@ -1012,7 +1074,7 @@ SUBROUTINE plot_fast (alat, at, nat, tau, atm, ityp,&
   real(DP) :: alat, tau (3, nat), at (3, 3), rho(nr1x,nr2x,nr3x), &
        bg (3, 3), e1(3), e2(3), e3(3), x0 (3), m1, m2, m3
 
-  INTEGER :: nx, ny, nz, nx0, ny0, nz0, nx1, ny1, nz1, i, j, k, i1, j1, k1
+  INTEGER :: nx, ny, nz, nx0, ny0, nz0, nx1, ny1, nz1, nix, niy, niz, i, j, k, i1, j1, k1
   real(DP) :: rhomin, rhomax, rhotot, rhoabs
   real(DP), ALLOCATABLE :: carica (:,:,:)
   real(DP) :: deltax, deltay, deltaz
@@ -1037,9 +1099,24 @@ SUBROUTINE plot_fast (alat, at, nat, tau, atm, ityp,&
   ny1 = nint ( (x0(1)*bg(1,2)+(x0(2)+m2)*bg(2,2)+x0(3)*bg(3,2) )*nr2)
   nz1 = nint ( (x0(1)*bg(1,3)+x0(2)*bg(2,3)+(x0(3)+m3)*bg(3,3) )*nr3)
 
-  nx = nx1 - nx0 + 1
-  ny = ny1 - ny0 + 1
-  nz = nz1 - nz0 + 1
+  ! find number of intervals between points
+  nix = nx1 - nx0 + 1
+  niy = ny1 - ny0 + 1
+  niz = nz1 - nz0 + 1
+
+  IF ( output_format == 3 ) THEN
+     ! XSF grids require one more point at the end of the parallelepiped sides
+     nx1 = nx1 + 1
+     ny1 = ny1 + 1
+     nz1 = nz1 + 1
+     nx = nix + 1
+     ny = niy + 1
+     nz = niz + 1
+  ELSE
+     nx = nix
+     ny = niy
+     nz = niz
+  END IF
 
   ALLOCATE ( carica(nx, ny, nz) )
 
@@ -1062,9 +1139,9 @@ SUBROUTINE plot_fast (alat, at, nat, tau, atm, ityp,&
   ! consistent with the FFT grid
   !
   WRITE( stdout,'(5x,"Requested parallelepiped sides : ",3f8.4)') m1, m2,m3
-  m1 = nx * sqrt (at(1, 1) **2 + at(2, 1) **2 + at(3, 1) **2) / nr1
-  m2 = ny * sqrt (at(1, 2) **2 + at(2, 2) **2 + at(3, 2) **2) / nr2
-  m3 = nz * sqrt (at(1, 3) **2 + at(2, 3) **2 + at(3, 3) **2) / nr3
+  m1 = nix * sqrt (at(1, 1) **2 + at(2, 1) **2 + at(3, 1) **2) / nr1
+  m2 = niy * sqrt (at(1, 2) **2 + at(2, 2) **2 + at(3, 2) **2) / nr2
+  m3 = niz * sqrt (at(1, 3) **2 + at(2, 3) **2 + at(3, 3) **2) / nr3
   WRITE( stdout,'(5x,"Redefined parallelepiped sides : ",3f8.4)') m1, m2,m3
   !
   ! recalculate x0 (the origin of the parallelepiped)
@@ -1076,9 +1153,9 @@ SUBROUTINE plot_fast (alat, at, nat, tau, atm, ityp,&
   x0(3)=(nx0-1)*at(3,1)/ nr1 +(ny0-1)*at(3,2)/ nr2 +(nz0-1)*at(3,3)/ nr3
   WRITE( stdout,'(5x,"Redefined parallelepiped origin: ",3f8.4)') x0
 
-  deltax = m1/nx
-  deltay = m2/ny
-  deltaz = m3/nz
+  deltax = m1/nix
+  deltay = m2/niy
+  deltaz = m3/niz
   !
   !    Here we check the value of the resulting charge
   !
@@ -1086,8 +1163,8 @@ SUBROUTINE plot_fast (alat, at, nat, tau, atm, ityp,&
 
   rhomin = max ( minval (carica), 1.d-10 )
   rhomax = maxval (carica)
-  rhotot = sum (carica(:,:,:)) * omega * deltax * deltay * deltaz
-  rhoabs = sum (abs(carica(:,:,:))) * omega * deltax * deltay * deltaz
+  rhotot = sum (carica(1:nix,1:niy,1:niz)) * omega * deltax * deltay * deltaz
+  rhoabs = sum (abs(carica(1:nix,1:niy,1:niz))) * omega * deltax * deltay * deltaz
 
   WRITE(stdout, '(/5x,"Min, Max, Total, Abs charge: ",4f10.6)') rhomin, &
        rhomax, rhotot, rhoabs
@@ -1195,3 +1272,176 @@ SUBROUTINE write_openmol_file (alat, at, nat, tau, atm, ityp, x0, &
   !
   RETURN
 END SUBROUTINE write_openmol_file
+!
+SUBROUTINE isostm_plot(rhor, nr1x, nr2x, nr3x, & 
+                      isovalue, heightmin, heightmax, direction)
+  !-----------------------------------------------------------------------
+  !
+  !   Written by Andrea Cepellotti (2011), modified by Marco Pividori (2014) 
+  !   to better interface with the postprocessing suite of QE
+  !
+  !      This subroutine calculates 2D images of STM as isosurface of 
+  !      integrated ldos.
+  !      It receives as input the STM charge density (that will be
+  !      overwritten!) and the dimension of the grid in the real space.
+  !      Works only for surfaces perpendicular to idir=3, searching for the
+  !      highest isovalue found from heightmax to heightmin or viceversa
+  !      according to the variable direction.
+  !      
+  !
+  !      DESCRIPTION of the INPUT CARD  ISOSTM :
+  !
+  !      isovalue     ! (real) value of the charge of the isosurface
+  !                   ! default value -> 0.0d0
+  !      heightmin    ! (real) minimum value of the plane in which searching for the isosurface
+  !                   ! default value -> 0.0d0
+  !      heightmax    ! (real) maximum value of the plane in which searching for the isosurface
+  !                   ! default value -> 1.0d0
+  !                   ! the two parameters above are in percentage with respect to the 
+  !                   ! height of the cell, i.e. between 0.0 and 1.0.
+  !                   ! If heightmax < heightmin, it treats it as if it's in the 
+  !                   !  upper periodically repeated slab.
+  !                   ! Put heightmin somewhere in the bulk and heightmax in the vacuum
+  !      direction    ! (integer) direction along z of the scan for the stm image:
+  !                   ! if direction = 1 generates the isosurface as seen from heightmax to heightmin
+  !                   ! if direction =-1 generates the isosurface as seen from heightmin to heightmax
+  !                   ! default value -> 1
+
+  USE kinds,      ONLY : DP
+  USE io_global,  ONLY : stdout, ionode, ionode_id
+  USE mp,         ONLY : mp_bcast
+
+  IMPLICIT NONE
+
+  INTEGER, INTENT(IN) :: nr1x, nr2x, nr3x
+  !dimension of the grid in the REAL SPACE
+
+  INTEGER :: ios
+
+  real(DP) :: rhor(nr1x*nr2x*nr3x)
+  ! charge in R space
+
+  REAL(DP), ALLOCATABLE :: image (:,:)  
+  ! array for storing z coordinates
+
+  REAL(DP), ALLOCATABLE :: reorder (:)
+  ! temporary array used to reorder z coord if  heightmax < heightmin
+  INTEGER :: kmin,kmax,deltakz, ir, ir2,direction
+  ! min fft z value
+  ! max fft z value
+  ! difference between kmin and kmax
+  ! counters on grid
+  ! direction of scan
+   
+  REAL(DP) :: isovalue,heightmin,heightmax
+  ! input parameters
+  REAL(DP) :: maximum,minimum
+  ! max and min value of iLDOS
+  LOGICAL :: saturation			! check on the image
+
+  INTEGER :: i, j, k
+
+  !
+  ! algorithm to find the isovalue
+  !
+
+  kmin=NINT(heightmin*nr3x)
+  kmax=NINT(heightmax*nr3x)   
+  deltakz=0
+
+  ! if heightmin > heightmax, translate the z coordinates so that heightmin < heightmax
+
+  IF ( heightmin > heightmax ) THEN
+    ALLOCATE (reorder(nr1x*nr2x*nr3x))
+    kmin=NINT(heightmin*nr3x)
+    kmax=NINT(heightmax*nr3x)       
+    deltakz=nr3x-kmin+1
+   
+    DO k = 1,nr3x
+      DO j = 1,nr2x
+        DO i = 1,nr1x
+            ir  = i + (j - 1) * nr1x + (k - 1) * nr1x * nr2x
+            ir2 = i + (j - 1) * nr1x + ( mod((k + deltakz),nr3x) &
+                     - 1) * nr1x * nr2x
+            reorder(ir2) = rhor(ir)               
+        ENDDO    
+      ENDDO
+    ENDDO
+    rhor=reorder
+    DEALLOCATE (reorder)
+   
+    kmin= mod( kmin + deltakz, nr3x)
+    kmax= mod( kmax + deltakz, nr3x)
+ 
+  ENDIF
+
+  IF (kmax > nr3x .or. kmin > nr3x .or. kmax <0 .or. kmin <0) THEN
+    CALL errore('isostm','problem with heightmax/min',1)
+  ENDIF
+
+  !
+  ! now search for the isosurface
+  !
+
+  ! if heightmin is 0.0d0, the lower limit is set to alat/nr3x
+  IF (kmin == 0) kmin = 1  
+
+  ALLOCATE (image(nr1x,nr2x))
+  image=0.d0
+  minimum=10.d0
+  maximum=0.d0
+  saturation=.false.
+
+  DO k = kmin, kmax, direction
+     DO j = 1, nr2x
+        DO i = 1, nr1x
+           ir = i + (j - 1) * nr1x + (k - 1) * nr1x * nr2x
+           IF ( dble (rhor (ir) ) >= isovalue ) THEN
+              image (i,j) = k
+              IF (k==kmax) THEN
+                 saturation=.true.
+              ENDIF
+              IF (k < NINT(heightmin*nr3x) ) THEN
+                 image (i,j) = image (i,j) + mod((k + deltakz),nr3x)
+              ENDIF
+           ENDIF
+           IF (dble (rhor (ir) ) < minimum ) THEN
+              minimum = dble (rhor(ir))
+           ELSE IF (dble (rhor (ir) ) > maximum ) THEN
+              maximum = dble (rhor (ir))
+           ENDIF
+        ENDDO
+     ENDDO
+  ENDDO
+
+  WRITE( stdout, * )
+  WRITE( stdout, * )  '    image of z coordinates of the constant isovalue'
+  WRITE( stdout, * )  '    -----------------------------------------------'  
+  WRITE( stdout, * )  '    max density found: ',maximum       
+  WRITE( stdout, * )  '    min density found: ',minimum
+  WRITE( stdout, * )  '    isovalue:          ', isovalue
+ 
+  IF (minimum > isovalue) CALL errore('isostm','too low isovalue',1)
+  IF (maximum < isovalue) CALL errore('isostm','too high isovalue',1)     
+
+  IF (saturation) THEN
+      WRITE( stdout, * )  '!! WARNING: possibly saturated image, change heights or isovalue'
+  ENDIF
+
+  !--------  
+  !WARNING!  We overwrite image(x,y) in the 3D real grid to use the FFT3D algorithm
+  !--------
+
+  !overwriting charge with image(x,y) (z is a dummy variable)
+  DO k = 1, nr3x
+     DO j = 1, nr2x
+        DO i = 1, nr1x
+           ir = i + (j - 1) * nr1x + (k - 1) * nr1x * nr2x
+           rhor(ir) = image(i,j)
+        ENDDO
+     ENDDO
+  ENDDO
+
+  DEALLOCATE(image)
+
+END SUBROUTINE isostm_plot

@@ -650,8 +650,10 @@ CONTAINS
 
   SUBROUTINE pdsyevd_drv( tv, n, nb, s, lds, w, ortho_cntx )
      USE kinds,     ONLY : DP
-     USE mp_global,   ONLY: nproc_bgrp, me_bgrp, intra_bgrp_comm,root_bgrp,ortho_comm
-#ifdef __ELPA
+     USE mp_bands,  ONLY: nproc_bgrp, me_bgrp, intra_bgrp_comm, root_bgrp
+     USE mp_diag,   ONLY: ortho_comm
+     USE mp,        ONLY: mp_comm_free
+#if defined(__ELPA)
      USE elpa1
 #endif
      IMPLICIT NONE
@@ -675,7 +677,7 @@ CONTAINS
      INTEGER     :: LWORK, LIWORK, info
      CHARACTER   :: jobv
      INTEGER     :: i
-#ifdef __ELPA
+#if defined(__ELPA)
      INTEGER     :: nprow,npcol,my_prow, my_pcol,mpi_comm_rows, mpi_comm_cols
 #endif 
 
@@ -686,7 +688,7 @@ CONTAINS
         ALLOCATE( vv( SIZE( s, 1 ), SIZE( s, 2 ) ) )
         jobv = 'V'
      ELSE
-        CALL errore( ' pdsyevd_drv ', ' PDSYEVD does not compute eigenvalue only ', ABS( info ) )
+        CALL errore('pdsyevd_drv','PDSYEVD does not compute eigenvalue only',1)
      END IF
 
      CALL descinit( desch, n, n, nb, nb, 0, 0, ortho_cntx, SIZE( s, 1 ) , info )
@@ -698,12 +700,16 @@ CONTAINS
      itmp = 0
      rtmp = 0.0_DP
 
-#ifdef __ELPA
+#if defined(__ELPA)
      CALL BLACS_Gridinfo(ortho_cntx,nprow, npcol, my_prow,my_pcol)
-     call GET_ELPA_ROW_COL_COMMS(ortho_comm, my_prow, my_pcol,mpi_comm_rows, mpi_comm_cols)
-     CALL SOLVE_EVP_REAL(n,  n,   s, lds,    w,  vv, lds     ,nb  ,mpi_comm_rows, mpi_comm_cols)
-     s = vv
+     CALL get_elpa_row_col_comms(ortho_comm, my_prow, my_pcol,mpi_comm_rows, mpi_comm_cols)
+     CALL solve_evp_real(n,  n,   s, lds,    w,  vv, lds     ,nb  ,mpi_comm_rows, mpi_comm_cols)
+     
+     IF( tv )  s = vv
      IF( ALLOCATED( vv ) ) DEALLOCATE( vv )
+
+     CALL mp_comm_free ( mpi_comm_rows )
+     CALL mp_comm_free ( mpi_comm_cols )
 #else
      CALL PDSYEVD( jobv, 'L', n, s, 1, 1, desch, w, vv, 1, 1, desch, rtmp, lwork, itmp, liwork, info )
 
@@ -725,24 +731,6 @@ CONTAINS
      DEALLOCATE( work )
      DEALLOCATE( iwork )
 #endif 
-
-!#ifdef __ELPA   ! uncomment only if you want to printout eigenv* for debug
-!                ! purposes
-!     ALLOCATE ( work (n) ) 
-!     CALL PDLAPRNT( N, N, s, 1, 1, desch, 0, 0, 's', 99, WORK )
-!     DO i=1,N
-!        WRITE(88,*)i,w(i)
-!     END DO
-!     DEALLOCATE( work )
-!#else
-!     ALLOCATE ( work (n) ) 
-!     write(*,*)n
-!     CALL PDLAPRNT( N, N, s, 1, 1, desch, 0, 0, 's', 100, WORK )
-!     DO i=1,N
-!        WRITE(200,*)i,w(i)
-!     END DO
-!     DEALLOCATE( work )
-!#endif
 
      RETURN
   END SUBROUTINE pdsyevd_drv

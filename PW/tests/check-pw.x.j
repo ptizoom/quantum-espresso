@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Automated checks for pw.x - PG 2007-2012
+# Automated checks for pw.x - PG 2007-2014
 #
 . ../../environment_variables
 #
@@ -18,6 +18,8 @@
 #    ./check-pw.x.j atom*.in lsda*
 # If you want to save a copy in file "logfile":
 #    ./check-pw.x.j atom*.in lsda* | tee logfile
+#
+# In order to test "pw.x -something", use files "plugin-something_N.in"
 #
 # For 'nscf' case, the data is in file $name.in2, where $name.in is the
 # data for the scf calculation that must be executed before the nscf one.
@@ -37,7 +39,7 @@
 if test "`echo -e`" = "-e" ; then ECHO=echo ; else ECHO="echo -e" ; fi
 
 ESPRESSO_ROOT=`cd ../../ ; pwd`
-ESPRESSO_TMPDIR=$ESPRESSO_ROOT/tmp/
+ESPRESSO_TMPDIR=$ESPRESSO_ROOT/tempdir/
 ESPRESSO_PSEUDO=$ESPRESSO_ROOT/pseudo/
 
 # no need to specify outdir and pseudo_dir in all *.in files
@@ -71,6 +73,14 @@ get_kernel () {
          $PARA_PREFIX $ESPRESSO_ROOT/PW/src/generate_vdW_kernel_table.x $PARA_POSTFIX
          mv vdW_kernel_table $ESPRESSO_PSEUDO/
          $ECHO "kernel table generated in $ESPRESSO_PSEUDO/vdW_kernel_table"
+      fi
+    fi
+   if test "$1" = "vdw6" ; then
+      if ! test -f $ESPRESSO_PSEUDO/rVV10_kernel_table ; then
+         $ECHO "Generating kernel table - May take several minutes...\c"
+         $PARA_PREFIX $ESPRESSO_ROOT/PW/src/generate_rVV10_kernel_table.x $PARA_POSTFIX
+         mv rVV10_kernel_table $ESPRESSO_PSEUDO/
+         $ECHO "kernel table generated in $ESPRESSO_PSEUDO/rVV10_kernel_table"
       fi
     fi
 }
@@ -239,13 +249,15 @@ do
   name=`basename $file .in`
   get_pp $name
   get_kernel $name
+  # in order to test pw.x -something, use files plugin-something_N.in
+  plugin_name=`echo  $name | sed 's/plugin//' | cut -d_ -f1`
   $ECHO "Checking $name...\c"
   ###
   # run the code in the scratch directory
   #
   cd $ESPRESSO_TMPDIR
-  $PARA_PREFIX $ESPRESSO_ROOT/PW/src/pw.x $PARA_POSTFIX \
-        -inp $TESTDIR/$name.in > $TESTDIR/$name.out
+  $PARA_PREFIX $ESPRESSO_ROOT/PW/src/pw.x $plugin_name $PARA_POSTFIX \
+        -i $TESTDIR/$name.in > $TESTDIR/$name.out
   if test $? != 0; then
      $ECHO "FAILED with error condition!"
      $ECHO "Input: $name.in, Output: $name.out, Reference: $name.ref"
@@ -279,7 +291,7 @@ do
      #
      cd $ESPRESSO_TMPDIR
      $PARA_PREFIX $ESPRESSO_ROOT/PW/src/pw.x $PARA_POSTFIX \
-             -inp $TESTDIR/$name.in$n > $TESTDIR/$name.out$n
+             -i $TESTDIR/$name.in$n > $TESTDIR/$name.out$n
      if test $? != 0; then
         $ECHO "FAILED with error condition!"
         $ECHO "Input: $name.in$n, Output: $name.out$n, Reference: $name.ref$n"

@@ -77,8 +77,8 @@ CONTAINS
   SUBROUTINE calbec_bec_type ( npw, beta, psi, betapsi, nbnd )
     !-----------------------------------------------------------------------
     !_
-    USE mp_global, ONLY: intra_bgrp_comm
-    USE mp, ONLY: mp_size, mp_rank, mp_get_comm_null
+    USE mp_bands, ONLY: intra_bgrp_comm
+    USE mp,       ONLY: mp_size, mp_rank, mp_get_comm_null
     !
     IMPLICIT NONE
     COMPLEX (DP), INTENT (in) :: beta(:,:), psi(:,:)
@@ -141,7 +141,7 @@ CONTAINS
   !-----------------------------------------------------------------------
   SUBROUTINE calbec_gamma_nocomm ( npw, beta, psi, betapsi, nbnd )
     !-----------------------------------------------------------------------
-    USE mp_global, ONLY: intra_bgrp_comm
+    USE mp_bands, ONLY: intra_bgrp_comm
     IMPLICIT NONE
     COMPLEX (DP), INTENT (in) :: beta(:,:), psi(:,:)
     REAL (DP), INTENT (out) :: betapsi(:,:)
@@ -182,6 +182,7 @@ CONTAINS
     IF ( nkb == 0 ) RETURN
     !
     CALL start_clock( 'calbec' )
+    IF ( npw == 0 ) betapsi(:,:)=0.0_DP
     npwx= size (beta, 1)
     IF ( npwx /= size (psi, 1) ) CALL errore ('calbec', 'size mismatch', 1)
     IF ( npwx < npw ) CALL errore ('calbec', 'size mismatch', 2)
@@ -222,8 +223,8 @@ CONTAINS
     ! ... matrix times matrix with summation index (k=1,npw) running on
     ! ... G-vectors or PWs : betapsi(i,j) = \sum_k beta^*(i,k) psi(k,j)
     !
-    USE mp_global, ONLY : intra_bgrp_comm
-    USE mp,        ONLY : mp_sum
+    USE mp_bands, ONLY : intra_bgrp_comm
+    USE mp,       ONLY : mp_sum
 
     IMPLICIT NONE
     COMPLEX (DP), INTENT (in) :: beta(:,:), psi(:,:)
@@ -237,6 +238,7 @@ CONTAINS
     IF ( nkb == 0 ) RETURN
     !
     CALL start_clock( 'calbec' )
+    IF ( npw == 0 ) betapsi(:,:)=(0.0_DP,0.0_DP)
     npwx= size (beta, 1)
     IF ( npwx /= size (psi, 1) ) CALL errore ('calbec', 'size mismatch', 1)
     IF ( npwx < npw ) CALL errore ('calbec', 'size mismatch', 2)
@@ -281,8 +283,8 @@ CONTAINS
     ! ... betapsi(i,1,j) = \sum_k=1,npw beta^*(i,k) psi(k,j)
     ! ... betapsi(i,2,j) = \sum_k=1,npw beta^*(i,k) psi(k+npwx,j)
     !
-    USE mp_global, ONLY : intra_bgrp_comm
-    USE mp,        ONLY : mp_sum
+    USE mp_bands, ONLY : intra_bgrp_comm
+    USE mp,       ONLY : mp_sum
 
     IMPLICIT NONE
     COMPLEX (DP), INTENT (in) :: beta(:,:), psi(:,:)
@@ -296,6 +298,7 @@ CONTAINS
     IF ( nkb == 0 ) RETURN
     !
     CALL start_clock ('calbec')
+    IF ( npw == 0 ) betapsi(:,:,:)=(0.0_DP,0.0_DP)
     npwx= size (beta, 1)
     IF ( 2*npwx /= size (psi, 1) ) CALL errore ('calbec', 'size mismatch', 1)
     IF ( npwx < npw ) CALL errore ('calbec', 'size mismatch', 2)

@@ -13,14 +13,14 @@
    <blockquote>
 <h3>TABLE OF CONTENTS</h3>
 <blockquote>
-<p><a href="#id1063323">INTRODUCTION</a></p>
-<p><a href="#id1063428">&amp;INPUT_BGW2PW</a><blockquote>
-<a href="#id1063432">prefix</a> | <a href="#id1063446">outdir</a> | <a href="#id1063461">real_or_complex</a> | <a href="#id1063478">wfng_flag</a> | <a href="#id1063493">wfng_file</a> | <a href="#id1063508">wfng_nband</a> | <a href="#id1063524">rhog_flag</a> | <a href="#id1063539">rhog_file</a>
+<p><a href="#idm1680">INTRODUCTION</a></p>
+<p><a href="#idm1296">&amp;INPUT_BGW2PW</a><blockquote>
+<a href="#idm768">prefix</a> | <a href="#idp13120">outdir</a> | <a href="#idp14848">real_or_complex</a> | <a href="#idp16816">wfng_flag</a> | <a href="#idp18624">wfng_file</a> | <a href="#idp20480">wfng_nband</a> | <a href="#idp22304">rhog_flag</a> | <a href="#idp24112">rhog_file</a>
 </blockquote></p>
 </blockquote>
 </blockquote>
    <blockquote>
-<a name="id1063323"><h3>INTRODUCTION</h3></a><blockquote><pre>
+<a name="idm1680"><h3>INTRODUCTION</h3></a><blockquote><pre>
 Converts BerkeleyGW WFN and RHO files to the format of pw.x.
 This can be useful, for example, if you generate the plane waves
 on top of the valence bands and want to diagonalize them in pw.x.
@@ -45,10 +45,10 @@ Structure of the input data:
    /
    </pre></blockquote>
 </blockquote>
-   <a name="id1063428"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm1296"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: INPUT_BGW2PW</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="id1063432"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm768"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">prefix</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -63,7 +63,7 @@ prefix of files saved by program pw.x
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063446"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp13120"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">outdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -78,7 +78,7 @@ the scratch directory where the massive data-files are written
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063461"><a name="real_or_complex"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp14848"><a name="real_or_complex"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">real_or_complex</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -96,7 +96,7 @@ without inversion symmetry and time-reversal symmetry)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063478"><a name="wfng_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp16816"><a name="wfng_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -111,7 +111,7 @@ read wavefunctions in G-space from BerkeleyGW WFN file
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063493"><a name="wfng_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp18624"><a name="wfng_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -126,7 +126,7 @@ name of BerkeleyGW WFN input file. Not used if wfng_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063508"><a name="wfng_nband"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp20480"><a name="wfng_nband"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_nband</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -141,7 +141,7 @@ number of bands to write (0 = all). Not used if wfng_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063524"><a name="rhog_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp22304"><a name="rhog_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhog_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -156,7 +156,7 @@ read charge density in G-space from BerkeleyGW RHO file
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id1063539"><a name="rhog_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp24112"><a name="rhog_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhog_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>

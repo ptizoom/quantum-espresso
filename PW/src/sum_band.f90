@@ -16,13 +16,13 @@ SUBROUTINE sum_band()
   !
   USE kinds,                ONLY : DP
   USE ener,                 ONLY : eband
-  USE control_flags,        ONLY : diago_full_acc, gamma_only, tqr
+  USE control_flags,        ONLY : diago_full_acc, gamma_only, tqr, lxdm
   USE cell_base,            ONLY : at, bg, omega, tpiba
   USE ions_base,            ONLY : nat, ntyp => nsp, ityp
   USE fft_base,             ONLY : dfftp, dffts
   USE fft_interfaces,       ONLY : fwfft, invfft
   USE gvect,                ONLY : ngm, g, nl, nlm
-  USE gvecs,              ONLY : nls, nlsm, doublegrid
+  USE gvecs,                ONLY : nls, nlsm, doublegrid
   USE klist,                ONLY : nks, nkstot, wk, xk, ngk
   USE fixed_occ,            ONLY : one_atom_occupations
   USE ldaU,                 ONLY : lda_plus_U
@@ -37,7 +37,8 @@ SUBROUTINE sum_band()
   USE noncollin_module,     ONLY : noncolin, npol, nspin_mag
   USE spin_orb,             ONLY : lspinorb, domag, fcoef
   USE wvfct,                ONLY : nbnd, npwx, npw, igk, wg, et, btype
-  USE mp_global,            ONLY : inter_pool_comm, intra_bgrp_comm
+  USE mp_pools,             ONLY : inter_pool_comm
+  USE mp_bands,             ONLY : intra_bgrp_comm
   USE mp,                   ONLY : mp_sum
   USE funct,                ONLY : dft_is_meta
   USE paw_symmetry,         ONLY : PAW_symmetrize
@@ -68,12 +69,11 @@ SUBROUTINE sum_band()
   becsum(:,:,:) = 0.D0
   rho%of_r(:,:)      = 0.D0
   rho%of_g(:,:)      = (0.D0, 0.D0)
-  if ( dft_is_meta() ) then
+  if ( dft_is_meta() .OR. lxdm ) then
      rho%kin_r(:,:)      = 0.D0
      rho%kin_g(:,:)      = (0.D0, 0.D0)
   end if
   eband         = 0.D0
-
   !
   ! ... calculates weights of Kohn-Sham orbitals used in calculation of rho
   !
@@ -93,31 +93,30 @@ SUBROUTINE sum_band()
      ! ... occupation is less than 1.0 %
      !
      btype(:,:) = 1
-     !
      FORALL( ik = 1:nks, wk(ik) > 0.D0 )
-        !
         WHERE( wg(:,ik) / wk(ik) < 0.01D0 ) btype(:,ik) = 0
-        !
      END FORALL
      !
   END IF
   !
-  ! ... Needed for LDA+U
+  ! ... Needed for LDA+U: compute occupations of Hubbard states
   !
   IF (lda_plus_u) THEN
-   IF(noncolin) THEN
-    CALL new_ns_nc(rho%ns_nc)
-   ELSE
-    CALL new_ns(rho%ns)
-   ENDIF
+     IF(noncolin) THEN
+        CALL new_ns_nc(rho%ns_nc)
+     ELSE
+        CALL new_ns(rho%ns)
+     ENDIF
   ENDIF
   !
-  IF ( okvan.OR.one_atom_occupations ) CALL allocate_bec_type (nkb,nbnd, becp,intra_bgrp_comm)
+  ! ... Allocate (and later deallocate) arrays needed in specific cases
   !
-  ! ... specific routines are called to sum for each k point the contribution
-  ! ... of the wavefunctions to the charge
+  IF ( okvan ) CALL allocate_bec_type (nkb,nbnd, becp,intra_bgrp_comm)
+  IF (dft_is_meta() .OR. lxdm) ALLOCATE (kplusg(npwx))
   !
-  IF (dft_is_meta()) ALLOCATE (kplusg(npwx))
+  ! ... specialized routines are called to sum at Gamma or for each k point 
+  ! ... the contribution of the wavefunctions to the charge
+  !
   IF ( gamma_only ) THEN
      !
      CALL sum_band_gamma()
@@ -127,7 +126,8 @@ SUBROUTINE sum_band()
      CALL sum_band_k()
      !
   END IF
-  IF (dft_is_meta()) DEALLOCATE (kplusg)
+  !
+  IF (dft_is_meta() .OR. lxdm) DEALLOCATE (kplusg)
   !
   IF( okpaw )  THEN
      rho%bec(:,:,:) = becsum(:,:,:) ! becsum is filled in sum_band_{k|gamma}
@@ -139,7 +139,7 @@ SUBROUTINE sum_band()
      CALL PAW_symmetrize(rho%bec)
   ENDIF
   !
-  IF ( okvan .OR. one_atom_occupations ) CALL deallocate_bec_type ( becp )
+  IF ( okvan ) CALL deallocate_bec_type ( becp )
   !
   ! ... If a double grid is used, interpolate onto the fine grid
   !
@@ -148,7 +148,7 @@ SUBROUTINE sum_band()
      DO is = 1, nspin
         !
         CALL interpolate( rho%of_r(1,is), rho%of_r(1,is), 1 )
-        if (dft_is_meta()) CALL interpolate(rho%kin_r(1,is),rho%kin_r(1,is),1)
+        if (dft_is_meta() .OR. lxdm) CALL interpolate(rho%kin_r(1,is),rho%kin_r(1,is),1)
         !
      END DO
      !
@@ -167,7 +167,7 @@ SUBROUTINE sum_band()
   ! ... reduce charge density across pools
   !
   CALL mp_sum( rho%of_r, inter_pool_comm )
-  if (dft_is_meta() ) CALL mp_sum( rho%kin_r, inter_pool_comm )
+  if (dft_is_meta() .OR. lxdm) CALL mp_sum( rho%kin_r, inter_pool_comm )
 #endif
   !
   ! ... bring the (unsymmetrized) rho(r) to G-space (use psic as work array)
@@ -184,7 +184,7 @@ SUBROUTINE sum_band()
   !
   ! ... same for rho_kin(G)
   !
-  IF ( dft_is_meta()) THEN
+  IF ( dft_is_meta() .OR. lxdm) THEN
      DO is = 1, nspin
         psic(:) = rho%kin_r(:,is)
         CALL fwfft ('Dense', psic, dfftp)
@@ -207,7 +207,7 @@ SUBROUTINE sum_band()
   !
   ! ... the same for rho%kin_r and rho%kin_g
   !
-  IF ( dft_is_meta()) THEN
+  IF ( dft_is_meta() .OR. lxdm) THEN
      DO is = 1, nspin
         !
         psic(:) = ( 0.D0, 0.D0 )
@@ -234,7 +234,7 @@ SUBROUTINE sum_band()
        ! ... gamma version
        !
        USE becmod,        ONLY : bec_type, becp, calbec
-       USE mp_global,     ONLY : me_bgrp
+       USE mp_bands,      ONLY : me_bgrp
        USE mp,            ONLY : mp_sum, mp_get_comm_null
        !
        IMPLICIT NONE
@@ -261,7 +261,7 @@ SUBROUTINE sum_band()
        !
        IF( dffts%have_task_groups ) THEN
           !
-          IF( dft_is_meta() ) &
+          IF( dft_is_meta() .OR. lxdm) &
              CALL errore( ' sum_band ', ' task groups with meta dft, not yet implemented ', 1 )
           !
           v_siz = dffts%tg_nnr * dffts%nogrp
@@ -315,8 +315,10 @@ SUBROUTINE sum_band()
                    !
                    IF( idx + ibnd - 1 < nbnd ) THEN
                       DO j = 1, npw
-                         tg_psi(nls (igk(j))+ioff) =        evc(j,idx+ibnd-1) + (0.0d0,1.d0) * evc(j,idx+ibnd)
-                         tg_psi(nlsm(igk(j))+ioff) = CONJG( evc(j,idx+ibnd-1) - (0.0d0,1.d0) * evc(j,idx+ibnd) )
+                         tg_psi(nls (igk(j))+ioff) =       evc(j,idx+ibnd-1) +&
+                              (0.0d0,1.d0) * evc(j,idx+ibnd)
+                         tg_psi(nlsm(igk(j))+ioff) = CONJG(evc(j,idx+ibnd-1) -&
+                              (0.0d0,1.d0) * evc(j,idx+ibnd) )
                       END DO
                    ELSE IF( idx + ibnd - 1 == nbnd ) THEN
                       DO j = 1, npw
@@ -360,7 +362,8 @@ SUBROUTINE sum_band()
                    w2 = w1
                 END IF
                 !
-                CALL get_rho_gamma(tg_rho, dffts%tg_npp( me_bgrp + 1 ) * dffts%nr1x * dffts%nr2x, w1, w2, tg_psi)
+                CALL get_rho_gamma(tg_rho, dffts%tg_npp( me_bgrp + 1 ) * &
+                                   dffts%nr1x * dffts%nr2x, w1, w2, tg_psi)
                 !
              ELSE
                 !
@@ -371,9 +374,9 @@ SUBROUTINE sum_band()
                    ! ... two ffts at the same time
                    !
                    psic(nls(igk(1:npw)))  = evc(1:npw,ibnd) + &
-                                               ( 0.D0, 1.D0 ) * evc(1:npw,ibnd+1)
+                                           ( 0.D0, 1.D0 ) * evc(1:npw,ibnd+1)
                    psic(nlsm(igk(1:npw))) = CONJG( evc(1:npw,ibnd) - &
-                                               ( 0.D0, 1.D0 ) * evc(1:npw,ibnd+1) )
+                                           ( 0.D0, 1.D0 ) * evc(1:npw,ibnd+1) )
                    !
                 ELSE
                    !
@@ -404,7 +407,7 @@ SUBROUTINE sum_band()
                 !
              END IF
              !
-             IF (dft_is_meta()) THEN
+             IF (dft_is_meta() .OR. lxdm) THEN
                 DO j=1,3
                    psic(:) = ( 0.D0, 0.D0 )
                    !
@@ -545,7 +548,10 @@ SUBROUTINE sum_band()
           !
        END DO k_loop
        !
-       IF( becp%comm /= mp_get_comm_null() ) call mp_sum( becsum, becp%comm )
+       ! ... with distributed <beta|psi>, sum over bands
+       !
+       IF( okvan .AND. becp%comm /= mp_get_comm_null() ) &
+            CALL mp_sum( becsum, becp%comm )
        !
        IF( dffts%have_task_groups ) THEN
           DEALLOCATE( tg_psi )
@@ -565,8 +571,8 @@ SUBROUTINE sum_band()
        ! ... k-points version
        !
        USE becmod, ONLY : bec_type, becp, calbec
-       USE mp_global,     ONLY : me_bgrp
-       USE mp,            ONLY : mp_sum
+       USE mp_bands,     ONLY : me_bgrp
+       USE mp,           ONLY : mp_sum
        !
        IMPLICIT NONE
        !
@@ -598,7 +604,7 @@ SUBROUTINE sum_band()
        !
        use_tg = dffts%have_task_groups
        dffts%have_task_groups = ( dffts%have_task_groups ) .AND. &
-                  ( nbnd >= dffts%nogrp ) .AND. ( .NOT. dft_is_meta() )
+                  ( nbnd >= dffts%nogrp ) .AND. ( .NOT. (dft_is_meta() .OR. lxdm) )
        !
        incr = 1
        !
@@ -813,7 +819,7 @@ SUBROUTINE sum_band()
 
                 END IF
                 !
-                IF (dft_is_meta()) THEN
+                IF (dft_is_meta() .OR. lxdm) THEN
                    DO j=1,3
                       psic(:) = ( 0.D0, 0.D0 )
                       !

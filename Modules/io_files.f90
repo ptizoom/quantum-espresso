@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2002-2010 Quantum ESPRESSO group
+! Copyright (C) 2002-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -11,18 +11,23 @@ MODULE io_files
   !
   USE parameters, ONLY: ntypx
   !
-  ! ... The name of the files
+  ! ... I/O related variables: file names, units, utilities
   !
   IMPLICIT NONE
   !
   SAVE
-  !
-  CHARACTER(len=256) :: tmp_dir = './'            ! directory for temporary files
-  CHARACTER(len=256) :: wfc_dir = 'undefined'     ! directory for large files on each node, should be kept 'undefined' if not known 
-  CHARACTER(len=256) :: prefix  = 'os'            ! prepended to file names
-  CHARACTER(len=6)   :: nd_nmbr = '000000'        ! node number (used only in parallel case)
-  CHARACTER(len=256) :: pseudo_dir = './'    ! original location of PP files
-  CHARACTER(len=256) :: pseudo_dir_cur = ' ' ! current location when restarting
+  ! ... directory for all temporary files
+  CHARACTER(len=256) :: tmp_dir = './'
+  ! ... directory for large files on each node. Default: same as tmp_dir
+  CHARACTER(len=256) :: wfc_dir = 'undefined'
+  ! ... prefix is prepended to all file (and directory) names 
+  CHARACTER(len=256) :: prefix  = 'os'
+  ! ... for parallel case and distributed I/O: node number
+  CHARACTER(len=6)   :: nd_nmbr = '000000'
+  ! ... directory where pseudopotential files are found
+  CHARACTER(len=256) :: pseudo_dir = './'
+  ! ... location of PP files after a restart from file
+  CHARACTER(len=256) :: pseudo_dir_cur = ' '
   CHARACTER(len=256) :: psfile( ntypx ) = 'UPF'
   CHARACTER(len=256) :: outdir  = './'
   !
@@ -32,32 +37,24 @@ MODULE io_files
   CHARACTER(LEN=256) :: input_drho = ' '          ! name of the file with the input drho
   CHARACTER(LEN=256) :: output_drho = ' '         ! name of the file with the output drho
   !
-  CHARACTER(LEN=5 ), PARAMETER :: crash_file    = 'CRASH'
-  CHARACTER (LEN=261) :: &
-    exit_file = "os.EXIT"    ! file required for a soft exit  
+  CHARACTER(LEN=5 ), PARAMETER :: crash_file  = 'CRASH'
+  CHARACTER (LEN=261) :: exit_file = 'os.EXIT' ! file required for a soft exit  
   !
   CHARACTER (LEN=9),  PARAMETER :: xmlpun_base = 'data-file'
   CHARACTER (LEN=13), PARAMETER :: xmlpun      = xmlpun_base // '.xml'
   !
   ! ... The units where various variables are saved
-  !
-  INTEGER :: rhounit     = 17
-  INTEGER :: crashunit   = 15
-  INTEGER :: pseudounit  = 10
-  INTEGER :: opt_unit    = 20 ! optional unit 
-  !
-  ! ... units in pwscf
+  ! ... Only units that are kept open during the run should be listed here
   !
   INTEGER :: iunres      =  1 ! unit for the restart of the run
   INTEGER :: iunpun      =  4 ! unit for saving the final results
   INTEGER :: iunwfc      = 10 ! unit with wavefunctions
   INTEGER :: iunoldwfc   = 11 ! unit with old wavefunctions
   INTEGER :: iunoldwfc2  = 12 ! as above at step -2
-  INTEGER :: iunat       = 13 ! unit for saving (orthogonal) atomic wfcs 
+  INTEGER :: iunhub      = 13 ! unit for saving Hubbard-U atomic wfcs 
   INTEGER :: iunsat      = 14 ! unit for saving (orthogonal) atomic wfcs * S
-  INTEGER :: iunocc      = 15 ! unit for saving the atomic n_{ij}
+  INTEGER :: iunmix      = 15 ! unit for saving mixing information
   INTEGER :: iunigk      = 16 ! unit for saving indices
-  INTEGER :: iunpaw      = 17 ! unit for saving paw becsum and D_Hxc
   !
   INTEGER :: iunexit     = 26 ! unit for a soft exit  
   INTEGER :: iunupdate   = 27 ! unit for saving old positions (extrapolation)
@@ -65,23 +62,22 @@ MODULE io_files
   INTEGER :: iunlock     = 29 ! as above (locking file)
   !
   INTEGER :: iunbfgs     = 30 ! unit for the bfgs restart file
-  INTEGER :: iunatsicwfc = 31 ! unit for sic wfc
   !
   INTEGER :: iuntmp      = 90 ! temporary unit, when used must be closed ASAP
   !
   INTEGER :: nwordwfc    =  2 ! length of record in wavefunction file
   INTEGER :: nwordatwfc  =  2 ! length of record in atomic wfc file
+  INTEGER :: nwordwfcU   =  2 ! length of record in atomic hubbard wfc file
   INTEGER :: nwordwann   =  2 ! length of record in sic wfc file
   !
-  ! ... "path" specific
+  !... finite electric field
   !
-  !... finite electric field (Umari)
-  !
-  INTEGER :: iunefield   = 31 ! unit to store wavefunction for calculatin electric field operator
-  !
-  INTEGER :: iunefieldm  = 32 !unit to store projectors for hermitean electric field potential
-  !
-  INTEGER :: iunefieldp  = 33 !unit to store projectors for hermitean electric field potential
+  INTEGER :: iunefield   = 31 ! unit to store wavefunction for calculating
+                              ! electric field operator
+  INTEGER :: iunefieldm  = 32 ! unit to store projectors for hermitean
+                              ! electric field potential
+  INTEGER :: iunefieldp  = 33 ! unit to store projectors for hermitean 
+                              ! electric field potential
   !
   ! ... For Wannier Hamiltonian
   !
@@ -90,7 +86,6 @@ MODULE io_files
   INTEGER :: nwordwpp = 2
   INTEGER :: nwordwf  = 2
   !
-  INTEGER, EXTERNAL :: find_free_unit
 CONTAINS
   !
   !--------------------------------------------------------------------------
@@ -105,6 +100,7 @@ CONTAINS
     LOGICAL, OPTIONAL, INTENT(IN) :: in_warning
     LOGICAL                       :: exst, warning
     INTEGER                       :: iunit
+    INTEGER, EXTERNAL :: find_free_unit
     !
     IF ( .NOT. ionode ) RETURN
     !
@@ -298,24 +294,21 @@ subroutine seqopn (unit, extension, formatt, exst, tmp_dir_)
   else
     tempfile = trim(tmp_dir) // trim(filename)
   end if
-  if ( trim(nd_nmbr) == '1' .or. trim(nd_nmbr) == '01'.or. &
-       trim(nd_nmbr) == '001' .or. trim(nd_nmbr) == '0001'.or. &
-       trim(nd_nmbr) == '00001' .or. trim(nd_nmbr) == '000001' ) then
+  if ( trim(nd_nmbr) /= '1'     .and. trim(nd_nmbr) /= '01'   .and. &
+       trim(nd_nmbr) /= '001'   .and. trim(nd_nmbr) /= '0001' .and. &
+       trim(nd_nmbr) /= '00001' .and. trim(nd_nmbr) /= '000001' ) then
      !
      ! do not add processor number to files opened by processor 1
      ! in parallel execution: if only the first processor writes,
      ! we do not want the filename to be dependent on the number
      ! of processors
      !
-     !tempfile = tempfile
-  else
      tempfile = trim(tempfile) // nd_nmbr
   end if
   inquire (file = tempfile, exist = exst)
   !
   !    Open the file
   !
-
   open (unit = unit, file = tempfile, form = formatt, status = &
        'unknown', iostat = ios)
 
@@ -352,18 +345,17 @@ SUBROUTINE davcio( vect, nword, unit, nrec, io )
   INTEGER :: ios
     ! integer variable for I/O control
   LOGICAL :: opnd
+  CHARACTER*256 :: name
   !
   !
   CALL start_clock( 'davcio' )
-  !
-  INQUIRE( UNIT = unit )
   !
   IF ( unit  <= 0 ) CALL errore(  'davcio', 'wrong unit', 1 )
   IF ( nrec  <= 0 ) CALL errore(  'davcio', 'wrong record number', 2 )
   IF ( nword <= 0 ) CALL errore(  'davcio', 'wrong record length', 3 )
   IF ( io    == 0 ) CALL infomsg( 'davcio', 'nothing to do?' )
   !
-  INQUIRE( UNIT = unit, OPENED = opnd )
+  INQUIRE( UNIT = unit, OPENED = opnd, NAME = name )
   !
   IF ( .NOT. opnd ) &
      CALL errore(  'davcio', 'unit is not opened', unit )
@@ -373,14 +365,14 @@ SUBROUTINE davcio( vect, nword, unit, nrec, io )
   IF ( io < 0 ) THEN
      !
      READ( UNIT = unit, REC = nrec, IOSTAT = ios ) vect
-     IF ( ios /= 0 ) &
-        CALL errore( 'davcio', 'error while reading from file', unit )
+     IF ( ios /= 0 ) CALL errore( 'davcio', &
+         & 'error while reading from file "' // TRIM(name) // '"', unit )
      !
   ELSE IF ( io > 0 ) THEN
      !
      WRITE( UNIT = unit, REC = nrec, IOSTAT = ios ) vect
-     IF ( ios /= 0 ) &
-        CALL errore( 'davcio', 'error while writing to file', unit )
+     IF ( ios /= 0 ) CALL errore( 'davcio', &
+         & 'error while writing from file "' // TRIM(name) // '"', unit )
      !
   END IF
   !

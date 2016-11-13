@@ -54,7 +54,8 @@ SUBROUTINE add_efield(vpoten,etotefield,rho,iflag)
   USE io_global,     ONLY : stdout,ionode
   USE control_flags, ONLY : mixing_beta
   USE lsda_mod,      ONLY : nspin
-  USE mp_global,     ONLY : intra_image_comm, me_bgrp, intra_bgrp_comm
+  USE mp_images,     ONLY : intra_image_comm
+  USE mp_bands,      ONLY : me_bgrp
   USE fft_base,      ONLY : dfftp
   USE mp,            ONLY : mp_bcast, mp_sum
   USE control_flags, ONLY : iverbosity
@@ -70,7 +71,7 @@ SUBROUTINE add_efield(vpoten,etotefield,rho,iflag)
   !
   ! local variables
   !
-  INTEGER :: index, index0, i, j, k
+  INTEGER :: index0, i, j, k
   INTEGER :: ir, na, ipol
   REAL(DP) :: length, vamp, value, sawarg, e_dipole, ion_dipole
   REAL(DP) :: tot_dipole, bmod
@@ -115,10 +116,7 @@ SUBROUTINE add_efield(vpoten,etotefield,rho,iflag)
      CALL compute_ion_dip(emaxpos, eopreg, edir, ion_dipole)
     
      tot_dipole  = -e_dipole + ion_dipole
-
-#ifdef __MPI
      CALL mp_bcast(tot_dipole, 0, intra_image_comm)
-#endif
   !  
   !  E_{TOT} = -e^{2} \left( eamp - dip \right) dip \frac{\Omega}{4\pi} 
   !
@@ -241,12 +239,11 @@ SUBROUTINE add_efield(vpoten,etotefield,rho,iflag)
      !
      ! ... three dimensional indexes
      !
-     index = index0 + ir - 1
-     k     = index / (dfftp%nr1x*dfftp%nr2x)
-     index = index - (dfftp%nr1x*dfftp%nr2x)*k
-     j     = index / dfftp%nr1x
-     index = index - dfftp%nr1x*j
-     i     = index
+     i = index0 + ir - 1
+     k = i / (dfftp%nr1x*dfftp%nr2x)
+     i = i - (dfftp%nr1x*dfftp%nr2x)*k
+     j = i / dfftp%nr1x
+     i = i - dfftp%nr1x*j
      
      if (edir.eq.1) sawarg = DBLE(i)/DBLE(dfftp%nr1)
      if (edir.eq.2) sawarg = DBLE(j)/DBLE(dfftp%nr2)

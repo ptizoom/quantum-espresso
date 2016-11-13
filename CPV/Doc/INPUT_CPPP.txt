@@ -55,10 +55,11 @@ NAMELIST: &INPUTPP
    Type:           CHARACTER
    Default:        'xsf'
    Description:    a string describing the output format to be performed,
-                   allowed values: 'xsf', 'grd'
+                   allowed values: 'xsf', 'grd', 'xyz'
                    
                        xsf     xcrysden format
                        grd     GRD gaussian 3D grid format
+                       xyz     XMOL format
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------

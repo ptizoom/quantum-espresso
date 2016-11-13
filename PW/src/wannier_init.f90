@@ -18,19 +18,18 @@ SUBROUTINE wannier_init(hwwa)
   USE input_parameters, only: constrain_pot, wan_data
   USE lsda_mod, only: nspin
   USE ions_base, only : nat
-  USE basis, only : natomwfc
+  USE basis, only : natomwfc, swfcatom
   USE constants, only: rytoev
   USE klist, only: nks
   USE io_files
   USE buffers
-  USE ldaU,       ONLY : swfcatom, U_projection
   USE noncollin_module, ONLY : npol
 
   IMPLICIT NONE 
   
   LOGICAL,INTENT(IN) :: hwwa ! have we Wannier already?
   LOGICAL :: exst = .FALSE.,opnd
-  INTEGER :: i
+  INTEGER :: i, io_level
 
   ALLOCATE(pp(nwan,nbnd))
   ALLOCATE(wan_in(nwan,nspin))
@@ -62,21 +61,19 @@ SUBROUTINE wannier_init(hwwa)
   !now open files to store projectors and wannier functions
   nwordwpp = nwan*nbnd*npol
   nwordwf = nwan*npwx*npol
-  CALL open_buffer( iunwpp, 'wproj', nwordwpp, nks, exst )
-  CALL open_buffer( iunwf, 'wwf', nwordwf, nks, exst )
+  io_level = 1
+  CALL open_buffer( iunwpp, 'wproj', nwordwpp, io_level, exst )
+  CALL open_buffer( iunwf, 'wwf', nwordwf, io_level, exst )
 
   ! For atomic wavefunctions
   INQUIRE( UNIT = iunigk, OPENED = opnd )
   IF(.NOT. opnd) CALL seqopn( iunigk, 'igk', 'UNFORMATTED', exst )
 
   IF(.NOT. ALLOCATED(swfcatom)) ALLOCATE( swfcatom( npwx, natomwfc))
-  U_projection = 'ortho-atomic'
   
-  nwordatwfc = 2*npwx*natomwfc*npol
-  INQUIRE( UNIT = iunat, OPENED = opnd )
-  IF(.NOT. opnd) CALL open_buffer( iunat,  'atwfc',  nwordatwfc/2, nks, exst )
+  nwordatwfc = npwx*natomwfc*npol
   INQUIRE( UNIT = iunsat, OPENED = opnd )
-  IF(.NOT. opnd) CALL open_buffer( iunsat, 'satwfc', nwordatwfc/2, nks, exst )
+  IF(.NOT. opnd) CALL open_buffer( iunsat,'satwfc',nwordatwfc,io_level,exst )
 
   RETURN
   !

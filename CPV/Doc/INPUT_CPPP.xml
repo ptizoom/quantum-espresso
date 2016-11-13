@@ -47,10 +47,11 @@ basename of the cppp.x output files
          </default>
          <info>
 a string describing the output format to be performed,
-allowed values: &apos;xsf&apos;, &apos;grd&apos;
+allowed values: &apos;xsf&apos;, &apos;grd&apos;, &apos;xyz&apos;
 
     xsf     xcrysden format
     grd     GRD gaussian 3D grid format
+    xyz     XMOL format
          </info>
       </var>
       <var name="outdir" type="CHARACTER" >

@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,7 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="user_guide.css">
@@ -26,26 +26,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html237"
+<A NAME="tex2html241"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html233"
+<A NAME="tex2html237"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html227"
+<A NAME="tex2html231"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html235"
+<A NAME="tex2html239"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html238"
+<B> Next:</B> <A NAME="tex2html242"
   HREF="node11.html">3.4 Optimization and dynamics</A>
-<B> Up:</B> <A NAME="tex2html234"
+<B> Up:</B> <A NAME="tex2html238"
   HREF="node7.html">3 Using PWscf</A>
-<B> Previous:</B> <A NAME="tex2html228"
+<B> Previous:</B> <A NAME="tex2html232"
   HREF="node9.html">3.2 Data files</A>
- &nbsp; <B>  <A NAME="tex2html236"
+ &nbsp; <B>  <A NAME="tex2html240"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -55,25 +55,25 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <UL>
 <LI><UL>
-<LI><A NAME="tex2html239"
-  HREF="node10.html#SECTION00043010000000000000">3.3.0.1 Single-point (fixed-ion) SCF calculation</A>
-<LI><A NAME="tex2html240"
-  HREF="node10.html#SECTION00043020000000000000">3.3.0.2 Band structure calculation</A>
-<LI><A NAME="tex2html241"
-  HREF="node10.html#SECTION00043030000000000000">3.3.0.3 Noncollinear magnetization, spin-orbit interactions</A>
-<LI><A NAME="tex2html242"
-  HREF="node10.html#SECTION00043040000000000000">3.3.0.4 DFT+U</A>
 <LI><A NAME="tex2html243"
-  HREF="node10.html#SECTION00043050000000000000">3.3.0.5 Dispersion Interactions (DFT-D)</A>
+  HREF="node10.html#SECTION00043010000000000000">3.3.0.1 Single-point (fixed-ion) SCF calculation</A>
 <LI><A NAME="tex2html244"
-  HREF="node10.html#SECTION00043060000000000000">3.3.0.6 Hartree-Fock and Hybrid functionals</A>
+  HREF="node10.html#SECTION00043020000000000000">3.3.0.2 Band structure calculation</A>
 <LI><A NAME="tex2html245"
-  HREF="node10.html#SECTION00043070000000000000">3.3.0.7 Dispersion interaction with non-local functional (vdwDF)</A>
+  HREF="node10.html#SECTION00043030000000000000">3.3.0.3 Noncollinear magnetization, spin-orbit interactions</A>
 <LI><A NAME="tex2html246"
-  HREF="node10.html#SECTION00043080000000000000">3.3.0.8 Polarization via Berry Phase</A>
+  HREF="node10.html#SECTION00043040000000000000">3.3.0.4 DFT+U</A>
 <LI><A NAME="tex2html247"
-  HREF="node10.html#SECTION00043090000000000000">3.3.0.9 Finite electric fields</A>
+  HREF="node10.html#SECTION00043050000000000000">3.3.0.5 Dispersion Interactions (DFT-D)</A>
 <LI><A NAME="tex2html248"
+  HREF="node10.html#SECTION00043060000000000000">3.3.0.6 Hartree-Fock and Hybrid functionals</A>
+<LI><A NAME="tex2html249"
+  HREF="node10.html#SECTION00043070000000000000">3.3.0.7 Dispersion interaction with non-local functional (vdW-DF)</A>
+<LI><A NAME="tex2html250"
+  HREF="node10.html#SECTION00043080000000000000">3.3.0.8 Polarization via Berry Phase</A>
+<LI><A NAME="tex2html251"
+  HREF="node10.html#SECTION00043090000000000000">3.3.0.9 Finite electric fields</A>
+<LI><A NAME="tex2html252"
   HREF="node10.html#SECTION000430100000000000000">3.3.0.10 Orbital magnetization</A>
 </UL></UL>
 <!--End of Table of Child-Links-->
@@ -143,7 +143,8 @@ total magnetization is zero.
 If <TT>starting_magnetization</TT> is different from zero, it makes a 
 noncollinear spin polarized calculation with spin-orbit interaction. The 
 final spin magnetization might be zero or different from zero depending 
-on the system. 
+on the system. Note that the code will look only for symmetries that leave
+the starting magnetization unchanged.
 
 <P>
 Furthermore to make a spin-orbit calculation you must use fully
@@ -152,8 +153,8 @@ think that spin-orbit interaction is large. If all the pseudopotentials
 are scalar
 relativistic the calculation becomes equivalent to a noncollinear
 calculation without spin orbit. (Andrea Dal Corso, 2007-07-27)
-See Example 06 for noncollinear magnetism, Example 07
-for spin-orbit interactions.
+See Example 06 for noncollinear magnetism, Example 07 (and references
+quoted therein) for spin-orbit interactions.
 
 <P>
 
@@ -162,10 +163,8 @@ for spin-orbit interactions.
 </H4>
 DFT+U (formerly known as LDA+U) calculation can be
 performed within a simplified rotationally invariant form 
-of the <I>U</I>
-<tex2html_verbatim_mark> Hubbard correction. Note that for all atoms having 
-a <I>U</I>
-<tex2html_verbatim_mark> value there should be an item in function
+of the <I>U</I> Hubbard correction. Note that for all atoms having 
+a <I>U</I> value there should be an item in function
 <TT>flib/set_hubbard_l.f90</TT> and one in 
 subroutine <TT>PW/src/tabd.f90</TT>, defining respectively
 the angular momentum and the occupancy of the orbitals with
@@ -200,7 +199,7 @@ See <TT>EXX_example/</TT> and its README file.
 <P>
 
 <H4><A NAME="SECTION00043070000000000000">
-3.3.0.7 Dispersion interaction with non-local functional (vdwDF)</A>
+3.3.0.7 Dispersion interaction with non-local functional (vdW-DF)</A>
 </H4>
 See example <TT>vdwDF_example</TT> 
 and references
@@ -245,31 +244,31 @@ is present (<TT>lelfield=.true.</TT>) only Kubo terms are computed
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html237"
+<A NAME="tex2html241"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html233"
+<A NAME="tex2html237"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html227"
+<A NAME="tex2html231"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html235"
+<A NAME="tex2html239"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html238"
+<B> Next:</B> <A NAME="tex2html242"
   HREF="node11.html">3.4 Optimization and dynamics</A>
-<B> Up:</B> <A NAME="tex2html234"
+<B> Up:</B> <A NAME="tex2html238"
   HREF="node7.html">3 Using PWscf</A>
-<B> Previous:</B> <A NAME="tex2html228"
+<B> Previous:</B> <A NAME="tex2html232"
   HREF="node9.html">3.2 Data files</A>
- &nbsp; <B>  <A NAME="tex2html236"
+ &nbsp; <B>  <A NAME="tex2html240"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Layla Martin-Samos Colomer
-2012-11-21
+paolo giannozzi
+2015-03-08
 </ADDRESS>
 </BODY>
 </HTML>

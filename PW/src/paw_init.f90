@@ -80,13 +80,18 @@ SUBROUTINE PAW_post_init()
     ! this routine does nothing at this moment...
     USE ions_base,          ONLY : nat, ntyp=>nsp, ityp
     USE uspp_param,         ONLY : upf
-    USE mp_global,          ONLY : me_image, nproc_image, intra_image_comm
+    USE mp_images,          ONLY : me_image, nproc_image, intra_image_comm
     USE mp,                 ONLY : mp_sum
     USE io_global,          ONLY : stdout, ionode
     USE control_flags,      ONLY : iverbosity
+    USE funct,              ONLY : dft_is_hybrid
     !
     INTEGER :: nt, np, ia, ia_s, ia_e, mykey
     INTEGER :: info(0:nproc_image-1,ntyp)
+
+    !
+    ! FIXME: the PAW EXX code is not parallelized (but it is very fast)
+    IF ( dft_is_hybrid() ) RETURN
 
     IF(ionode) &
     WRITE(stdout,"(5x,a)") &
@@ -95,11 +100,13 @@ SUBROUTINE PAW_post_init()
 
     CALL block_distribute( nat, me_image, nproc_image, ia_s, ia_e, mykey )
     !
+    !
     types : &
     DO nt = 1,ntyp
         DO ia =ia_s, ia_e
             IF (ityp(ia) == nt.or..not.upf(nt)%tpawp ) CYCLE types
         ENDDO
+
         ! If I can't find any atom within first_nat and last_nat
         ! which is of type nt, then I can deallocate:
         IF (ASSOCIATED(upf(nt)%paw%ae_rho_atc )) &
@@ -230,7 +237,7 @@ SUBROUTINE PAW_init_onecenter()
     USE spin_orb,           ONLY : domag
     USE noncollin_module,   ONLY : noncolin
     USE funct,              ONLY : dft_is_gradient
-    USE mp_global,          ONLY : me_image, nproc_image
+    USE mp_images,          ONLY : me_image, nproc_image
     USE mp,                 ONLY : mp_sum
 
     INTEGER :: nt, lmax_safe, lmax_add, ia, ia_s, ia_e, na, mykey, max_mesh, &
@@ -279,10 +286,11 @@ SUBROUTINE PAW_init_onecenter()
     !
     types : &
     DO nt = 1,ntyp
-        ! only allocate radial grid integrator for atomic species
-        ! that are actually present on this parallel node:
-        DO ia = ia_s, ia_e
-        IF (ityp(ia) == nt ) THEN
+      IF(.not.upf(nt)%tpawp) CYCLE types
+      ! only allocate radial grid integrator for atomic species
+      ! that are actually present on this parallel node:
+      DO ia = ia_s, ia_e
+         IF (ityp(ia) == nt ) THEN
             IF (upf(nt)%lmax_rho == 0) THEN
                 ! no need for more than one direction, when it is spherical!
                 lmax_safe = 0
@@ -309,8 +317,8 @@ SUBROUTINE PAW_init_onecenter()
             max_nx = MAX( max_nx, rad(nt)%nx )
             !
             CYCLE types
-        ENDIF
-        ENDDO
+         ENDIF
+      ENDDO
     ENDDO types
     IF (noncolin.and.domag) ALLOCATE(vs_rad(max_mesh,max_nx,nat))
 
@@ -326,7 +334,7 @@ END SUBROUTINE PAW_init_onecenter
 SUBROUTINE PAW_increase_lm(incr)
     USE ions_base,          ONLY : nat, ityp, ntyp => nsp
     USE paw_variables,      ONLY : rad, paw_is_init
-    USE mp_global,          ONLY : me_image, nproc_image, intra_image_comm
+    USE mp_images,          ONLY : me_image, nproc_image, intra_image_comm
     USE io_global,          ONLY : stdout, ionode
 
     INTEGER,INTENT(IN) :: incr ! required increase in lm precision
@@ -427,7 +435,7 @@ SUBROUTINE PAW_rad_init(l, ls, rad)
     n = (rad%lmax+2)/2
     ALLOCATE(x(n),w(n))
     ! compute weights for theta integration
-    CALL weights(x,w,n)
+    CALL gauss_weights(x,w,n)
 
     ! number of integration directions
     rad%nx = n*nphi !(rad%lmax+1)
@@ -524,7 +532,7 @@ SUBROUTINE PAW_rad_init(l, ls, rad)
  CONTAINS
     ! Computes weights for gaussian integrals,
     ! from numerical recipes
-    SUBROUTINE weights(x,w,n)
+    SUBROUTINE gauss_weights(x,w,n)
     USE constants, ONLY : pi, eps => eps12
     implicit none
     integer :: n, i,j,m
@@ -552,7 +560,7 @@ SUBROUTINE PAW_rad_init(l, ls, rad)
         w(n+1-i) = w(i)
     end do
 
-    END SUBROUTINE weights
+    END SUBROUTINE gauss_weights
 END SUBROUTINE PAW_rad_init 
 
 END MODULE paw_init

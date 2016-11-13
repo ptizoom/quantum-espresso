@@ -99,6 +99,16 @@ SUBROUTINE esm_ggen_2d()
 !**** imill_2d(h,k) = 2d index of vector with h,k indices
 !**** ng_2d = total number of 2d g vectors on this proc
 
+! Workaround for initialization of "planes" fw_planz and bw_planz in cft_1z
+! These planes are shared among OpenMP threads. We need to make a plane outside
+! OpenMP parallelization to avoid unexpected destroy and generation of planes
+
+  ALLOCATE(vg2_in(dfftp%nr3x),vg2(dfftp%nr3x))
+  vg2_in(:) = 0d0
+  vg2(:) = 0d0
+  CALL cft_1z(vg2_in,1,dfftp%nr3x,dfftp%nr3x,-1,vg2)
+  DEALLOCATE(vg2_in,vg2)
+
   RETURN
 END SUBROUTINE esm_ggen_2d
 
@@ -113,7 +123,7 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
   USE cell_base, ONLY : omega, alat, tpiba, tpiba2, at, bg
   USE control_flags,    ONLY : gamma_only
   USE fft_scalar,       ONLY : cft_1z
-  USE mp_global,        ONLY : intra_bgrp_comm, me_bgrp
+  USE mp_bands,         ONLY : intra_bgrp_comm
   USE mp,               ONLY : mp_sum
   USE fft_base,         ONLY : dfftp
   !
@@ -133,7 +143,7 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
   complex(DP)              :: xc, ci, tmp, tmp1, tmp2, tmp3, tmp4, f1, f2, f3, f4, &
                               a0, a1, a2, a3, c_r, c_l, s_r, s_l, rg3
 
-  allocate(vg2(dfftp%nr3),vg2_in(dfftp%nr3),rhog3(dfftp%nr3,ngm_2d))
+  allocate(rhog3(dfftp%nr3,ngm_2d))
 !
 ! Map to FFT mesh (dfftp%nr3,ngm_2d)
   rhog3(:,:)=(0.d0,0.d0)
@@ -165,8 +175,10 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
   ci=(0.d0,1.d0)
 
 !****For gp!=0 case ********************
-!$omp parallel do private( k1, k2, gp2, ipol, t, gp, tmp1, tmp2, vg2, iz, kn, &
-!$omp                      cc, ss, tmp, vg2_in, k3, z, rg3 )
+!$omp parallel private( k1, k2, gp2, ipol, t, gp, tmp1, tmp2, vg2, iz, kn, &
+!$omp                   cc, ss, tmp, vg2_in, k3, z, rg3 )
+  allocate(vg2(dfftp%nr3),vg2_in(dfftp%nr3))
+!$omp do
   do ng_2d = 1, ngm_2d
      k1 = mill_2d(1,ng_2d)
      k2 = mill_2d(2,ng_2d)
@@ -224,10 +236,13 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
      
      vg3(1:dfftp%nr3,ng_2d)=vg2(1:dfftp%nr3)*2.d0
   enddo
+  deallocate(vg2,vg2_in)
+!$omp end parallel
   
 !****For gp=0 case ********************
   ng_2d = imill_2d(0,0)
   if( ng_2d > 0 ) then
+     allocate(vg2(dfftp%nr3),vg2_in(dfftp%nr3))
      tmp1=(0.d0,0.d0); tmp2=(0.d0,0.d0); tmp3=(0.d0,0.d0); tmp4=(0.d0,0.d0)
      !for smoothing
      f1=(0.d0,0.d0); f2=(0.d0,0.d0); f3=(0.d0,0.d0); f4=(0.d0,0.d0)
@@ -323,13 +338,13 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
         f1=f1-tpi*z_r**2*rg3 &
              -tpi*(z_r+z1)*tmp1/z1 &
              +tpi*(z_r-z1)*tmp2/z1 &
-             -fpi*z*(z1-z0)/z1*tmp3 &
+             -fpi*z_r*(z1-z0)/z1*tmp3 &
              +fpi  *(z1-z0)   *tmp4
         f1=f1+tpi*(2.d0*z1-z0)*z0*rg3
         f2=f2-tpi*z_l**2*rg3 &
              -tpi*(z_l+z1)*tmp1/z1 &
              +tpi*(z_l-z1)*tmp2/z1 &
-             -fpi*z*(z1-z0)/z1*tmp3 &
+             -fpi*z_l*(z1-z0)/z1*tmp3 &
              +fpi  *(z1-z0)   *tmp4
         f2=f2+tpi*(2.d0*z1-z0)*z0*rg3
         f3=f3-fpi*z_r*rg3-tpi*tmp1/z1+tpi*tmp2/z1-fpi*(z1-z0)/z1*tmp3
@@ -370,6 +385,7 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
      
      vg3(1:dfftp%nr3,ng_2d)=vg2(1:dfftp%nr3)*2.d0
      
+     deallocate(vg2,vg2_in)
   endif ! if( ng_2d > 0 )
 
 ! Hartree Energy
@@ -412,8 +428,7 @@ SUBROUTINE esm_hartree (rhog, ehart, aux)
      enddo
   endif 
 
-  deallocate (vg3)
-  deallocate (vg2,vg2_in,rhog3)
+  deallocate (vg3,rhog3)
 
   RETURN
 END SUBROUTINE esm_hartree
@@ -603,7 +618,6 @@ subroutine esm_local (aux)
   USE lsda_mod,         ONLY : nspin
   USE fft_scalar,       ONLY : cft_1z
   USE fft_base,         ONLY : dfftp
-  USE mp_global,        ONLY : me_bgrp
   !
   implicit none
   COMPLEX(DP)             :: aux( dfftp%nnr )     ! aux contains v_loc_short(G) (input) and v_loc(G) (output)
@@ -625,7 +639,7 @@ subroutine esm_local (aux)
   z0=L/2.d0
   z1=z0+abs(esm_w)
 
-  allocate(vloc3(dfftp%nr3,ngm_2d),vg2(dfftp%nr3),vg2_in(dfftp%nr3),bgauss(nat,1))
+  allocate(vloc3(dfftp%nr3,ngm_2d),bgauss(nat,1))
   do it=1,nat
      bgauss(it,1)=1.d0
   enddo
@@ -634,9 +648,11 @@ subroutine esm_local (aux)
   ci=(0.d0,1.d0)
 
 ! for gp!=0
-!$omp parallel do private( k1, k2, gp2, gp, vg2, it, tt, pp, cc, ss, cs, zp, iz, &
-!$omp                      k3, z, cc1, ig, tmp, arg11, arg12, arg21, arg22, t1, t2, &
-!$omp                      cc2, vg2_in )
+!$omp parallel private( k1, k2, gp2, gp, vg2, it, tt, pp, cc, ss, cs, zp, iz, &
+!$omp                   k3, z, cc1, ig, tmp, arg11, arg12, arg21, arg22, t1, t2, &
+!$omp                   cc2, vg2_in )
+  allocate(vg2(dfftp%nr3),vg2_in(dfftp%nr3))
+!$omp do
   do ng_2d = 1, ngm_2d
      k1 = mill_2d(1,ng_2d)
      k2 = mill_2d(2,ng_2d)
@@ -691,9 +707,12 @@ subroutine esm_local (aux)
         vloc3(iz,ng_2d)=vg2(iz)
      enddo
   enddo
+  deallocate(vg2,vg2_in)
+!$omp end parallel
   
   ng_2d=imill_2d(0,0)
   if( ng_2d > 0 ) then
+     allocate(vg2(dfftp%nr3),vg2_in(dfftp%nr3))
 
      vg2(1:dfftp%nr3)=(0.d0,0.d0)
 ! for smoothing
@@ -786,8 +805,9 @@ subroutine esm_local (aux)
         vloc3(iz,ng_2d)=vg2(iz)
      enddo
      
+     deallocate(vg2,vg2_in)
   endif ! if( ng_2d > 0 )
-  deallocate(vg2,vg2_in,bgauss)
+  deallocate(bgauss)
   
 ! Map to FFT mesh (dfftp%nrx)
   do ng=1,ngm
@@ -1100,24 +1120,24 @@ subroutine esm_force_lc ( aux, forcelc )
   z0=L/2.d0
   z1=z0+abs(esm_w)
 
-  allocate(vg2(dfftp%nr3),vg2_fx(dfftp%nr3),vg2_fy(dfftp%nr3),vg2_fz(dfftp%nr3),bgauss(nat,1))
-  allocate(for_g(3,nat))
+  allocate(bgauss(nat,1),for_g(3,nat))
   do it=1,nat
      bgauss(it,1)=1.d0
   enddo
   sa=omega/L
   for_g(:,:)=0.d0
-  vg2_fx(:)=(0.d0,0.d0)
-  vg2_fy(:)=(0.d0,0.d0)
-  vg2_fz(:)=(0.d0,0.d0)
 
 !**** for gp!=0 *********
 !$omp parallel private( k1, k2, gp2, gp, it, tt, pp, cc, ss, zp, iz, &
 !$omp                   k3, z, cx1, cy1, cz1, tmp, arg11, arg12, arg21, arg22, &
 !$omp                   t1, t2, cx2, cy2, cz2, vg2_fx, vg2_fy, vg2_fz, vg2, &
 !$omp                   r1, r2, fx1, fy1, fz1, fx2, fy2, fz2, for )
-  allocate(for(3,nat))
+  allocate(for(3,nat),vg2(dfftp%nr3x),vg2_fx(dfftp%nr3x), &
+       vg2_fy(dfftp%nr3x),vg2_fz(dfftp%nr3x))
   for(:,:)=0.d0
+  vg2_fx(:)=(0.d0,0.d0)
+  vg2_fy(:)=(0.d0,0.d0)
+  vg2_fz(:)=(0.d0,0.d0)
 !$omp do
   do ng_2d = 1, ngm_2d
      k1 = mill_2d(1,ng_2d)
@@ -1214,14 +1234,15 @@ subroutine esm_force_lc ( aux, forcelc )
   enddo
 !$omp critical
   for_g(:,:) = for_g(:,:) + for(:,:)
-  deallocate(for)
 !$omp end critical
+  deallocate(for,vg2,vg2_fx,vg2_fy,vg2_fz)
 !$omp end parallel
 
 
 !***** for gp==0********
   ng_2d = imill_2d(0,0)
   if( ng_2d > 0 ) then
+     allocate(vg2(dfftp%nr3x),vg2_fz(dfftp%nr3x))
 
      vg2_fz(:)=(0.d0,0.d0)
      do it=1,nat
@@ -1258,9 +1279,10 @@ subroutine esm_force_lc ( aux, forcelc )
         enddo
      enddo
      
+     deallocate(vg2,vg2_fz)
   endif ! if( ng_2d > 0 )
 
-  deallocate(vg2,vg2_fx,vg2_fy,vg2_fz,bgauss)
+  deallocate(bgauss)
 
 !***** sum short_range part and long_range part in local potential force at cartecian coordinate
 
@@ -1291,7 +1313,7 @@ SUBROUTINE esm_printpot ()
   USE scf,                  ONLY : rho, vltot
   USE lsda_mod,             ONLY : nspin
   USE mp,                   ONLY : mp_sum
-  USE mp_global,            ONLY : intra_bgrp_comm
+  USE mp_bands,             ONLY : intra_bgrp_comm
   USE fft_base,             ONLY : dfftp
   USE io_global,            ONLY : ionode, stdout
   USE constants,            ONLY : rytoev, bohr_radius_angs

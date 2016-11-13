@@ -64,8 +64,10 @@
 !               process (called from write_wfng)
 ! write_rhog  - generates real/complex charge density in G-space
 !               (units of the number of electronic states per unit cell)
-! write_vxcg  - generates real/complex exchange-correlation potential in G-space
-!               (units of Rydberg) [only local part of Vxc]
+! calc_rhog   - computes charge density by summing over a subset of occupied
+!               bands (called from write_rhog), destroys charge density
+! write_vxcg  - generates real/complex exchange-correlation potential in
+!               G-space (units of Rydberg) [only local part of Vxc]
 ! write_vxc0  - prints real/complex exchange-correlation potential at G=0
 !               (units of eV) [only local part of Vxc]
 ! write_vxc_r - calculates matrix elements of exchange-correlation potential
@@ -77,6 +79,7 @@
 ! write_vkbg  - generates complex Kleinman-Bylander projectors in G-space
 !               (units of Rydberg)
 ! check_inversion - checks whether real/complex version is appropriate
+!               (called from everywhere)
 !
 ! Quantum ESPRESSO stores the wavefunctions in is-ik-ib-ig order
 ! BerkeleyGW stores the wavefunctions in ik-ib-is-ig order
@@ -101,6 +104,7 @@ PROGRAM pw2bgw
   USE kinds, ONLY : DP
   USE lsda_mod, ONLY : nspin
   USE mp, ONLY : mp_bcast
+  USE mp_world, ONLY : world_comm
   USE mp_global, ONLY : mp_startup
   USE paw_variables, ONLY : okpaw
   USE scf, ONLY : rho_core, rhog_core
@@ -126,6 +130,8 @@ PROGRAM pw2bgw
   integer :: wfng_nvmax
   logical :: rhog_flag
   character ( len = 256 ) :: rhog_file
+  integer :: rhog_nvmin
+  integer :: rhog_nvmax
   logical :: vxcg_flag
   character ( len = 256 ) :: vxcg_file
   logical :: vxc0_flag
@@ -147,8 +153,8 @@ PROGRAM pw2bgw
     real_or_complex, symm_type, wfng_flag, wfng_file, wfng_kgrid, &
     wfng_nk1, wfng_nk2, wfng_nk3, wfng_dk1, wfng_dk2, wfng_dk3, &
     wfng_occupation, wfng_nvmin, wfng_nvmax, rhog_flag, rhog_file, &
-    vxcg_flag, vxcg_file, vxc0_flag, vxc0_file, vxc_flag, &
-    vxc_file, vxc_integral, vxc_diag_nmin, vxc_diag_nmax, &
+    rhog_nvmin, rhog_nvmax, vxcg_flag, vxcg_file, vxc0_flag, vxc0_file, &
+    vxc_flag, vxc_file, vxc_integral, vxc_diag_nmin, vxc_diag_nmax, &
     vxc_offdiag_nmin, vxc_offdiag_nmax, vxc_zero_rho_core, &
     vscg_flag, vscg_file, vkbg_flag, vkbg_file
 
@@ -158,9 +164,10 @@ PROGRAM pw2bgw
   character (len=256), external :: trimcheck
   character (len=1), external :: lowercase
 
-#ifdef __PARA
+#ifdef __MPI
   CALL mp_startup ( )
 #endif
+
   CALL environment_start ( codename )
 
   prefix = 'prefix'
@@ -182,6 +189,8 @@ PROGRAM pw2bgw
   wfng_nvmax = 0
   rhog_flag = .FALSE.
   rhog_file = 'RHO'
+  rhog_nvmin = 0
+  rhog_nvmax = 0
   vxcg_flag = .FALSE.
   vxcg_file = 'VXC'
   vxc0_flag = .FALSE.
@@ -193,7 +202,7 @@ PROGRAM pw2bgw
   vxc_diag_nmax = 0
   vxc_offdiag_nmin = 0
   vxc_offdiag_nmax = 0
-  vxc_zero_rho_core = .FALSE.
+  vxc_zero_rho_core = .TRUE.
   vscg_flag = .FALSE.
   vscg_file = 'VSC'
   vkbg_flag = .FALSE.
@@ -220,41 +229,43 @@ PROGRAM pw2bgw
   ENDIF
 
   tmp_dir = trimcheck ( outdir )
-  CALL mp_bcast ( outdir, ionode_id )
-  CALL mp_bcast ( tmp_dir, ionode_id )
-  CALL mp_bcast ( prefix, ionode_id )
-  CALL mp_bcast ( real_or_complex, ionode_id )
-  CALL mp_bcast ( symm_type, ionode_id )
-  CALL mp_bcast ( wfng_flag, ionode_id )
-  CALL mp_bcast ( wfng_file, ionode_id )
-  CALL mp_bcast ( wfng_kgrid, ionode_id )
-  CALL mp_bcast ( wfng_nk1, ionode_id )
-  CALL mp_bcast ( wfng_nk2, ionode_id )
-  CALL mp_bcast ( wfng_nk3, ionode_id )
-  CALL mp_bcast ( wfng_dk1, ionode_id )
-  CALL mp_bcast ( wfng_dk2, ionode_id )
-  CALL mp_bcast ( wfng_dk3, ionode_id )
-  CALL mp_bcast ( wfng_occupation, ionode_id )
-  CALL mp_bcast ( wfng_nvmin, ionode_id )
-  CALL mp_bcast ( wfng_nvmax, ionode_id )
-  CALL mp_bcast ( rhog_flag, ionode_id )
-  CALL mp_bcast ( rhog_file, ionode_id )
-  CALL mp_bcast ( vxcg_flag, ionode_id )
-  CALL mp_bcast ( vxcg_file, ionode_id )
-  CALL mp_bcast ( vxc0_flag, ionode_id )
-  CALL mp_bcast ( vxc0_file, ionode_id )
-  CALL mp_bcast ( vxc_flag, ionode_id )
-  CALL mp_bcast ( vxc_integral, ionode_id )
-  CALL mp_bcast ( vxc_file, ionode_id )
-  CALL mp_bcast ( vxc_diag_nmin, ionode_id )
-  CALL mp_bcast ( vxc_diag_nmax, ionode_id )
-  CALL mp_bcast ( vxc_offdiag_nmin, ionode_id )
-  CALL mp_bcast ( vxc_offdiag_nmax, ionode_id )
-  CALL mp_bcast ( vxc_zero_rho_core, ionode_id )
-  CALL mp_bcast ( vscg_flag, ionode_id )
-  CALL mp_bcast ( vscg_file, ionode_id )
-  CALL mp_bcast ( vkbg_flag, ionode_id )
-  CALL mp_bcast ( vkbg_file, ionode_id )
+  CALL mp_bcast ( outdir, ionode_id, world_comm )
+  CALL mp_bcast ( tmp_dir, ionode_id, world_comm )
+  CALL mp_bcast ( prefix, ionode_id, world_comm )
+  CALL mp_bcast ( real_or_complex, ionode_id, world_comm )
+  CALL mp_bcast ( symm_type, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_flag, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_file, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_kgrid, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_nk1, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_nk2, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_nk3, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_dk1, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_dk2, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_dk3, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_occupation, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_nvmin, ionode_id, world_comm )
+  CALL mp_bcast ( wfng_nvmax, ionode_id, world_comm )
+  CALL mp_bcast ( rhog_flag, ionode_id, world_comm )
+  CALL mp_bcast ( rhog_file, ionode_id, world_comm )
+  CALL mp_bcast ( rhog_nvmin, ionode_id, world_comm )
+  CALL mp_bcast ( rhog_nvmax, ionode_id, world_comm )
+  CALL mp_bcast ( vxcg_flag, ionode_id, world_comm )
+  CALL mp_bcast ( vxcg_file, ionode_id, world_comm )
+  CALL mp_bcast ( vxc0_flag, ionode_id, world_comm )
+  CALL mp_bcast ( vxc0_file, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_flag, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_integral, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_file, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_diag_nmin, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_diag_nmax, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_offdiag_nmin, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_offdiag_nmax, ionode_id, world_comm )
+  CALL mp_bcast ( vxc_zero_rho_core, ionode_id, world_comm )
+  CALL mp_bcast ( vscg_flag, ionode_id, world_comm )
+  CALL mp_bcast ( vscg_file, ionode_id, world_comm )
+  CALL mp_bcast ( vkbg_flag, ionode_id, world_comm )
+  CALL mp_bcast ( vkbg_file, ionode_id, world_comm )
 
   CALL read_file ( )
 
@@ -270,6 +281,16 @@ PROGRAM pw2bgw
   if (okpaw) call errore ( 'pw2bgw', 'BGW cannot use PAW.', 4 )
   if (gamma_only) call errore ( 'pw2bgw', 'BGW cannot use gamma-only run.', 5 )
   if (nspin == 4) call errore ( 'pw2bgw', 'BGW cannot use spinors.', 6 )
+  if (real_or_complex == 1 .AND. vxc_flag .AND. vxc_offdiag_nmax > 0) &
+    call errore ( 'pw2bgw', 'Off-diagonal matrix elements of Vxc ' // &
+    'with real wavefunctions are not implemented, compute them in ' // &
+    'Sigma using VXC.', 7)
+
+  ! this is needed to compute igk and store in iunigk
+  ! cannot use gk_sort because for some k-points
+  ! gk_sort generates different igk on every call
+  CALL openfil ( )
+  CALL hinit0 ( )
 
   CALL openfil_pp ( )
 
@@ -284,15 +305,6 @@ PROGRAM pw2bgw
       wfng_dk3, wfng_occupation, wfng_nvmin, wfng_nvmax )
     CALL stop_clock ( 'write_wfng' )
     IF ( ionode ) WRITE ( 6, '(5x,"done write_wfng",/)' )
-  ENDIF
-
-  IF ( rhog_flag ) THEN
-    output_file_name = TRIM ( outdir ) // '/' // TRIM ( rhog_file )
-    IF ( ionode ) WRITE ( 6, '(5x,"call write_rhog")' )
-    CALL start_clock ( 'write_rhog' )
-    CALL write_rhog ( output_file_name, real_or_complex, symm_type )
-    CALL stop_clock ( 'write_rhog' )
-    IF ( ionode ) WRITE ( 6, '(5x,"done write_rhog",/)' )
   ENDIF
 
   IF ( vxcg_flag ) THEN
@@ -357,6 +369,19 @@ PROGRAM pw2bgw
     IF ( ionode ) WRITE ( 6, '(5x,"done write_vkbg",/)' )
   ENDIF
 
+  ! since calc_rhog (called from write_rhog) destroys charge density,
+  ! it must be called after v_xc (called from write_vxcg, write_vxc0,
+  ! write_vxc_r, write_vxc_g)
+  IF ( rhog_flag ) THEN
+    output_file_name = TRIM ( outdir ) // '/' // TRIM ( rhog_file )
+    IF ( ionode ) WRITE ( 6, '(5x,"call write_rhog")' )
+    CALL start_clock ( 'write_rhog' )
+    CALL write_rhog ( output_file_name, real_or_complex, symm_type, &
+      rhog_nvmin, rhog_nvmax )
+    CALL stop_clock ( 'write_rhog' )
+    IF ( ionode ) WRITE ( 6, '(5x,"done write_rhog",/)' )
+  ENDIF
+
   IF ( ionode ) WRITE ( 6, * )
   IF ( wfng_flag ) CALL print_clock ( 'write_wfng' )
   IF ( rhog_flag ) CALL print_clock ( 'write_rhog' )
@@ -374,11 +399,15 @@ PROGRAM pw2bgw
   ENDIF
 
   CALL environment_end ( codename )
+
   CALL stop_pp ( )
+
+  ! this is needed because openfil is called above
+  CALL close_files ( .false. )
 
   STOP
 
-END PROGRAM pw2bgw
+CONTAINS
 
 !-------------------------------------------------------------------------------
 
@@ -390,21 +419,22 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
   USE constants, ONLY : pi, tpi, eps6
   USE fft_base, ONLY : dfftp
   USE gvect, ONLY : ngm, ngm_g, ig_l2g, g, mill, ecutrho
-  USE io_files, ONLY : iunwfc, nwordwfc
+  USE io_files, ONLY : iunwfc, nwordwfc, iunigk
   USE io_global, ONLY : ionode, ionode_id
   USE ions_base, ONLY : nat, atm, ityp, tau
   USE kinds, ONLY : DP
   USE klist, ONLY : xk, wk, ngk, nks, nkstot
   USE lsda_mod, ONLY : nspin, isk
   USE mp, ONLY : mp_sum, mp_max, mp_get, mp_bcast, mp_barrier
-  USE mp_global, ONLY : mpime, nproc, world_comm, kunit, me_pool, &
+  USE mp_pools, ONLY : kunit, me_pool, &
     root_pool, my_pool_id, npool, nproc_pool, intra_pool_comm
   USE mp_wave, ONLY : mergewf
+  USE mp_world, ONLY : mpime, nproc, world_comm
   USE start_k, ONLY : nk1, nk2, nk3, k1, k2, k3
   USE symm_base, ONLY : s, ftau, nsym
   USE wavefunctions_module, ONLY : evc
-  USE wvfct, ONLY : npwx, nbnd, npw, et, wg, g2kin, ecutwfc
-#ifdef __PARA
+  USE wvfct, ONLY : npwx, nbnd, npw, et, wg, g2kin, ecutwfc, igk
+#ifdef __MPI
   USE parallel_include, ONLY : MPI_DOUBLE_COMPLEX
 #endif
 
@@ -453,8 +483,6 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
   complex (DP), allocatable :: wfng_dist ( :, :, : )
 
   INTEGER, EXTERNAL :: atomic_number
-
-  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true. )
 
   IF ( real_or_complex .EQ. 1 .OR. nspin .GT. 1 ) THEN
     proc_wf = .TRUE.
@@ -518,7 +546,7 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
     IF ( ik .GE. iks .AND. ik .LE. ike .AND. is .NE. isk ( ik ) ) &
       ierr = ierr + 1
   ENDDO
-  CALL mp_max ( ierr )
+  CALL mp_max ( ierr, world_comm )
   IF ( ierr .GT. 0 ) &
     CALL errore ( 'write_wfng', 'smap', ierr )
 
@@ -600,6 +628,8 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
     ENDDO
   ENDDO
 
+  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true., translation )
+
   ALLOCATE ( et_g ( nb, nk_g ) )
 
   DO ik = 1, nk_l
@@ -607,9 +637,9 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
       et_g ( ib, ik ) = et ( ib, ik )
     ENDDO
   ENDDO
-#ifdef __PARA
+#ifdef __MPI
   CALL poolrecover ( et_g, nb, nk_g, nk_l )
-  CALL mp_bcast ( et_g, ionode_id )
+  CALL mp_bcast ( et_g, ionode_id, world_comm )
 #endif
 
   ALLOCATE ( wg_g ( nb, nk_g ) )
@@ -638,13 +668,14 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
 
     DO ik = 1, nk_l
       DO ib = 1, nb
-        wg_g ( ib, ik ) = wg ( ib, ik ) 
-        IF ( abs ( wk ( ik ) ) .GT. eps6 ) THEN
-          wg_g ( ib, ik ) = wg_g ( ib, ik ) / wk ( ik ) 
+        IF ( wk(ik) == 0.D0 ) THEN
+          wg_g(ib,ik) = wg(ib,ik)
+        ELSE
+          wg_g(ib,ik) = wg(ib,ik) / wk(ik)
         ENDIF
       ENDDO
     ENDDO
-#ifdef __PARA
+#ifdef __MPI
     CALL poolrecover ( wg_g, nb, nk_g, nk_l )
 #endif
     DO ik = 1, nk_g
@@ -680,23 +711,17 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
 
   ALLOCATE ( igk_l2g ( npwx, nk_l ) )
 
-  ALLOCATE ( itmp ( npwx ) )
+  IF ( nk_l > 1 ) REWIND ( iunigk )
   DO ik = 1, nk_l
-    DO i = 1, npwx
-      itmp ( i ) = 0
-    ENDDO
-    npw = npwx
-    CALL gk_sort ( xk ( 1, ik + iks - 1 ), ng_l, g, ecutwfc / tpiba2, &
-      npw, itmp ( 1 ), g2kin )
+    IF ( nk_l > 1 ) READ ( iunigk ) igk
+    npw = ngk ( ik )
     DO ig = 1, npw
-      igk_l2g ( ig, ik ) = ig_l2g ( itmp ( ig ) )
+      igk_l2g ( ig, ik ) = ig_l2g ( igk ( ig ) )
     ENDDO
     DO ig = npw + 1, npwx
       igk_l2g ( ig, ik ) = 0
     ENDDO
-    ngk ( ik ) = npw
   ENDDO
-  DEALLOCATE ( itmp )
 
   ALLOCATE ( ngk_g ( nk_g ) )
 
@@ -706,10 +731,10 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
   DO ik = 1, nk_l
     ngk_g ( ik + iks - 1 ) = ngk ( ik )
   ENDDO
-  CALL mp_sum ( ngk_g )
+  CALL mp_sum ( ngk_g, world_comm )
 
   npw_g = MAXVAL ( igk_l2g ( :, : ) )
-  CALL mp_max ( npw_g )
+  CALL mp_max ( npw_g, world_comm )
 
   npwx_g = MAXVAL ( ngk_g ( : ) )
 
@@ -791,7 +816,7 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
         itmp ( igk_l2g ( ig, ik - iks + 1 ) ) = igk_l2g ( ig, ik - iks + 1 )
       ENDDO
     ENDIF
-    CALL mp_sum ( itmp )
+    CALL mp_sum ( itmp, world_comm )
     ngg = 0
     DO ig = 1, npw_g
       IF ( itmp ( ig ) .EQ. ig ) THEN
@@ -812,7 +837,7 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
 
     local_pw = 0
     IF ( ik .GE. iks .AND. ik .LE. ike ) THEN
-      CALL davcio ( evc, nwordwfc, iunwfc, ik - iks + 1, - 1 )
+      CALL davcio ( evc, 2*nwordwfc, iunwfc, ik - iks + 1, - 1 )
       local_pw = ngk ( ik - iks + 1 )
     ENDIF
 
@@ -840,7 +865,7 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
       IF ( ( ik .GE. iks ) .AND. ( ik .LE. ike ) ) THEN
         IF ( me_pool .EQ. root_pool ) ipmask ( mpime + 1 ) = 1
       ENDIF
-      CALL mp_sum ( ipmask )
+      CALL mp_sum ( ipmask, world_comm )
       DO j = 1, nproc
         IF ( ipmask ( j ) .EQ. 1 ) ipsour = j - 1
       ENDDO
@@ -853,11 +878,11 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
       igwx = MAXVAL ( igwf_l2g ( 1 : local_pw ) )
     CALL mp_max ( igwx, intra_pool_comm )
     IF ( ipsour .NE. ionode_id ) &
-      CALL mp_get ( igwx, igwx, mpime, ionode_id, ipsour, 1 )
+      CALL mp_get ( igwx, igwx, mpime, ionode_id, ipsour, 1, world_comm )
     ierr = 0
     IF ( ik .GE. iks .AND. ik .LE. ike .AND. igwx .NE. ngk_g ( ik ) ) &
       ierr = 1
-    CALL mp_max ( ierr )
+    CALL mp_max ( ierr, world_comm )
     IF ( ierr .GT. 0 ) &
       CALL errore ( 'write_wfng', 'igwx ngk_g', ierr )
 
@@ -889,8 +914,8 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
         DO ig = igwx + 1, ngkdist_g
           wfng_buf ( ig, is ) = ( 0.0D0, 0.0D0 )
         ENDDO
-#ifdef __PARA
-        CALL mp_barrier ( )
+#ifdef __MPI
+        CALL mp_barrier ( world_comm )
         CALL MPI_Scatter ( wfng_buf ( :, is ), ngkdist_l, MPI_DOUBLE_COMPLEX, &
         wfng_dist ( :, ib, is ), ngkdist_l, MPI_DOUBLE_COMPLEX, &
         ionode_id, world_comm, ierr )
@@ -922,8 +947,8 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
       ENDIF
       DO ib = 1, nb
         DO is = 1, ns
-#ifdef __PARA
-          CALL mp_barrier ( )
+#ifdef __MPI
+          CALL mp_barrier ( world_comm )
           CALL MPI_Gather ( wfng_dist ( :, ib, is ), ngkdist_l, &
           MPI_DOUBLE_COMPLEX, wfng_buf ( :, is ), ngkdist_l, &
           MPI_DOUBLE_COMPLEX, ionode_id, world_comm, ierr )
@@ -971,7 +996,7 @@ SUBROUTINE write_wfng ( output_file_name, real_or_complex, symm_type, &
   DEALLOCATE ( smap )
   DEALLOCATE ( kmap )
 
-  CALL mp_barrier ( )
+  CALL mp_barrier ( world_comm )
 
   RETURN
 
@@ -987,12 +1012,13 @@ SUBROUTINE real_wfng ( ik, ngkdist_l, nb, ns, energy, wfng_dist )
   USE kinds, ONLY : DP
   USE io_global, ONLY : ionode
   USE mp, ONLY : mp_sum
+  USE mp_world, ONLY : world_comm
 
   IMPLICIT NONE
 
   integer, intent (in) :: ik, ngkdist_l, nb, ns
-  real (DP), intent (in) :: energy ( nb, ns )
-  complex (DP), intent (inout) :: wfng_dist ( ngkdist_l, nb, ns )
+  real (DP), intent (in) :: energy ( :, : ) ! ( nb, ns )
+  complex (DP), intent (inout) :: wfng_dist ( :, :, : ) ! ( ngkdist_l, nb, ns )
 
   real (DP), PARAMETER :: eps2 = 1.0D-2
   real (DP), PARAMETER :: eps5 = 1.0D-5
@@ -1063,7 +1089,7 @@ SUBROUTINE real_wfng ( ik, ngkdist_l, nb, ns, energy, wfng_dist )
         DO ig = 1, ngkdist_l
           x = x + dble ( wfc ( ig ) ) **2
         ENDDO
-        CALL mp_sum ( x )
+        CALL mp_sum ( x, world_comm )
         IF ( x .LT. eps2 ) null_map ( inull ( i ), i ) = 0
         IF ( x .GT. eps2 ) null_map ( inull ( i ), i ) = 1
         inull ( i ) = inull ( i ) + 1
@@ -1071,7 +1097,7 @@ SUBROUTINE real_wfng ( ik, ngkdist_l, nb, ns, energy, wfng_dist )
         DO ig = 1, ngkdist_l
           x = x + aimag ( wfc ( ig ) ) **2
         ENDDO
-        CALL mp_sum ( x )
+        CALL mp_sum ( x, world_comm )
         IF ( x .LT. eps2 ) null_map ( inull ( i ), i ) = 0
         IF ( x .GT. eps2 ) null_map ( inull ( i ), i ) = 1
         inull ( i ) = inull ( i ) + 1
@@ -1115,7 +1141,7 @@ SUBROUTINE real_wfng ( ik, ngkdist_l, nb, ns, energy, wfng_dist )
         DO ig = 1, ngkdist_l
           x = x + phi ( ig, j ) **2
         ENDDO
-        CALL mp_sum ( x )
+        CALL mp_sum ( x, world_comm )
         x = sqrt ( x )
         DO ig = 1, ngkdist_l
           phi ( ig, j ) = phi ( ig, j ) / x
@@ -1137,7 +1163,7 @@ SUBROUTINE real_wfng ( ik, ngkdist_l, nb, ns, energy, wfng_dist )
           DO ig = 1, ngkdist_l
             x = x + phi ( ig, j + 1 ) * psi ( ig, k )
           ENDDO
-          CALL mp_sum ( x )
+          CALL mp_sum ( x, world_comm )
           DO ig = 1, ngkdist_l
             vec ( ig ) = vec ( ig ) - psi ( ig, k ) * x
           ENDDO
@@ -1146,7 +1172,7 @@ SUBROUTINE real_wfng ( ik, ngkdist_l, nb, ns, energy, wfng_dist )
         DO ig = 1, ngkdist_l
           x = x + vec ( ig ) **2
         ENDDO
-        CALL mp_sum ( x )
+        CALL mp_sum ( x, world_comm )
         x = sqrt ( x )
         IF ( x .GT. eps6 ) THEN
           reduced_span = reduced_span + 1
@@ -1191,7 +1217,8 @@ END SUBROUTINE real_wfng
 
 !-------------------------------------------------------------------------------
 
-SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type )
+SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type, &
+  rhog_nvmin, rhog_nvmax )
 
   USE cell_base, ONLY : omega, alat, tpiba, tpiba2, at, bg, ibrav
   USE constants, ONLY : pi, tpi, eps6
@@ -1202,7 +1229,8 @@ SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type )
   USE kinds, ONLY : DP
   USE lsda_mod, ONLY : nspin
   USE mp, ONLY : mp_sum
-  USE mp_global, ONLY : intra_pool_comm
+  USE mp_world, ONLY : world_comm
+  USE mp_pools, ONLY : intra_pool_comm
   USE scf, ONLY : rho
   USE symm_base, ONLY : s, ftau, nsym
 
@@ -1211,6 +1239,8 @@ SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type )
   character ( len = 256 ), intent (in) :: output_file_name
   integer, intent (in) :: real_or_complex
   character ( len = 9 ), intent (in) :: symm_type
+  integer, intent (in) :: rhog_nvmin
+  integer, intent (in) :: rhog_nvmax
 
   character :: cdate*9, ctime*9, sdate*32, stime*32, stitle*32
   integer :: unit, id, is, ig, i, j, k, ierr
@@ -1223,8 +1253,6 @@ SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type )
   complex (DP), allocatable :: rhog_g ( :, : )
 
   INTEGER, EXTERNAL :: atomic_number
-
-  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true. )
 
   CALL date_and_tim ( cdate, ctime )
   WRITE ( sdate, '(A2,"-",A3,"-",A4,21X)' ) cdate(1:2), cdate(3:5), cdate(6:9)
@@ -1290,6 +1318,8 @@ SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type )
     ENDDO
   ENDDO
 
+  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true., translation )
+
   alat2 = alat ** 2
   recvol = 8.0D0 * pi**3 / omega
 
@@ -1320,6 +1350,9 @@ SUBROUTINE write_rhog ( output_file_name, real_or_complex, symm_type )
       ENDDO
     ENDDO
   ENDDO
+
+  IF ( rhog_nvmin .NE. 0 .AND. rhog_nvmax .NE. 0 ) &
+    CALL calc_rhog ( rhog_nvmin, rhog_nvmax )
 
   ALLOCATE ( g_g ( nd, ng_g ) )
   ALLOCATE ( rhog_g ( ng_g, ns ) )
@@ -1392,6 +1425,85 @@ END SUBROUTINE write_rhog
 
 !-------------------------------------------------------------------------------
 
+SUBROUTINE calc_rhog (rhog_nvmin, rhog_nvmax)
+
+! calc_rhog    Originally By Brad D. Malone    Last Modified (night before his thesis defense)
+! Computes charge density by summing over a subset of occupied bands
+
+  USE cell_base, ONLY : omega, tpiba2
+  USE fft_base, ONLY : dfftp
+  USE fft_interfaces, ONLY : fwfft, invfft
+  USE gvect, ONLY : ngm, g, nl
+  USE io_files, ONLY : nwordwfc, iunwfc, iunigk
+  USE klist, ONLY : xk, nkstot, ngk, nks
+  USE lsda_mod, ONLY : nspin, isk
+  USE mp, ONLY : mp_sum
+  USE mp_world, ONLY : world_comm
+  USE mp_pools, ONLY : kunit, my_pool_id, inter_pool_comm, npool
+  USE noncollin_module, ONLY : nspin_mag
+  USE scf, ONLY : rho
+  USE symme, ONLY : sym_rho, sym_rho_init
+  USE wavefunctions_module, ONLY : evc, psic
+  USE wvfct, ONLY : npw, igk, wg, g2kin, ecutwfc
+
+  IMPLICIT NONE
+
+  integer, intent (in) :: rhog_nvmin
+  integer, intent (in) :: rhog_nvmax
+
+  integer :: ik, is, ib, ig, ir, nkbl, nkl, nkr, iks, ike
+
+  nkbl = nkstot / kunit
+  nkl = kunit * (nkbl / npool)
+  nkr = (nkstot - nkl * npool) / kunit
+  IF (my_pool_id .LT. nkr) nkl = nkl + kunit
+  iks = nkl * my_pool_id + 1
+  IF (my_pool_id .GE. nkr) iks = iks + nkr * kunit
+  ike = iks + nkl - 1
+
+  CALL weights ()
+
+  rho%of_r (:, :) = 0.0D0
+
+  ! take psi to R-space, compute rho in R-space
+  IF ( nks > 1 ) REWIND ( iunigk )
+  DO ik = iks, ike
+    is = isk (ik)
+    IF ( nks > 1 ) READ ( iunigk ) igk
+    npw = ngk ( ik - iks + 1 )
+    CALL davcio (evc, 2*nwordwfc, iunwfc, ik - iks + 1, -1)
+    DO ib = rhog_nvmin, rhog_nvmax
+      psic (:) = (0.0D0, 0.0D0)
+      DO ig = 1, npw
+        psic (nl (igk (ig))) = evc (ig, ib)
+      ENDDO
+      CALL invfft ('Dense', psic, dfftp)
+      DO ir = 1, dfftp%nnr
+        rho%of_r (ir, is) = rho%of_r (ir, is) + wg (ib, ik) / omega &
+          * (dble (psic (ir)) **2 + aimag (psic (ir)) **2)
+      ENDDO
+    ENDDO
+  ENDDO
+  CALL mp_sum (rho%of_r, inter_pool_comm)
+
+  ! take rho to G-space
+  DO is = 1, nspin
+    psic (:) = (0.0D0, 0.0D0)
+    psic (:) = rho%of_r (:, is)
+    CALL fwfft ('Dense', psic, dfftp)
+    rho%of_g (:, is) = psic (nl (:))
+  ENDDO
+
+  ! symmetrize rho (didn`t make a difference)
+  CALL sym_rho_init (.False.)
+  CALL sym_rho (nspin_mag, rho%of_g)
+
+  RETURN
+
+END SUBROUTINE calc_rhog
+
+!-------------------------------------------------------------------------------
+
 SUBROUTINE write_vxcg ( output_file_name, real_or_complex, symm_type, &
   vxc_zero_rho_core )
 
@@ -1406,7 +1518,7 @@ SUBROUTINE write_vxcg ( output_file_name, real_or_complex, symm_type, &
   USE kinds, ONLY : DP
   USE lsda_mod, ONLY : nspin
   USE mp, ONLY : mp_sum
-  USE mp_global, ONLY : intra_pool_comm
+  USE mp_pools, ONLY : intra_pool_comm
   USE scf, ONLY : rho, rho_core, rhog_core
   USE symm_base, ONLY : s, ftau, nsym
   USE wavefunctions_module, ONLY : psic
@@ -1430,8 +1542,6 @@ SUBROUTINE write_vxcg ( output_file_name, real_or_complex, symm_type, &
   complex (DP), allocatable :: vxcg_g ( :, : )
 
   INTEGER, EXTERNAL :: atomic_number
-
-  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true. )
 
   CALL date_and_tim ( cdate, ctime )
   WRITE ( sdate, '(A2,"-",A3,"-",A4,21X)' ) cdate(1:2), cdate(3:5), cdate(6:9)
@@ -1497,6 +1607,8 @@ SUBROUTINE write_vxcg ( output_file_name, real_or_complex, symm_type, &
       translation ( j, i ) = t2 ( j ) * tpi
     ENDDO
   ENDDO
+
+  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true., translation )
 
   alat2 = alat ** 2
   recvol = 8.0D0 * pi**3 / omega
@@ -1617,7 +1729,7 @@ SUBROUTINE write_vxc0 ( output_file_name, vxc_zero_rho_core )
   USE kinds, ONLY : DP
   USE lsda_mod, ONLY : nspin
   USE mp, ONLY : mp_sum
-  USE mp_global, ONLY : intra_pool_comm
+  USE mp_pools, ONLY : intra_pool_comm
   USE scf, ONLY : rho, rho_core, rhog_core
   USE wavefunctions_module, ONLY : psic
 
@@ -1705,12 +1817,12 @@ SUBROUTINE write_vxc_r (output_file_name, diag_nmin, diag_nmax, &
   USE fft_base, ONLY : dfftp
   USE fft_interfaces, ONLY : invfft
   USE gvect, ONLY : ngm, g, nl
-  USE io_files, ONLY : nwordwfc, iunwfc
+  USE io_files, ONLY : nwordwfc, iunwfc, iunigk
   USE io_global, ONLY : ionode
-  USE klist, ONLY : xk, nkstot
+  USE klist, ONLY : xk, nkstot, nks, ngk
   USE lsda_mod, ONLY : nspin, isk
   USE mp, ONLY : mp_sum
-  USE mp_global, ONLY : kunit, my_pool_id, intra_pool_comm, &
+  USE mp_pools, ONLY : kunit, my_pool_id, intra_pool_comm, &
     inter_pool_comm, npool
   USE scf, ONLY : rho, rho_core, rhog_core
   USE wavefunctions_module, ONLY : evc, psic
@@ -1785,10 +1897,11 @@ SUBROUTINE write_vxc_r (output_file_name, diag_nmin, diag_nmax, &
   ENDIF
   CALL v_xc (rho, rho_core, rhog_core, etxc, vtxc, vxcr)
 
+  IF ( nks > 1 ) REWIND ( iunigk )
   DO ik = iks, ike
-    CALL gk_sort (xk (1, ik - iks + 1), ngm, g, ecutwfc &
-      / tpiba2, npw, igk, g2kin)
-    CALL davcio (evc, nwordwfc, iunwfc, ik - iks + 1, -1)
+    IF ( nks > 1 ) READ ( iunigk ) igk
+    npw = ngk ( ik - iks + 1 )
+    CALL davcio (evc, 2*nwordwfc, iunwfc, ik - iks + 1, -1)
     IF (ndiag .GT. 0) THEN
       DO ib = diag_nmin, diag_nmax
         psic (:) = (0.0D0, 0.0D0)
@@ -1896,13 +2009,13 @@ SUBROUTINE write_vxc_g (output_file_name, diag_nmin, diag_nmax, &
   USE fft_interfaces, ONLY : fwfft, invfft
   USE funct, ONLY : exx_is_active
   USE gvect, ONLY : ngm, g, nl
-  USE io_files, ONLY : nwordwfc, iunwfc
+  USE io_files, ONLY : nwordwfc, iunwfc, iunigk
   USE io_global, ONLY : ionode
   USE kinds, ONLY : DP
-  USE klist, ONLY : xk, nkstot
+  USE klist, ONLY : xk, nkstot, nks, ngk
   USE lsda_mod, ONLY : nspin, isk
   USE mp, ONLY : mp_sum
-  USE mp_global, ONLY : kunit, my_pool_id, intra_pool_comm, &
+  USE mp_pools, ONLY : kunit, my_pool_id, intra_pool_comm, &
     inter_pool_comm, npool
   USE scf, ONLY : rho, rho_core, rhog_core
   USE wavefunctions_module, ONLY : evc, psic
@@ -1978,10 +2091,11 @@ SUBROUTINE write_vxc_g (output_file_name, diag_nmin, diag_nmax, &
   ENDIF
   CALL v_xc (rho, rho_core, rhog_core, etxc, vtxc, vxcr)
 
+  IF ( nks > 1 ) REWIND ( iunigk )
   DO ik = iks, ike
-    CALL gk_sort (xk (1, ik - iks + 1), ngm, g, ecutwfc &
-      / tpiba2, npw, igk, g2kin)
-    CALL davcio (evc, nwordwfc, iunwfc, ik - iks + 1, -1)
+    IF ( nks > 1 ) READ ( iunigk ) igk
+    npw = ngk ( ik - iks + 1 )
+    CALL davcio (evc, 2*nwordwfc, iunwfc, ik - iks + 1, -1)
     IF (ndiag .GT. 0) THEN
       DO ib = diag_nmin, diag_nmax
         psic (:) = (0.0D0, 0.0D0)
@@ -2106,7 +2220,6 @@ SUBROUTINE write_vscg ( output_file_name, real_or_complex, symm_type )
 
   USE cell_base, ONLY : omega, alat, tpiba, tpiba2, at, bg, ibrav
   USE constants, ONLY : pi, tpi, eps6
-  USE ener, ONLY : etxc, vtxc
   USE fft_base, ONLY : dfftp
   USE fft_interfaces, ONLY : fwfft
   USE gvect, ONLY : ngm, ngm_g, ig_l2g, nl, mill, ecutrho
@@ -2115,7 +2228,7 @@ SUBROUTINE write_vscg ( output_file_name, real_or_complex, symm_type )
   USE kinds, ONLY : DP
   USE lsda_mod, ONLY : nspin
   USE mp, ONLY : mp_sum
-  USE mp_global, ONLY : intra_pool_comm
+  USE mp_pools, ONLY : intra_pool_comm
   USE scf, ONLY : vltot, v
   USE symm_base, ONLY : s, ftau, nsym
   USE wavefunctions_module, ONLY : psic
@@ -2138,8 +2251,6 @@ SUBROUTINE write_vscg ( output_file_name, real_or_complex, symm_type )
   complex (DP), allocatable :: vscg_g ( :, : )
 
   INTEGER, EXTERNAL :: atomic_number
-
-  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true. )
 
   CALL date_and_tim ( cdate, ctime )
   WRITE ( sdate, '(A2,"-",A3,"-",A4,21X)' ) cdate(1:2), cdate(3:5), cdate(6:9)
@@ -2207,6 +2318,8 @@ SUBROUTINE write_vscg ( output_file_name, real_or_complex, symm_type )
       translation ( j, i ) = t2 ( j ) * tpi
     ENDDO
   ENDDO
+
+  CALL check_inversion ( real_or_complex, nsym, s, nspin, .true., .true., translation )
 
   alat2 = alat ** 2
   recvol = 8.0D0 * pi**3 / omega
@@ -2318,20 +2431,22 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
   USE constants, ONLY : pi, tpi, eps6
   USE fft_base, ONLY : dfftp
   USE gvect, ONLY : ngm, ngm_g, ig_l2g, g, mill, ecutrho
+  USE io_files, ONLY : iunigk
   USE io_global, ONLY : ionode, ionode_id
   USE ions_base, ONLY : nat, atm, ityp, tau, nsp
   USE kinds, ONLY : DP
   USE klist, ONLY : xk, wk, ngk, nks, nkstot
   USE lsda_mod, ONLY : nspin, isk
   USE mp, ONLY : mp_sum, mp_max, mp_get, mp_barrier
-  USE mp_global, ONLY : mpime, nproc, world_comm, kunit, me_pool, &
-    root_pool, my_pool_id, npool, nproc_pool, intra_pool_comm
+  USE mp_world, ONLY : mpime, nproc, world_comm
+  USE mp_pools, ONLY : kunit, me_pool, root_pool, my_pool_id, npool, &
+                       nproc_pool, intra_pool_comm
   USE mp_wave, ONLY : mergewf
   USE start_k, ONLY : nk1, nk2, nk3, k1, k2, k3
   USE symm_base, ONLY : s, ftau, nsym
   USE uspp, ONLY : nkb, vkb, deeq
   USE uspp_param, ONLY : nhm, nh
-  USE wvfct, ONLY : npwx, npw, g2kin, ecutwfc
+  USE wvfct, ONLY : npwx, npw, g2kin, ecutwfc, igk
 
   IMPLICIT NONE
 
@@ -2480,7 +2595,7 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
     IF ( ik .GE. iks .AND. ik .LE. ike .AND. is .NE. isk ( ik ) ) &
       ierr = ierr + 1
   ENDDO
-  CALL mp_max ( ierr )
+  CALL mp_max ( ierr, world_comm )
   IF ( ierr .GT. 0 ) &
     CALL errore ( 'write_vkbg', 'smap', ierr )
 
@@ -2497,24 +2612,20 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
   ALLOCATE ( igk_l2g ( npwx, nks ) )
   ngk_g = 0
   igk_l2g = 0
-  ALLOCATE ( itmp ( npwx ) )
+  IF ( nks > 1 ) REWIND ( iunigk )
   DO ik = 1, nks
-    itmp = 0
-    npw = npwx
-    CALL gk_sort ( xk ( 1, ik + iks - 1 ), ngm, g, ecutwfc / tpiba2, &
-      npw, itmp ( 1 ), g2kin )
+    IF ( nks > 1 ) READ ( iunigk ) igk
+    npw = ngk ( ik )
     DO ig = 1, npw
-      igk_l2g ( ig, ik ) = ig_l2g ( itmp ( ig ) )
+      igk_l2g ( ig, ik ) = ig_l2g ( igk ( ig ) )
     ENDDO
-    ngk ( ik ) = npw
   ENDDO
-  DEALLOCATE ( itmp )
   DO ik = 1, nks
     ngk_g ( ik + iks - 1 ) = ngk ( ik )
   ENDDO
-  CALL mp_sum ( ngk_g )
+  CALL mp_sum ( ngk_g, world_comm )
   npw_g = MAXVAL ( igk_l2g ( :, : ) )
-  CALL mp_max ( npw_g )
+  CALL mp_max ( npw_g, world_comm )
   npwx_g = MAXVAL ( ngk_g ( : ) )
 
   CALL cryst_to_cart (nkstot, xk, at, -1)
@@ -2555,6 +2666,7 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
 
   ALLOCATE ( igwk ( npwx_g ) )
 
+  IF ( nks > 1 ) REWIND ( iunigk )
   DO i = 1, nkstot
 
     ik = kmap ( i )
@@ -2569,7 +2681,7 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
         itmp ( igk_l2g ( ig, ik - iks + 1 ) ) = igk_l2g ( ig, ik - iks + 1 )
       ENDDO
     ENDIF
-    CALL mp_sum ( itmp )
+    CALL mp_sum ( itmp, world_comm )
     ngg = 0
     DO ig = 1, npw_g
       IF ( itmp ( ig ) .EQ. ig ) THEN
@@ -2590,13 +2702,10 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
 
     local_pw = 0
     IF ( ik .GE. iks .AND. ik .LE. ike ) THEN
-      ALLOCATE ( itmp ( npwx ) )
-      npw = npwx
-      CALL gk_sort ( xk ( 1, ik ), ngm, g, ecutwfc / tpiba2, &
-        npw, itmp ( 1 ), g2kin )
-      CALL init_us_2 ( npw, itmp, xk ( 1, ik ), vkb )
-      local_pw = ngk ( ik - iks + 1 )
-      DEALLOCATE ( itmp )
+      IF ( nks > 1 ) READ ( iunigk ) igk
+      npw = ngk ( ik - iks + 1 )
+      CALL init_us_2 ( npw, igk, xk ( 1, ik ), vkb )
+      local_pw = npw
     ENDIF
 
     ALLOCATE ( igwf_l2g ( local_pw ) )
@@ -2618,7 +2727,7 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
       IF ( ( ik .GE. iks ) .AND. ( ik .LE. ike ) ) THEN
         IF ( me_pool .EQ. root_pool ) ipmask ( mpime + 1 ) = 1
       ENDIF
-      CALL mp_sum ( ipmask )
+      CALL mp_sum ( ipmask, world_comm )
       DO j = 1, nproc
         IF ( ipmask ( j ) .EQ. 1 ) ipsour = j - 1
       ENDDO
@@ -2631,11 +2740,11 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
       igwx = MAXVAL ( igwf_l2g ( 1 : local_pw ) )
     CALL mp_max ( igwx, intra_pool_comm )
     IF ( ipsour .NE. ionode_id ) &
-      CALL mp_get ( igwx, igwx, mpime, ionode_id, ipsour, 1 )
+      CALL mp_get ( igwx, igwx, mpime, ionode_id, ipsour, 1, world_comm )
     ierr = 0
     IF ( ik .GE. iks .AND. ik .LE. ike .AND. igwx .NE. ngk_g ( ik ) ) &
       ierr = 1
-    CALL mp_max ( ierr )
+    CALL mp_max ( ierr, world_comm )
     IF ( ierr .GT. 0 ) &
       CALL errore ( 'write_vkbg', 'igwx ngk_g', ierr )
 
@@ -2660,7 +2769,7 @@ SUBROUTINE write_vkbg (output_file_name, symm_type, wfng_kgrid, &
 
       IF ( ionode ) THEN
         WRITE ( unit ) nrecord
-        WRITE ( unit ) igwx
+        WRITE ( unit ) ngk_g ( ik )
         WRITE ( unit ) ( vkb_g ( ig ), ig = 1, igwx )
       ENDIF
 
@@ -2688,26 +2797,33 @@ END SUBROUTINE write_vkbg
 
 !-------------------------------------------------------------------------------
 
-subroutine check_inversion(real_or_complex, ntran, mtrx, nspin, warn, real_need_inv)
+subroutine check_inversion(real_or_complex, ntran, mtrx, nspin, warn, real_need_inv, tnp)
 
-! check_inversion    Originally By D. Strubbe    Last Modified 10/14/2010
+! check_inversion    Originally By David A. Strubbe    Last Modified 11/18/2013
 ! Check whether our choice of real/complex version is appropriate given the
 ! presence or absence of inversion symmetry.
 
+  USE constants, ONLY : eps6
   USE io_global, ONLY : ionode
+  USE kinds, ONLY : DP
 
   implicit none
 
   integer, intent(in) :: real_or_complex
   integer, intent(in) :: ntran
-  integer, intent(in) :: mtrx(3, 3, 48)
+  integer, intent(in) :: mtrx(3, 3, 48) !< symmetry operations matrices
   integer, intent(in) :: nspin
-  logical, intent(in) :: warn ! set to false to suppress warnings, for converters
-  logical, intent(in) :: real_need_inv ! use for generating routines to block real without inversion
+  logical, intent(in) :: warn !< set to false to suppress warnings, for converters
+  logical, intent(in) :: real_need_inv !< use for generating routines to block real without inversion
+     !! this is not always true so that it is possible to run real without using symmetries
+  real(DP), intent(in) :: tnp(3, 48) !< fractional translations.
+     !! optional only to avoid changing external interface for library.
 
   integer :: invflag, isym, ii, jj, itest
+  logical :: origin_inv
 
   invflag = 0
+  origin_inv = .false.
   do isym = 1, ntran
     itest = 0
     do ii = 1, 3
@@ -2719,27 +2835,43 @@ subroutine check_inversion(real_or_complex, ntran, mtrx, nspin, warn, real_need_
         endif
       enddo
     enddo
-    if(itest .eq. 0) invflag = invflag + 1
-    if(invflag .gt. 1) call errore('check_inversion', 'More than one inversion symmetry operation is present.', invflag)
+    if(itest .eq. 0) then
+      invflag = invflag + 1
+      !if(present(tnp)) then
+        if(sum(abs(tnp(1:3, isym))) < eps6) origin_inv = .true.
+      !else
+      !  origin_inv = .true.
+      !endif
+    endif
   enddo
+  if(invflag > 0 .and. .not. origin_inv) then
+    write(0, '(a)') "WARNING: Inversion symmetry is present only with a fractional translation."
+    write(0, '(a)') "Apply the translation so inversion is about the origin, to be able to use the real version."
+  endif
+  if(invflag .gt. 1) write(0, '(a)') "WARNING: More than one inversion symmetry operation is present."
+
+!  if(invflag > 0 .and. .not. present(tnp)) then
+!    write(0, '(a)') "WARNING: check_inversion did not receive fractional translations."
+!    write(0, '(a)') "Cannot confirm that inversion symmetry is about the origin for use of real version."
+!  endif
 
   if(real_or_complex .eq. 2) then
-    if(invflag .ne. 0 .and. warn .and. nspin == 1) then
-      if(ionode) write(6, '(a)') 'WARNING: Inversion symmetry is present. The real version would be faster.'
+    if(origin_inv .and. warn .and. nspin == 1) then
+      if(ionode) &
+        write(0, '(a)') "WARNING: Inversion symmetry about the origin is present. The real version would be faster."
     endif
   else
-    if(invflag .eq. 0) then
+    if(.not. origin_inv) then
       if(real_need_inv) then
-        call errore('check_inversion', 'The real version cannot be used without inversion symmetry.', -1)
+        call errore("check_inversion", "The real version cannot be used without inversion symmetry about the origin.", -1)
       endif
       if(ionode) then
-        write(6, '(a)') 'WARNING: Inversion symmetry is absent in symmetries used to reduce k-grid.'
-        write(6, '(a)') 'Be sure inversion is still a spatial symmetry, or you must use complex version instead.'
+        write(0, '(a)') "WARNING: Inversion symmetry about the origin is absent in symmetries used to reduce k-grid."
+        write(0, '(a)') "Be sure inversion about the origin is still a spatial symmetry, or you must use complex version instead."
       endif
     endif
-    if(nspin .eq. 2) then
-      call errore('check_inversion', &
-        'Real version may only be used for spin-unpolarized calculations.', nspin)
+    if(nspin > 1) then
+      call errore("check_inversion", "Real version may only be used for spin-unpolarized calculations.", nspin)
     endif
   endif
 
@@ -2748,4 +2880,6 @@ subroutine check_inversion(real_or_complex, ntran, mtrx, nspin, warn, real_need_
 end subroutine check_inversion
 
 !-------------------------------------------------------------------------------
+
+END PROGRAM pw2bgw
 

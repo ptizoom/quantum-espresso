@@ -46,7 +46,10 @@ NAMELIST: &BANDS
    Variable:       outdir
    
    Type:           CHARACTER
-   Description:    temporary directory where pw.x files resides
+   Description:    directory containing the input data,
+                   i.e. the same as in pw.x
+   Default:        value of the ESPRESSO_TMPDIR environment variable if set;
+                   current directory ('./') otherwise
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -73,6 +76,23 @@ NAMELIST: &BANDS
    Description:    If true writes a file filband.i with the expectation
                    values of the spin operator on the spinor wave-functions.
                    (only in the noncollinear case).
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       lp
+   
+   Type:           LOGICAL
+   Default:        .false.
+   Description:    If .true. matrix elements of the momentum operator p between
+                   conduction and valence bands are written to file "filp"
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       filp
+   
+   Type:           CHARACTER
+   Default:        'p_avg.dat'
+   Description:    If "lp" is set to .true., file name for matrix elements of p
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -106,7 +126,7 @@ NAMELIST: &BANDS
                    xk, yk, energy
                    xk, yk, energy
                    ..  ..  ..
-                   enegies are written in eV and xk in units 2\pi/a.
+                   energies are written in eV and xk in units 2\pi/a.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------

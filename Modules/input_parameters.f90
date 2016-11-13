@@ -96,10 +96,10 @@ MODULE input_parameters
         CHARACTER(len=80) :: calculation = 'none'
           ! Specify the type of the simulation
           ! See below for allowed values
-        CHARACTER(len=80) :: calculation_allowed(15)
+        CHARACTER(len=80) :: calculation_allowed(14)
         DATA calculation_allowed / 'scf', 'nscf', 'relax', 'md', 'cp', &
           'vc-relax', 'vc-md', 'vc-cp', 'bands', 'neb', 'smd', 'cp-wf', &
-          'cp-wf-nscf','cp-wf-pbe0', 'pbe0-nscf'/   ! Lingzhu Kong
+          'vc-cp-wf', 'cp-wf-nscf'/
         CHARACTER(len=80) :: verbosity = 'default'
           ! define the verbosity of the code output
         CHARACTER(len=80) :: verbosity_allowed(6)
@@ -211,6 +211,12 @@ MODULE input_parameters
         LOGICAL :: lberry = .false.
           ! if .TRUE., use modern theory of the polarization
 
+        LOGICAL :: lcalc_z2 = .false.
+          ! if .TRUE., calculate Z2 without inversion symmetry
+
+        REAL(DP) :: z2_m_threshold = 0.8d0, z2_z_threshold = 0.05d0
+          ! threshold for realizing the parallel transport gauge
+
         INTEGER :: gdir = 0
           ! G-vector for polarization calculation ( related to lberry )
           ! only used in PW
@@ -249,7 +255,11 @@ MODULE input_parameters
           ! if true symmetry in scf run is neglected for RPA Ec calculation
           ! 
 
+        LOGICAL :: tqmmm = .FALSE.    ! QM/MM coupling. enabled if .true.
+
         CHARACTER(len=256) :: vdw_table_name = ' '
+
+        CHARACTER(len=10) :: point_label_type='SC'
 
         CHARACTER(len=80) :: memory = 'default' 
           ! controls memory usage 
@@ -260,10 +270,7 @@ MODULE input_parameters
           ! if memory = 'large' then QE tries to use (when implemented) algorithms using more memory
           !                     to enhance performance.
 
-#if defined (__MS2)
-        LOGICAL :: MS2_enabled = .false.       ! Enable the shared memory exchange in MS2
-        CHARACTER(len=256) :: MS2_handler = ' '! Name for the shared memory handler in MS2
-#endif
+          ! if .TRUE., perform exact exchange calculation using Wannier functions (X. Wu et al., Phys. Rev. B. 79, 085102 (2009))
 
         NAMELIST / control / title, calculation, verbosity, restart_mode, &
           nstep, iprint, isave, tstress, tprnfor, dt, ndr, ndw, outdir,   &
@@ -271,12 +278,8 @@ MODULE input_parameters
           forc_conv_thr, pseudo_dir, disk_io, tefield, dipfield, lberry,  &
           gdir, nppstr, wf_collect, printwfc, lelfield, nberrycyc, refg,  &
           tefield2, saverho, tabps, lkpoint_dir, use_wannier, lecrpa,     &
-          vdw_table_name, lorbm, memory
-
-
-#if defined ( __MS2)
-        NAMELIST / control / MS2_enabled, MS2_handler
-#endif
+          tqmmm, vdw_table_name, lorbm, memory, point_label_type,         &
+          lcalc_z2, z2_m_threshold, z2_z_threshold
 
 !
 !=----------------------------------------------------------------------------=!
@@ -299,6 +302,9 @@ MODULE input_parameters
         REAL(DP) :: cosac = 0.0_DP
         REAL(DP) :: cosbc = 0.0_DP
           ! Alternate definition of the cell - use either this or celldm
+
+        REAL(DP) :: ref_alat = 0.0_DP
+          ! reference cell alat in a.u. (see REF_CELL_PARAMETERS card) 
 
         INTEGER :: nat = 0
           ! total number of atoms
@@ -401,11 +407,14 @@ MODULE input_parameters
         REAL(DP) :: alpha_pen(10) = 0.0_DP
 
           ! next group of variables PWSCF ONLY
-          !
-        INTEGER  :: nqx1 = 1, nqx2 = 1, nqx3=1
+          ! 
           !
         REAL(DP) :: exx_fraction = -1.0_DP      ! if negative, use defaults
         REAL(DP) :: screening_parameter = -1.0_DP
+        INTEGER  :: nqx1 = 0, nqx2 = 0, nqx3=0  ! use the same values as nk1, nk2, nk3
+        !gau-pbe in
+        REAL(DP) :: gau_parameter = -1.0_DP
+        !gau-pbe out
           !
         CHARACTER(len=80) :: exxdiv_treatment = 'gygi-baldereschi'
           ! define how ro cure the Coulomb divergence in EXX
@@ -457,20 +466,43 @@ MODULE input_parameters
         LOGICAL :: one_atom_occupations=.false.
 
         CHARACTER(len=80) :: assume_isolated = 'none'
-          ! used to define corrections for isolated systems
-          ! other possibilities:
-          !  'makov-payne', 'martyna-tuckerman`, `dcc`, 'esm'
-!
+          ! possible corrections for isolated systems:
+          !  'none', 'makov-payne', 'martyna-tuckerman', 'esm'
+          ! plus ENVIRON-specific:
+          !  'slabx', 'slaby', 'slabz', 'pcc'
+
+        CHARACTER(len=80) :: vdw_corr = 'none'
+          ! semi-empirical van der Waals corrections
+          ! (not to be confused with nonlocal functionals,
+          !  specified in input_dft!). Default is 'none', allowed values:
+          !  'dft-d' or 'grimme-d2' [S.Grimme, J.Comp.Chem. 27, 1787 (2006)]
+          !  'ts', 'ts-vdW', 'tkatchenko-scheffler'
+          !  (Tkatchenko & Scheffler, Phys. Rev. Lett. 102, 073005 (2009))
+          !  'xdm' (Otero de la Roza and Johnson, J. Chem. Phys. 136 (2012) 174109)
+
         LOGICAL   :: london = .false.
-          ! if .true. compute semi-empirical dispersion term ( C6_ij / R_ij**6 )
-          ! other DFT-D parameters ( see PW/mm_dispersion.f90 )
-        REAL ( DP ) :: london_s6   =   0.75_DP , & ! default global scaling parameter for PBE
+          ! OBSOLESCENT: same as vdw_corr='grimme-d2'
+          ! other DFT-D parameters ( see Modules/mm_dispersion.f90 )
+          ! london_s6 = default global scaling parameter for PBE
+        REAL ( DP ) :: london_s6   =   0.75_DP , &
                        london_rcut = 200.00_DP
-#ifdef __ENVIRON
-!
-        LOGICAL   :: do_environ = .false.
-#endif
-!
+
+        LOGICAL   :: ts_vdw = .false.
+          ! OBSOLESCENT: same as vdw_corr='Tkatchenko-Scheffler'
+        LOGICAL :: ts_vdw_isolated = .FALSE.
+          ! if .TRUE., TS-vdW correction for isolated system
+          ! if .FALSE., TS-vdW correction for periodic system
+        REAL(DP) :: ts_vdw_econv_thr = 1.0E-6_DP
+          ! convergence criterion for TS-vdW energy for periodic system 
+          !
+
+        LOGICAL :: xdm = .FALSE.
+          ! OBSOLESCENT: same as vdw_corr='xdm'
+        REAL(DP) :: xdm_a1 = 0.6836_DP
+        REAL(DP) :: xdm_a2 = 1.5045_DP
+          ! xdm_a1 and xdm_a2 -- parameters for the BJ damping function
+          ! The default values are for the b86bpbe functional.
+          !
         CHARACTER(LEN=3) :: esm_bc = 'pbc'
           ! 'pbc': ordinary calculation with periodic boundary conditions
           ! 'bc1': vacuum-slab-vacuum
@@ -494,6 +526,25 @@ MODULE input_parameters
           ! if esm_debug is .TRUE., calcualte v_hartree and v_local
           ! for abs(gp)<=esm_debug_gpmax (gp is integer and has tpiba unit)
 
+        INTEGER :: space_group = 0
+          ! space group number for coordinates given in crystallographic form
+          !
+        LOGICAL :: uniqueb=.FALSE.
+          ! if .TRUE. for monoclinic lattice choose the b unique primitive 
+          ! vectors
+          !
+        INTEGER :: origin_choice = 1 
+          ! for space groups that have more than one origin choice, choose
+          ! the origin (can be 1 or 2)
+          !
+        LOGICAL :: rhombohedral = .TRUE.
+          !
+          ! if .TRUE. for rhombohedral space groups give the coordinates 
+          ! in rhombohedral axes. If .FALSE. in hexagonal axes, that are
+          ! converted internally in rhombohedral axes.  
+          !
+
+
         NAMELIST / system / ibrav, celldm, a, b, c, cosab, cosac, cosbc, nat, &
              ntyp, nbnd, ecutwfc, ecutrho, nr1, nr2, nr3, nr1s, nr2s,         &
              nr3s, nr1b, nr2b, nr3b, nosym, nosym_evc, noinv, use_all_frac,   &
@@ -506,177 +557,18 @@ MODULE input_parameters
              U_projection_type, input_dft, la2F, assume_isolated,             &
              nqx1, nqx2, nqx3, ecutfock,                                      &
              exxdiv_treatment, x_gamma_extrapolation, yukawa, ecutvcut,       &
-             exx_fraction, screening_parameter,                               &
-#ifdef __ENVIRON
-             do_environ,                                                      &
-#endif
+             exx_fraction, screening_parameter, ref_alat,                     &
              noncolin, lspinorb, starting_spin_angle, lambda, angle1, angle2, &
              report,              &
              constrained_magnetization, B_field, fixed_magnetization,         &
              sic, sic_epsilon, force_pairing, sic_alpha,                      &
-             tot_charge, tot_magnetization,                                   &
-             spline_ps, one_atom_occupations, london, london_s6, london_rcut, &
+             tot_charge, tot_magnetization, spline_ps, one_atom_occupations,  &
+             vdw_corr, london, london_s6, london_rcut,                        &
+             ts_vdw, ts_vdw_isolated, ts_vdw_econv_thr,                       &
+             xdm, xdm_a1, xdm_a2,                                             &
              step_pen, A_pen, sigma_pen, alpha_pen, no_t_rev,                 &
-             esm_bc, esm_efield, esm_w, esm_nfit, esm_debug, esm_debug_gpmax
-#ifdef __ENVIRON
-!
-!=----------------------------------------------------------------------------=!
-!  ENVIRON Namelist Input Parameters
-!=----------------------------------------------------------------------------=!
-!
-! Global parameters
-!
-        INTEGER  :: verbose = 0
-        ! verbosity  0: only prints summary of polarization charge calculation; 
-        !    1: prints an extra file with details of iterative convergence;
-        !    2: prints 3D cube files of physical properties
-        REAL(DP) :: environ_thr = 1.d-1
-        ! how early in scf should the corrective pot start being calculated
-        CHARACTER( LEN = 256 ) :: environ_type = 'input'
-        ! keyword to set up all the environment parameters at once to a specific set
-        ! vacuum = all the flags are off (perm=1.d0, surf=0.0, pres=0.0)
-        ! water = parameters optimized for water solutions in Andreussi et al. 
-        !         J. Chem. Phys. 136, 064102 (perm=78, surf=50, pres=-0.35)
-        ! input = do not use any predefined set, use paramters from input
-!
-! Switching function parameters
-!
-        REAL(DP) :: stype = 1
-        ! type of switching functions used in the solvation models
-        !    0: original Fattebert-Gygi
-        !    1: ultrasoft dielectric function as defined in Andreussi et al.
-        REAL(DP) :: rhomax = 0.005
-        ! first parameter of the sw function, roughly corresponding 
-        ! to the density threshold of the solvation model
-        REAL(DP) :: rhomin = 0.0001
-        ! second parameter of the sw function when stype=1
-        REAL(DP) :: tbeta = 4.8
-        ! second parameter of the sw function when stype=0
-!
-! Dielectric solvent parameters
-!
-        REAL(DP) :: env_static_permittivity = 1.D0
-        ! static dielectric permittivity of the solvation model. If set equal
-        ! to one (=vacuum) no dielectric effects
-        CHARACTER( LEN = 256 ) :: eps_mode = 'electronic'
-        !  eps_mode method for calculating the density that sets 
-        !  the dielectric constant
-        !  electronic = dielectric depends self-consist. on electronic density
-        !  ionic = dielectric defined on a fictitious ionic density, generated
-        !          as the sum of exponential functions centered on atomic 
-        !          positions of width specified in input by solvationrad(ityp)
-        !  full  = similar to electronic, but an extra density is added to 
-        !          represent the core electrons and the nuclei. This extra 
-        !          density is defined as the sum of gaussian functions centered
-        !          on atomic positions of width equal to atomicspread(ityp)
-        REAL(DP) :: solvationrad(nsx) = 3.D0
-        ! solvationrad radius of the solvation shell for each species when the
-        ! ionic dielectric function is adopted
-        REAL(DP) :: atomicspread(nsx) = 0.5D0
-        ! gaussian spreads of the atomic density of charge
-        LOGICAL :: add_jellium = .false.
-        ! depending on periodic boundary corrections, one may need to explicitly
-        ! polarize the compensatinig jellium background
-!
-! Numerical differentiators paramters
-!
-        INTEGER  :: ifdtype = 1 
-        ! type of numerical differentiator: 1=central differences, 
-        ! 2=low-noise lanczos (m=2), 3=low-noise lanczos (m=4), 
-        ! 4=smooth noise-robust (n=2), 5=smooth noise-robust (n=4)
-        INTEGER  :: nfdpoint = 1
-        ! number of points used in the numerical differentiator 
-        ! N = 2*nfdpoint+1
-!
-! Iterative solver parameters
-!
-        CHARACTER( LEN=256 ) :: mixtype = 'linear'
-        ! mixing method for iterative calculation of polarization charges
-        ! 'linear', 'anderson', 'diis', 'broyden'
-        REAL(DP) :: mixrhopol = 0.5D0
-        ! mixing param to be used in iter calculation of polarization charges
-        REAL(DP) :: tolrhopol = 1.D-10
-        ! convergence threshold for polarization charges in iterative procedure
-        INTEGER :: ndiis=1
-        ! order of DIIS interpolation of iterative polarization charge
-!
-! Cavitation energy parameters
-!
-        REAL(DP) :: env_surface_tension = 0.D0
-        ! solvent surface tension, if equal to zero no cavitation term 
-        REAL(DP) :: delta = 0.00001D0
-        ! finite difference parameter to compute the molecular surface
-!
-! PV energy parameters
-!
-        REAL(DP) :: env_pressure = 0.D0
-        ! external pressure for PV energy, if equal to zero no pressure term 
-!
-! Ionic countercharge parameters
-!
-        REAL(DP) :: env_ioncc_concentration = 0.D0
-        ! molar concentration of ionic countercharge (M=mol/L)
-        REAL(DP) :: zion = 1.D0
-        ! valence of ionic countercharge
-        REAL(DP) :: rhopb = 0.0001D0
-        ! density threshold for the onset of ionic countercharge
-        REAL(DP) :: solvent_temperature = 300.D0
-        ! temperature of the solution
-
-        NAMELIST / environ /                                           &
-             verbose, environ_thr, environ_type,                       &
-             stype, rhomax, rhomin, tbeta,                             &
-             env_static_permittivity, eps_mode,                        &
-             solvationrad, atomicspread, add_jellium,                  &
-             ifdtype, nfdpoint,                                        &
-             mixtype, ndiis, mixrhopol, tolrhopol,                     &
-             env_surface_tension, delta,                               &
-             env_pressure,                                             &
-             env_ioncc_concentration, zion, rhopb,                     &
-             solvent_temperature
-#endif
-!
-!=----------------------------------------------------------------------------=!
-!  EE Namelist Input Parameters
-!=----------------------------------------------------------------------------=!
-!
-! kinetic energy cutoff for the coarse (MultiGrid) grid
-        REAL(DP) :: ecutcoarse = 100.0d0
-! amount of "new" correction introduced when mixing
-        REAL(DP) :: mixing_charge_compensation = 1.0
-! error tolerance for the multigrid solver
-        REAL(DP) :: errtol = 1.d-22
-! how early in scf itarations should the corrective pot start being calculated
-        REAL(DP) :: comp_thr = 1.d-2
-! nlev number of grid levels in the multigrid solver
-        INTEGER :: nlev = 2
-! itmax maximum number of iterations in the multigrid solver
-        INTEGER :: itmax = 1000
-! whichbc 0 if aperiodic
-        INTEGER :: whichbc(3) = 0
-! sets after how many scf cycles the corrective potential should be calculated
-        INTEGER :: n_charge_compensation = 5
-!
-        INTEGER :: ncompx = 1
-        INTEGER :: ncompy = 1
-        INTEGER :: ncompz = 1
-          ! ONLY PWSCF
-!
-        INTEGER :: mr1 = 0
-        INTEGER :: mr2 = 0
-        INTEGER :: mr3 = 0
-
-        REAL(DP) :: cellmin( 3 ) = 0.D0
-          ! ONLY PWSCF
-
-        REAL(DP) :: cellmax( 3 ) = 1.D0
-
-        NAMELIST / ee / comp_thr,    &
-             ncompx,n_charge_compensation,              &
-             ncompy, ncompz,mixing_charge_compensation, &
-             mr1, mr2, mr3, ecutcoarse,                 &
-             errtol, nlev, itmax, whichbc,              &
-             cellmin, cellmax
+             esm_bc, esm_efield, esm_w, esm_nfit, esm_debug, esm_debug_gpmax, &
+             space_group, uniqueb, origin_choice, rhombohedral
 
 !=----------------------------------------------------------------------------=!
 !  ELECTRONS Namelist Input Parameters
@@ -712,15 +604,15 @@ MODULE input_parameters
         INTEGER :: electron_maxstep = 1000
           ! maximum number of steps in electronic minimization
           ! This parameter apply only when using 'cg' electronic or
-          ! ionic dynamics
+          ! ionic dynamics and electron_dynamics = 'CP-BO'
         LOGICAL :: scf_must_converge = .true.
           ! stop or continue if SCF does not converge
 
         CHARACTER(len=80) :: electron_dynamics = 'none'
           ! set how electrons should be moved
-        CHARACTER(len=80) :: electron_dynamics_allowed(6)
+        CHARACTER(len=80) :: electron_dynamics_allowed(7)
         DATA electron_dynamics_allowed &
-          / 'default', 'sd', 'cg', 'damp', 'verlet', 'none' /
+          / 'default', 'sd', 'cg', 'damp', 'verlet', 'none', 'cp-bo' /
 
         REAL(DP) :: electron_damping = 0.0_DP
           ! meaningful only if " electron_dynamics = 'damp' "
@@ -901,6 +793,7 @@ MODULE input_parameters
         REAL(DP) :: conv_thr = 1.E-6_DP
           ! convergence threshold in electronic ONLY minimizations
           ! used only in PWscf
+          ! used in electron_dynamics = 'CP-BO' in CP and PWscf
 
         INTEGER :: mixing_fixed_ns  = 0
           ! For DFT+U calculations, PWscf only
@@ -970,6 +863,9 @@ MODULE input_parameters
 
         REAL(DP) :: efield_cart(3)
           ! electric field vector in cartesian system of reference
+        
+       CHARACTER(len=80) :: efield_phase='none'
+          ! for Berry's phase electric field selection of string phases
 
        INTEGER  :: epol2 = 3
           ! electric field direction
@@ -983,6 +879,30 @@ MODULE input_parameters
         LOGICAL :: occupation_constraints = .false.
           ! If true perform CP dynamics with constrained occupations
           ! to be used together with penalty functional ...
+
+        !
+        ! ... CP-BO ...
+        LOGICAL :: tcpbo = .FALSE.
+          ! if true perform CP-BO minimization of electron energy
+
+        REAL(DP) :: emass_emin = 0.0_DP
+          ! meaningful only if electron_dynamics = 'CP-BO'
+          ! effective electron mass used in CP-BO electron minimization in
+          ! atomic units ( 1 a.u. of mass = 1/1822.9 a.m.u. = 9.10939 * 10^-31 kg )
+
+        REAL(DP) :: emass_cutoff_emin = 0.0_DP
+          ! meaningful only if electron_dynamics = 'CP-BO'
+          ! mass cut-off (in Rydbergs) for the Fourier acceleration in CP-BO
+          ! electron minimization
+
+        REAL(DP) :: electron_damping_emin = 0.0_DP
+          ! meaningful only if electron_dynamics = 'CP-BO'
+          ! damping parameter utilized in CP-BO electron minimization
+
+        REAL(DP) :: dt_emin = 0.0_DP
+          ! meaningful only if electron_dynamics = 'CP-BO'
+          ! time step for CP-BO electron minimization dynamics, in atomic units
+          ! CP: 1 a.u. of time = 2.4189 * 10^-17 s, PW: twice that much
 
         NAMELIST / electrons / emass, emass_cutoff, orthogonalization, &
           electron_maxstep, scf_must_converge, ortho_eps, ortho_max, electron_dynamics,   &
@@ -1001,34 +921,28 @@ MODULE input_parameters
           occupation_dynamics, tcg, maxiter, etresh, passop, epol,     &
           efield, epol2, efield2, diago_full_acc,                      &
           occupation_constraints, niter_cg_restart,                    &
-          niter_cold_restart, lambda_cold, efield_cart, real_space
+          niter_cold_restart, lambda_cold, efield_cart, real_space,    &
+          tcpbo,emass_emin, emass_cutoff_emin, electron_damping_emin,  &
+          dt_emin, efield_phase
 
 !
 !=----------------------------------------------------------------------------=!
 !  IONS Namelist Input Parameters
 !=----------------------------------------------------------------------------=!
 !
-        CHARACTER(len=80) :: phase_space = 'full'
-          ! phase_space = 'full' | 'coarse-grained'
-          ! 'full'             the full phase-space is used for the ionic
-          !                    dynamics
-          ! 'coarse-grained'   a coarse-grained phase-space, defined by a set
-          !                    of constraints, is used for the ionic dynamics
-
-!        CHARACTER(len=80) :: phase_space_allowed(2)
-!        DATA phase_space_allowed / 'full', 'coarse-grained' /
-        CHARACTER(len=80) :: phase_space_allowed(1)
-        DATA phase_space_allowed / 'full' /
 
         CHARACTER(len=80) :: ion_dynamics = 'none'
           ! set how ions should be moved
-        CHARACTER(len=80) :: ion_dynamics_allowed(8)
+        CHARACTER(len=80) :: ion_dynamics_allowed(9)
         DATA ion_dynamics_allowed / 'none', 'sd', 'cg', 'langevin', &
-                                    'damp', 'verlet', 'bfgs', 'beeman' /
+                                    'damp', 'verlet', 'bfgs', 'beeman',& 
+                                    'langevin-smc' /
 
         REAL(DP) :: ion_radius(nsx) = 0.5_DP
-          ! pseudo-atomic radius of the i-th atomic species
-          ! (for Ewald summation), values between 0.5 and 2.0 are usually used.
+          ! pseudo-atomic radius of the i-th atomic species (CP only)
+          ! for Ewald summation: typical values range between 0.5 and 2.0 
+       INTEGER :: iesr = 1
+          ! perform Ewald summation on iesr*iesr*iesr cells - CP only
 
         REAL(DP) :: ion_damping = 0.2_DP
           ! meaningful only if " ion_dynamics = 'damp' "
@@ -1164,29 +1078,15 @@ MODULE input_parameters
 
         REAL(DP)  :: w_1 = 0.5E-1_DP
         REAL(DP)  :: w_2 = 0.5_DP
-
-        REAL(DP)  :: sic_rloc = 0.0_DP
-
         !
-        ! ... variable for meta-dynamics
-        !
-        INTEGER, PARAMETER :: max_nconstr = 100
-        INTEGER  :: fe_nstep = 100
-        INTEGER  :: sw_nstep = 10
-        INTEGER  :: eq_nstep = 0
-        REAL(DP) :: g_amplitude = 0.005_DP
-        !
-        REAL(DP) :: fe_step( max_nconstr ) = 0.4_DP
-        !
-        NAMELIST / ions / phase_space, ion_dynamics, ion_radius, ion_damping,  &
+        NAMELIST / ions / ion_dynamics, iesr, ion_radius, ion_damping,         &
                           ion_positions, ion_velocities, ion_temperature,      &
                           tempw, fnosep, nhgrp, fnhscl, nhpcl, nhptyp, ndega, tranp,   &
                           amprp, greasp, tolp, ion_nstepe, ion_maxstep,        &
                           refold_pos, upscale, delta_t, pot_extrapolation,     &
                           wfc_extrapolation, nraise, remove_rigid_rot,         &
                           trust_radius_max, trust_radius_min,                  &
-                          trust_radius_ini, w_1, w_2, bfgs_ndim, sic_rloc,     &
-                          fe_step, fe_nstep, sw_nstep, eq_nstep, g_amplitude
+                          trust_radius_ini, w_1, w_2, bfgs_ndim
 
 
 !=----------------------------------------------------------------------------=!
@@ -1261,7 +1161,7 @@ MODULE input_parameters
         INTEGER   :: cell_nstepe = 1
           ! number of electronic steps for each cell step
 
-        REAL(DP) :: cell_damping = 0.0_DP
+        REAL(DP) :: cell_damping = 0.1_DP
           ! meaningful only if " cell_dynamics = 'damp' "
           ! damping frequency times delta t, optimal values could be
           ! calculated with the formula
@@ -1328,13 +1228,15 @@ MODULE input_parameters
           REAL(DP) :: wf_q
           REAL(DP) :: wf_friction
 !=======================================================================
-!Lingzhu Kong
+!exx_wf related
           INTEGER  :: vnbsp
-          INTEGER  :: neigh
-          REAL(DP) :: poisson_eps
-          REAL(DP) :: dis_cutoff
-          REAL(DP) :: exx_ps_rcut
-          REAL(DP) :: exx_me_rcut
+          INTEGER  :: exx_neigh
+          REAL(DP) :: exx_poisson_eps
+          REAL(DP) :: exx_dis_cutoff
+          REAL(DP) :: exx_ps_rcut_self
+          REAL(DP) :: exx_ps_rcut_pair
+          REAL(DP) :: exx_me_rcut_self
+          REAL(DP) :: exx_me_rcut_pair
 !=======================================================================
 
           INTEGER :: nit
@@ -1351,10 +1253,11 @@ MODULE input_parameters
           !
           LOGICAL :: writev
 !==============================================================================
-!Lingzhu Kong
+!exx_wf related
           NAMELIST / wannier / wf_efield, wf_switch, sw_len, efx0, efy0, efz0,&
-                               efx1, efy1, efz1, wfsd, wfdt, neigh,poisson_eps,&
-                               dis_cutoff,exx_ps_rcut, exx_me_rcut, vnbsp,    &
+                               efx1, efy1, efz1, wfsd, wfdt,exx_neigh,exx_poisson_eps,&
+                               exx_dis_cutoff,exx_ps_rcut_self, exx_me_rcut_self,   &
+                               exx_ps_rcut_pair, exx_me_rcut_pair, vnbsp,&
                                maxwfdt, wf_q, wf_friction, nit, nsd, nsteps,  & 
                                tolw, adapt, calwf, nwf, wffort, writev
 !===============================================================================
@@ -1406,10 +1309,8 @@ MODULE input_parameters
         LOGICAL   :: tforces = .false.
         LOGICAL   :: tocc = .false.
         LOGICAL   :: tcell = .false.
-        LOGICAL   :: tdipole = .false.
         LOGICAL   :: tionvel = .false.
         LOGICAL   :: tconstr = .false.
-        LOGICAL   :: tesr = .false.
         LOGICAL   :: tksout = .false.
         LOGICAL   :: ttemplate = .false.
         LOGICAL   :: twannier = .false.
@@ -1420,17 +1321,13 @@ MODULE input_parameters
         REAL(DP), ALLOCATABLE :: rd_pos(:,:)  ! unsorted positions from input
         INTEGER,  ALLOCATABLE :: sp_pos(:)
         INTEGER,  ALLOCATABLE :: if_pos(:,:)
-        INTEGER,  ALLOCATABLE :: id_loc(:)
         INTEGER,  ALLOCATABLE :: na_inp(:)
         LOGICAL  :: tapos = .false.
+        LOGICAL  :: lsg   = .false.
         CHARACTER(len=80) :: atomic_positions = 'crystal'
-          ! atomic_positions = 'bohr' | 'angstrong' | 'crystal' | 'alat'
+          ! atomic_positions = 'bohr' | 'angstrom' | 'crystal' | 'alat'
           ! select the units for the atomic positions being read from stdin
 
-        !
-        ! ... variable added for NEB  ( C.S. 17/10/2003 )
-        !
-        !
 !
 !    ION_VELOCITIES
 !
@@ -1468,21 +1365,18 @@ MODULE input_parameters
         LOGICAL   :: tf_inp = .false.
 
 !
-!    DIPOLE
-!
-        LOGICAL :: tdipole_card = .false.
-
-!
-!    ESR
-!
-       INTEGER :: iesr_inp = 1
-
-!
 !    CELL_PARAMETERS
 !
        REAL(DP) :: rd_ht(3,3) = 0.0_DP
-       CHARACTER(len=80) :: cell_units = 'alat'
+       CHARACTER(len=80) :: cell_units = 'none'
        LOGICAL   :: trd_ht = .false.
+
+!
+!    REFERENCE_CELL_PARAMETERS
+!
+       REAL(DP) :: rd_ref_ht(3,3) = 0.0_DP
+       CHARACTER(len=80) :: ref_cell_units = 'alat'
+       LOGICAL   :: ref_cell = .false.
 
 !
 !    CONSTRAINTS
@@ -1507,14 +1401,6 @@ MODULE input_parameters
         ! written to files 'KS.'
 
 !
-!   CLIMBING_IMAGES
-!
-      !
-      ! ... variable added for NEB  ( C.S. 20/11/2003 )
-      !
-      LOGICAL, ALLOCATABLE :: climbing( : )
-
-!
 !   PLOT_WANNIER
 !
 
@@ -1527,21 +1413,48 @@ MODULE input_parameters
 !
       TYPE (wannier_data) :: wan_data(nwanx,2)
 
+
 !  END manual
 ! ----------------------------------------------------------------------
 
       LOGICAL :: xmloutput = .false.
       ! if .true. PW produce an xml output
-CONTAINS
 
+CONTAINS
+!
+!----------------------------------------------------------------------------
+SUBROUTINE reset_input_checks()
+  !-----------------------------------------------------------------------------
+  !
+  ! ... This routine sets to .false. flags used to check whether some variables
+  ! ... have been read. If called before reading, allows to read a different
+  ! ... input file without triggering bogus error messages - useful for NEB
+  !
+  IMPLICIT NONE
+  !
+  tapos = .false.
+  tkpoints = .false.
+  taspc = .false.
+  twannier = .false.
+  tconstr = .false.
+  tforces = .false.
+  tocc = .false.
+  tksout = .false.
+  tionvel = .false.
+  tcell = .false.
+  !
+  END SUBROUTINE reset_input_checks
+  !
+  !
+  !-----------------------------------------------------------------------------
   SUBROUTINE allocate_input_ions( ntyp, nat )
+  !-----------------------------------------------------------------------------
     !
     INTEGER, INTENT(in) :: ntyp, nat
     !
     IF ( allocated( rd_pos ) ) DEALLOCATE( rd_pos )
     IF ( allocated( sp_pos ) ) DEALLOCATE( sp_pos )
     IF ( allocated( if_pos ) ) DEALLOCATE( if_pos )
-    IF ( allocated( id_loc ) ) DEALLOCATE( id_loc )
     IF ( allocated( na_inp ) ) DEALLOCATE( na_inp )
     IF ( allocated( rd_vel ) ) DEALLOCATE( rd_vel )
     IF ( allocated( sp_vel ) ) DEALLOCATE( sp_vel )
@@ -1550,7 +1463,6 @@ CONTAINS
     ALLOCATE( rd_pos( 3, nat ) )
     ALLOCATE( sp_pos( nat)   )
     ALLOCATE( if_pos( 3, nat ) )
-    ALLOCATE( id_loc( nat)   )
     ALLOCATE( na_inp( ntyp)  )
     ALLOCATE( rd_vel( 3, nat ) )
     ALLOCATE( sp_vel( nat)   )
@@ -1559,7 +1471,6 @@ CONTAINS
     rd_pos = 0.0_DP
     sp_pos = 0
     if_pos = 1
-    id_loc = 0
     na_inp = 0
     rd_vel = 0.0_DP
     sp_vel = 0
@@ -1569,7 +1480,9 @@ CONTAINS
     !
   END SUBROUTINE allocate_input_ions
 
+  !-----------------------------------------------------------------------------
   SUBROUTINE allocate_input_constr()
+  !-----------------------------------------------------------------------------
     !
     IF ( allocated( constr_type_inp ) )   DEALLOCATE( constr_type_inp )
     IF ( allocated( constr_inp ) )        DEALLOCATE( constr_inp )
@@ -1591,7 +1504,9 @@ CONTAINS
     !
   END SUBROUTINE allocate_input_constr
 
+  !-----------------------------------------------------------------------------
   SUBROUTINE allocate_input_iprnks( nksx, nspin )
+  !-----------------------------------------------------------------------------
     !
     INTEGER, INTENT(in) :: nksx, nspin
     !
@@ -1605,15 +1520,15 @@ CONTAINS
     !
   END SUBROUTINE allocate_input_iprnks
 
-
+  !-----------------------------------------------------------------------------
   SUBROUTINE deallocate_input_parameters()
+  !-----------------------------------------------------------------------------
     !
     IF ( allocated( xk ) ) DEALLOCATE( xk )
     IF ( allocated( wk ) ) DEALLOCATE( wk )
     IF ( allocated( rd_pos ) ) DEALLOCATE( rd_pos )
     IF ( allocated( sp_pos ) ) DEALLOCATE( sp_pos )
     IF ( allocated( if_pos ) ) DEALLOCATE( if_pos )
-    IF ( allocated( id_loc ) ) DEALLOCATE( id_loc )
     IF ( allocated( na_inp ) ) DEALLOCATE( na_inp )
     IF ( allocated( rd_vel ) ) DEALLOCATE( rd_vel )
     IF ( allocated( sp_vel ) ) DEALLOCATE( sp_vel )

@@ -62,18 +62,16 @@ SUBROUTINE setup()
                                  find_sym, inverse_s, no_t_rev
   USE wvfct,              ONLY : nbnd, nbndx, ecutwfc
   USE control_flags,      ONLY : tr2, ethr, lscf, lmd, david, lecrpa,  &
-                                 isolve, niter, noinv, &
+                                 isolve, niter, noinv, ts_vdw, &
                                  lbands, use_para_diag, gamma_only
   USE cellmd,             ONLY : calc
   USE uspp_param,         ONLY : upf, n_atom_wfc
   USE uspp,               ONLY : okvan
-  USE ldaU,               ONLY : lda_plus_u, lda_plus_u_kind, U_projection, Hubbard_U, Hubbard_J, &
-                                 Hubbard_l, Hubbard_alpha, Hubbard_lmax, d_spin_ldau, oatwfc,&
-                                 Hubbard_J0, Hubbard_beta
-  USE bp,                 ONLY : gdir, lberry, nppstr, lelfield, lorbm, nx_el, nppstr_3d,l3dstring, efield
+  USE ldaU,               ONLY : lda_plus_u, init_lda_plus_u
+  USE bp,                 ONLY : gdir, lberry, nppstr, lelfield, lorbm, nx_el, nppstr_3d,l3dstring, efield, lcalc_z2
   USE fixed_occ,          ONLY : f_inp, tfixed_occ, one_atom_occupations
   USE funct,              ONLY : set_dft_from_name
-  USE mp_global,          ONLY : kunit
+  USE mp_pools,           ONLY : kunit
   USE spin_orb,           ONLY : lspinorb, domag
   USE noncollin_module,   ONLY : noncolin, npol, m_loc, i_cons, &
                                  angle1, angle2, bfield, ux, nspin_lsda, &
@@ -82,31 +80,48 @@ SUBROUTINE setup()
   USE exx,                ONLY : exx_grid_init, exx_div_check
   USE funct,              ONLY : dft_is_meta, dft_is_hybrid, dft_is_gradient
   USE paw_variables,      ONLY : okpaw
+  USE cellmd,             ONLY : lmovecell  
   !
   IMPLICIT NONE
   !
-  INTEGER  :: na, nt, is, ierr, ibnd, ik
+  INTEGER  :: na, is, ierr, ibnd, ik
   LOGICAL  :: magnetic_sym, skip_equivalence=.FALSE.
   REAL(DP) :: iocc, ionic_charge, one
   !
   LOGICAL, EXTERNAL  :: check_para_diag
-  INTEGER, EXTERNAL :: set_Hubbard_l
   !
   ! ... okvan/okpaw = .TRUE. : at least one pseudopotential is US/PAW
   !
   okvan = ANY( upf(:)%tvanp )
   okpaw = ANY( upf(1:ntyp)%tpawp )
-  IF ( dft_is_meta() .AND. okvan ) &
-     CALL errore( 'setup', 'US and Meta-GGA not yet implemented', 1 )
+  !
+  ! ... check for features not implemented with US-PP or PAW
+  !
+  IF ( okvan .OR. okpaw ) THEN
+     IF ( dft_is_meta() ) CALL errore( 'setup', &
+                               'Meta-GGA not implemented with USPP/PAW', 1 )
+     IF ( noncolin .AND. lberry)  CALL errore( 'setup', &
+       'Noncolinear Berry Phase/electric not implemented with USPP/PAW', 1 )
+     IF  (ts_vdw ) CALL errore ('setup',&
+                   'Tkatchenko-Scheffler not implemented with USPP/PAW', 1 )
+     IF ( lorbm ) CALL errore( 'setup', &
+                  'Orbital Magnetization not implemented with USPP/PAW', 1 )
+  END IF
 
   IF ( dft_is_hybrid() ) THEN
      IF (.NOT. lscf) CALL errore( 'setup ', &
-                         'HYBRID XC not allowed in non-scf calculations', 1 )
-     IF ( okvan .OR. okpaw ) CALL errore( 'setup ', &
-                         'HYBRID XC not implemented for USPP or PAW', 1 )
+                         'hybrid XC not allowed in non-scf calculations', 1 )
      IF ( ANY (upf(1:ntyp)%nlcc) ) CALL infomsg( 'setup ', 'BEWARE:' // &
                & ' nonlinear core correction is not consistent with hybrid XC')
-     IF (noncolin) no_t_rev=.true.
+     IF (lmovecell) CALL errore('setup','Variable cell and hybrid XC not tested',1)
+     IF (okpaw.OR.okvan) CALL errore('setup','PAW and hybrid XC not tested',1)
+     IF ( noncolin ) THEN
+        IF ( okvan ) THEN
+           CALL errore('setup','Noncolinear hybrid XC for USPP not implemented',1)
+        ELSE
+           no_t_rev=.true.
+        END IF
+     END IF
   END IF
   !
   ! ... Compute the ionic charge for each atom type and the total ionic charge
@@ -358,8 +373,6 @@ SUBROUTINE setup()
   ! ... Compute the cut-off of the G vectors
   !
   doublegrid = ( dual > 4.D0 )
-  IF ( doublegrid .and.  dft_is_hybrid() ) &
-     CALL errore('setup','ecutrho>4*ecutwfc and exact exchange not allowed',1)
   IF ( doublegrid .AND. (.NOT.okvan .AND. .not.okpaw) ) &
      CALL infomsg ( 'setup', 'no reason to have ecutrho>4*ecutwfc' )
   gcutm = dual * ecutwfc / tpiba2
@@ -413,7 +426,7 @@ SUBROUTINE setup()
         nrot  = 1
         nsym  = 1
         !
-     ELSE IF (lberry) THEN
+     ELSE IF (lberry .OR. lcalc_z2) THEN
         !
         CALL kp_strings( nppstr, gdir, nrot, s, bg, npk, &
                          k1, k2, k3, nk1, nk2, nk3, nkstot, xk, wk )
@@ -442,12 +455,15 @@ SUBROUTINE setup()
         END IF
 
         ! <AF>
-        IF ( gdir<0 .OR. gdir>3 ) CALL errore('setup','invalid gdir value',10) 
-        IF ( gdir == 0 ) CALL errore('setup','needed gdir probably not set',10) 
+        IF ( gdir<1 .OR. gdir>3 ) CALL errore('setup','invalid gdir value'&
+                                  &' (valid values: 1=x, 2=y, 3=z)',10) 
         !
         DO ik=1,nkstot
            nx_el(ik,gdir)=ik
         END DO
+        ! sanity check (when nkstot==1 we /could/ just set nppstr=1):
+        IF(nppstr==0) CALL errore('setup', 'When lefield is true and kpoint are '&
+                                 &'specified manually you MUST set nppstr',1)
         if(nspin==2) nx_el(nkstot+1:2*nkstot,:) = nx_el(1:nkstot,:) + nkstot
         nppstr_3d(gdir)=nppstr
         l3dstring=.false.
@@ -578,90 +594,10 @@ SUBROUTINE setup()
         ENDDO
      ENDDO
   ENDIF
-
-!---
-! ... Set up Hubbard parameters for LDA+U calculation
-!
-  IF ( lda_plus_u ) THEN
-     !
-   Hubbard_lmax = -1
-   ! Set the default of Hubbard_l for the species which have
-   ! Hubbard_U=0 (in that case set_Hubbard_l will not be called)
-   Hubbard_l(:) = -1
-
-   if ( lda_plus_u_kind.eq.0 ) then
-     !
-     DO nt = 1, ntyp
-        !
-        IF ( Hubbard_U(nt)/=0.d0.OR.Hubbard_alpha(nt)/=0.D0 .OR.&
-             Hubbard_J0(nt) /=0.d0 .OR. Hubbard_beta(nt) /=0.d0) THEN
-           !
-           Hubbard_l(nt) = set_Hubbard_l( upf(nt)%psd )
-           !
-           Hubbard_lmax = MAX( Hubbard_lmax, Hubbard_l(nt) )
-           !
-        END IF
-        !
-     END DO
-   elseif ( lda_plus_u_kind.eq.1 ) then
-     !
-     IF ( U_projection == 'pseudo' ) CALL errore( 'setup', &
-        & 'full LDA+U not implemented with pseudo projection type', 1 )
-
-     if (noncolin) then
-      ALLOCATE( d_spin_ldau(2,2,48) )
-      call comp_dspinldau ()
-     endif
-
-     DO nt = 1, ntyp
-
-        if (Hubbard_alpha(nt)/=0.d0 ) CALL errore( 'setup', &
-                   & 'full LDA+U does not support Hubbard_alpha calculation', 1 )
-
-        IF ( Hubbard_U(nt)/=0.d0 .OR. ANY( Hubbard_J(:,nt)/=0.d0 ) ) THEN
-
-           !
-           Hubbard_l(nt) = set_Hubbard_l( upf(nt)%psd )
-
-           Hubbard_lmax = MAX( Hubbard_lmax, Hubbard_l(nt) )
-           !
-           if (Hubbard_U(nt) == 0.d0) Hubbard_U(nt) = 1.d-14
-
-           if ( Hubbard_l(nt) == 2 ) then
-             if ( Hubbard_J(2,nt) == 0.d0 ) &
-                          Hubbard_J(2,nt) = 0.114774114774d0 * Hubbard_J(1,nt)
-           elseif ( Hubbard_l(nt) == 3 ) then
-             if ( Hubbard_J(2,nt) == 0.d0 ) &
-                       Hubbard_J(2,nt) = 0.002268d0 * Hubbard_J(1,nt)
-             if ( Hubbard_J(3,nt)==0.d0 ) &
-                       Hubbard_J(3,nt) = 0.0438d0 * Hubbard_J(1,nt)
-           endif
-
-        END IF
-        !
-     END DO
-   else
-    CALL errore( 'setup', &
-                   & 'lda_plus_u_kind should be 0 or 1', 1 )
-   endif
-   IF ( Hubbard_lmax == -1 ) &
-        CALL errore( 'setup', &
-                   & 'lda_plus_u calculation but Hubbard_l not set', 1 )
-   IF ( Hubbard_lmax > 3 ) &
-        CALL errore( 'setup', &
-                   & 'Hubbard_l should not be > 3 ', 1 )
-
-   ! compute index of atomic wfcs used as projectors
-   if(.not.allocated(oatwfc)) ALLOCATE ( oatwfc(nat) )
-   CALL offset_atom_wfc ( nat, oatwfc )
-
-  ELSE
-     !
-     Hubbard_lmax = 0
-     !
-  END IF
-!---
-
+  !
+  ! ... Set up Hubbard parameters for LDA+U calculation
+  !
+  CALL init_lda_plus_u ( upf(1:ntyp)%psd, noncolin )
   !
   ! ... initialize d1 and d2 to rotate the spherical harmonics
   !
@@ -675,27 +611,37 @@ END SUBROUTINE setup
 LOGICAL FUNCTION check_para_diag( nbnd )
   !
   USE io_global,        ONLY : stdout, ionode, ionode_id
-  USE mp_global,        ONLY : np_ortho
+  USE mp_diag,          ONLY : np_ortho
+  USE control_flags,    ONLY : gamma_only
 
   IMPLICIT NONE
 
   INTEGER, INTENT(IN) :: nbnd
   LOGICAL, SAVE :: first = .TRUE.
+  LOGICAL, SAVE :: saved_value = .FALSE.
 
-  IF( .NOT. first ) RETURN
+  IF( .NOT. first ) then
+      check_para_diag = saved_value
+      RETURN
+  end if
   first = .FALSE.
   !
   IF( np_ortho(1) > nbnd ) &
      CALL errore ('check_para_diag', 'Too few bands for required ndiag',nbnd)
   !
   check_para_diag = ( np_ortho( 1 ) > 1 .AND. np_ortho( 2 ) > 1 )
+  saved_value = check_para_diag
   !
   IF ( ionode ) THEN
      !
      WRITE( stdout, '(/,5X,"Subspace diagonalization in iterative solution ",&
                      &     "of the eigenvalue problem:")' ) 
      IF ( check_para_diag ) THEN
-#ifdef __SCALAPACK
+#if defined(__ELPA)
+        WRITE( stdout, '(5X,"ELPA distributed-memory algorithm ", &
+              & "(size of sub-group: ", I2, "*", I3, " procs)",/)') &
+               np_ortho(1), np_ortho(2)
+#elif defined(__SCALAPACK)
         WRITE( stdout, '(5X,"scalapack distributed-memory algorithm ", &
               & "(size of sub-group: ", I2, "*", I3, " procs)",/)') &
                np_ortho(1), np_ortho(2)

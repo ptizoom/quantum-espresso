@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2006 Quantum ESPRESSO group
+! Copyright (C) 2001-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -24,7 +24,11 @@ SUBROUTINE addusdens(rho)
   IF ( tqr ) THEN
      CALL addusdens_r(rho,.true.)
   ELSE
+#if defined(__CUDA) && !defined(__DISABLE_CUDA_ADDUSDENS)
+     CALL addusdens_g_gpu(rho)
+#else
      CALL addusdens_g(rho)
+#endif
   END IF
   !
   RETURN
@@ -101,7 +105,7 @@ subroutine addusdens_g(rho)
                  if (ityp (na) .eq.nt) then
                     !
                     !  Multiply becsum and qg with the correct structure factor
-                    tbecsum(:) = becsum(ijh,na,:)
+                    tbecsum(1:nspin_mag) = becsum(ijh,na,1:nspin_mag)
                     !
 #ifdef DEBUG_ADDUSDENS
   call start_clock ('addus:aux')

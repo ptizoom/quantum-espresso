@@ -24,9 +24,10 @@ PROGRAM plan_avg
   USE io_global, ONLY : ionode, ionode_id
   USE wvfct,     ONLY : nbnd, ecutwfc
   USE mp,        ONLY : mp_bcast
+  USE mp_world,  ONLY : world_comm
   USE mp_global, ONLY : mp_startup
   USE control_flags, ONLY : gamma_only
-  USE environment,   ONLY : environment_start
+  USE environment,   ONLY : environment_start, environment_end
   !
   IMPLICIT NONE
   !
@@ -68,14 +69,14 @@ PROGRAM plan_avg
      !
   ENDIF
   !
-  CALL mp_bcast( ios, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
   IF ( ios /= 0 ) CALL errore ('plan_avg', 'reading inputpp namelist', abs(ios))
   !
   ! ... Broadcast variables
   !
-  CALL mp_bcast( tmp_dir, ionode_id )
-  CALL mp_bcast( prefix, ionode_id )
-  CALL mp_bcast( filplot, ionode_id )
+  CALL mp_bcast( tmp_dir, ionode_id, world_comm )
+  CALL mp_bcast( prefix, ionode_id, world_comm )
+  CALL mp_bcast( filplot, ionode_id, world_comm )
   !
   !   Now allocate space for pwscf variables, read and check them.
   !
@@ -129,6 +130,8 @@ PROGRAM plan_avg
   !
   DEALLOCATE (plan)
   DEALLOCATE (averag)
+  !
+  CALL environment_end ( 'plan-avg' )
   !
   CALL stop_pp ( )
 
@@ -253,7 +256,7 @@ SUBROUTINE do_plan_avg (averag, plan, ninter)
   DO ik = 1, nks
      IF (lsda) current_spin = isk (ik)
      CALL gk_sort (xk (1, ik), ngm, g, ecutwfc / tpiba2, npw, igk, g2kin)
-     CALL davcio (evc, nwordwfc, iunwfc, ik, - 1)
+     CALL davcio (evc, 2*nwordwfc, iunwfc, ik, - 1)
      CALL init_us_2 (npw, igk, xk (1, ik), vkb)
 
      CALL calbec ( npw, vkb, evc, becp)

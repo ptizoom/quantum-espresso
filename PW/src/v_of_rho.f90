@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2009 Quantum ESPRESSO group
+! Copyright (C) 2001-2013 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -19,10 +19,13 @@ SUBROUTINE v_of_rho( rho, rho_core, rhog_core, &
   USE fft_base,         ONLY : dfftp
   USE gvect,            ONLY : ngm
   USE noncollin_module, ONLY : noncolin, nspin_lsda
-  USE ions_base,        ONLY : nat
+  USE ions_base,        ONLY : nat, tau
   USE ldaU,             ONLY : lda_plus_U 
   USE funct,            ONLY : dft_is_meta
   USE scf,              ONLY : scf_type
+  USE cell_base,        ONLY : alat
+  USE control_flags,    ONLY : ts_vdw
+  USE tsvdw_module,     ONLY : tsvdw_calculate, UtsvdW
   !
   IMPLICIT NONE
   !
@@ -44,7 +47,7 @@ SUBROUTINE v_of_rho( rho, rho_core, rhog_core, &
   REAL(DP), INTENT(INOUT) :: etotefield
     ! electric field energy - inout due to the screwed logic of add_efield
   ! ! 
-  INTEGER :: is
+  INTEGER :: is, ir
   !
   CALL start_clock( 'v_of_rho' )
   !
@@ -67,11 +70,11 @@ SUBROUTINE v_of_rho( rho, rho_core, rhog_core, &
   ! ... LDA+U: build up Hubbard potential 
   !
   if (lda_plus_u) then
-   if(noncolin) then
-    call v_hubbard_nc(rho%ns_nc,v%ns_nc,eth)
-   else
-    call v_hubbard(rho%ns,v%ns,eth)
-   endif
+     if(noncolin) then
+        call v_hubbard_nc(rho%ns_nc,v%ns_nc,eth)
+     else
+        call v_hubbard(rho%ns,v%ns,eth)
+     endif
   endif
   !
   ! ... add an electric field
@@ -79,6 +82,17 @@ SUBROUTINE v_of_rho( rho, rho_core, rhog_core, &
   DO is = 1, nspin_lsda
      CALL add_efield(v%of_r(1,is), etotefield, rho%of_r, .false. )
   END DO
+  !
+  ! ... add Tkatchenko-Scheffler potential (factor 2: Ha -> Ry)
+  ! 
+  IF (ts_vdw) THEN
+     CALL tsvdw_calculate(tau*alat,rho%of_r)
+     DO is = 1, nspin_lsda
+        DO ir=1,dfftp%nnr
+           v%of_r(ir,is)=v%of_r(ir,is)+2.0d0*UtsvdW(ir)
+        END DO
+     END DO
+  END IF
   !
   CALL stop_clock( 'v_of_rho' )
   !
@@ -99,11 +113,10 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
   USE lsda_mod,         ONLY : nspin
   USE cell_base,        ONLY : omega, alat
   USE spin_orb,         ONLY : domag
-  USE funct,            ONLY : xc, xc_spin, tau_xc, tau_xc_spin, &
-                               get_igcx, get_igcc
+  USE funct,            ONLY : xc, xc_spin, tau_xc, tau_xc_spin, get_meta
   USE scf,              ONLY : scf_type
   USE mp,               ONLY : mp_sum
-  USE mp_global,        ONLY : intra_bgrp_comm
+  USE mp_bands,         ONLY : intra_bgrp_comm
   !
   IMPLICIT NONE
   !
@@ -124,12 +137,12 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
   REAL(DP) :: zeta, rh
   INTEGER  :: k, ipol, is
   REAL(DP) :: ex, ec, v1x, v2x, v3x,v1c, v2c, v3c,                     &
-  &           v1xup, v1xdw, v2xup, v2xdw, v1cup, v1cdw, v2cup, v2cdw , &
+  &           v1xup, v1xdw, v2xup, v2xdw, v1cup, v1cdw,                &
   &           v3xup, v3xdw,v3cup, v3cdw,                               &
   &           arho, atau, fac, rhoup, rhodw, ggrho2, tauup,taudw          
        
   REAL(DP), DIMENSION(2)   ::    grho2, rhoneg
-  REAL(DP), DIMENSION(3)   ::    grhoup, grhodw, v2cup_vec, v2cdw_vec
+  REAL(DP), DIMENSION(3)   ::    grhoup, grhodw, v2cup, v2cdw
   
   !
   REAL(DP),    ALLOCATABLE :: grho(:,:,:), h(:,:,:), dh(:)
@@ -229,7 +242,7 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
                 
         call tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec, &
                       v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw, v1cup, v1cdw, &
-                      v2cup, v2cdw, v2cup_vec, v2cdw_vec, v3cup, v3cdw ) 
+                      v2cup, v2cdw, v3cup, v3cdw ) 
           !
           ! first term of the gradient correction : D(rho*Exc)/D(rho)
           !
@@ -238,15 +251,15 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
           !
           ! h contains D(rho*Exc)/D(|grad rho|) * (grad rho) / |grad rho|
           !
-          if (get_igcx()==7.AND.get_igcc()==6) then  ! tpss functional
+          if (get_meta()==1) then  ! tpss functional
             !
-            h(:,k,1) = (v2xup * grhoup(:) + v2cup_vec(:)) * e2
-            h(:,k,2) = (v2xdw * grhodw(:) + v2cdw_vec(:)) * e2
+            h(:,k,1) = (v2xup * grhoup(:) + v2cup(:)) * e2
+            h(:,k,2) = (v2xdw * grhodw(:) + v2cdw(:)) * e2
             !
           else
             !
-            h(:,k,1) = (v2xup + v2cup) * grhoup(:) * e2
-            h(:,k,2) = (v2xdw + v2cdw) * grhodw(:) * e2
+            h(:,k,1) = (v2xup + v2cup(1)) * grhoup(:) * e2
+            h(:,k,2) = (v2xdw + v2cdw(1)) * grhodw(:) * e2
             !
           end if
           !
@@ -294,7 +307,7 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
   rhoneg(:) = rhoneg(:) * omega / ( dfftp%nr1*dfftp%nr2*dfftp%nr3 )
   !
   if ((rhoneg(1) > eps8) .or. (rhoneg(2) > eps8)) then
-    write (stdout, '(/,5x, "negative rho (up,down): ", 2e10.3)') rhoneg(:)
+    write (stdout, '(/,5x, "negative rho (up,down): ", 2es10.3)') rhoneg(:)
   end if
   !
   vtxc = omega * vtxc / ( dfftp%nr1*dfftp%nr2*dfftp%nr3 ) 
@@ -311,6 +324,7 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
   RETURN
   !
 END SUBROUTINE v_xc_meta
+!
 SUBROUTINE v_xc( rho, rho_core, rhog_core, etxc, vtxc, v )
   !----------------------------------------------------------------------------
   !
@@ -326,7 +340,7 @@ SUBROUTINE v_xc( rho, rho_core, rhog_core, etxc, vtxc, v )
   USE spin_orb,         ONLY : domag
   USE funct,            ONLY : xc, xc_spin
   USE scf,              ONLY : scf_type
-  USE mp_global,        ONLY : intra_pool_comm, intra_bgrp_comm, mpime
+  USE mp_bands,         ONLY : intra_bgrp_comm
   USE mp,               ONLY : mp_sum
 
   !
@@ -423,7 +437,7 @@ SUBROUTINE v_xc( rho, rho_core, rhog_core, etxc, vtxc, v )
            !
            etxc = etxc + e2*( ex + ec ) * rhox
            !
-           vtxc = vtxc + v(ir,1) * rho%of_r(ir,1) + v(ir,2) * rho%of_r(ir,2)
+           vtxc = vtxc + ( v(ir,1)*rho%of_r(ir,1) + v(ir,2)*rho%of_r(ir,2) )
            !
         END IF
         !
@@ -488,7 +502,7 @@ SUBROUTINE v_xc( rho, rho_core, rhog_core, etxc, vtxc, v )
   rhoneg(:) = rhoneg(:) * omega / ( dfftp%nr1*dfftp%nr2*dfftp%nr3 )
   !
   IF ( rhoneg(1) > eps8 .OR. rhoneg(2) > eps8 ) &
-     WRITE( stdout,'(/,5X,"negative rho (up, down): ",2E10.3)') rhoneg
+     WRITE( stdout,'(/,5X,"negative rho (up, down): ",2ES10.3)') rhoneg
   !
   ! ... energy terms, local-density contribution
   !
@@ -527,7 +541,7 @@ SUBROUTINE v_h( rhog, ehart, charge, v )
   USE lsda_mod,  ONLY : nspin
   USE cell_base, ONLY : omega, tpiba2
   USE control_flags, ONLY : gamma_only
-  USE mp_global, ONLY: intra_pool_comm, intra_bgrp_comm
+  USE mp_bands,  ONLY: intra_bgrp_comm
   USE mp,        ONLY: mp_sum
   USE martyna_tuckerman, ONLY : wg_corr_h, do_comp_mt
   USE esm,       ONLY: do_comp_esm, esm_hartree, esm_bc

@@ -10,25 +10,19 @@
 SUBROUTINE iosys()
   !-----------------------------------------------------------------------------
   !
-  ! ...  this subroutine reads input data from standard input ( unit 5 )
-  ! ...  Use "-input filename" to read input from file "filename":
-  ! ...  may be useful if you have trouble reading from standard input
-  ! ...  ---------------------------------------------------------------
-  !
-  ! ...  access the modules renaming the variables that have the same name
-  ! ...  as the input parameters, this is required in order to use a code
-  ! ...  independent input parser
-  !
+  ! ...  Copy data read from input file (in subroutine "read_input_file") and
+  ! ...  stored in modules input_parameters into internal modules
+  ! ...  Note that many variables in internal modules, having the same name as
+  ! ...  those in input_parameters, are locally renamed by adding a "_"
   !
   USE kinds,         ONLY : DP
-  USE uspp,          ONLY : okvan
   USE funct,         ONLY : dft_has_finite_size_correction, &
                             set_finite_size_volume, get_inlc 
   USE funct,         ONLY: set_exx_fraction, set_screening_parameter
   USE control_flags, ONLY: adapt_thr, tr2_init, tr2_multi
   USE constants,     ONLY : autoev, eV_to_kelvin, pi, rytoev, &
                             ry_kbar, amu_ry, bohr_radius_angs, eps8
-  USE mp_global,     ONLY : npool, nproc_pool
+  USE mp_pools,      ONLY : npool
   !
   USE io_global,     ONLY : stdout, ionode, ionode_id
   !
@@ -37,13 +31,17 @@ SUBROUTINE iosys()
   USE bp,            ONLY : nppstr_    => nppstr, &
                             gdir_      => gdir, &
                             lberry_    => lberry, &
+                            lcalc_z2_  => lcalc_z2, &
+                            z2_m_threshold_ => z2_m_threshold, &
+                            z2_z_threshold_ => z2_z_threshold, &
                             lelfield_  => lelfield, &
                             lorbm_     => lorbm, &
                             efield_    => efield, &
                             nberrycyc_ => nberrycyc, &
-                            efield_cart_ => efield_cart
+                            efield_cart_ => efield_cart, &
+                            phase_control
   !
-  USE cell_base,     ONLY : at, alat, omega, &
+  USE cell_base,     ONLY : at, alat, omega, bg, &
                             cell_base_init, init_dofree
   !
   USE ions_base,     ONLY : if_pos, ityp, tau, extfor, &
@@ -106,35 +104,6 @@ SUBROUTINE iosys()
                             niter_with_fixed_ns, starting_ns, U_projection
   !
   USE martyna_tuckerman, ONLY: do_comp_mt
-#ifdef __ENVIRON
-  USE constants,    ONLY : rydberg_si, bohr_radius_si, amu_si, k_boltzmann_ry
-  USE environ_base, ONLY : do_environ_ => do_environ,                           &
-                           verbose_ => verbose,                                 &
-                           environ_thr_ => environ_thr,                         &
-                           stype_ => stype,                                     &
-                           rhomax_ => rhomax,                                   &
-                           rhomin_ => rhomin,                                   &
-                           tbeta_ => tbeta,                                     &
-                           env_static_permittivity_ => env_static_permittivity, &
-                           eps_mode_ => eps_mode,                               &
-                           solvationrad_ => solvationrad,                       &
-                           atomicspread_ => atomicspread,                       &
-                           add_jellium_ => add_jellium,                         &
-                           ifdtype_ => ifdtype,                                 &
-                           nfdpoint_ => nfdpoint,                               &
-                           mixtype_ => mixtype,                                 &
-                           ndiis_ => ndiis,                                     &
-                           mixrhopol_ => mixrhopol,                             &
-                           tolrhopol_ => tolrhopol,                             &
-                           env_surface_tension_ => env_surface_tension,         &
-                           delta_ => delta,                                     &
-                           env_pressure_ => env_pressure,                       &
-                           env_periodicity, slab_axis,                          &
-                           env_ioncc_concentration_ => env_ioncc_concentration, &
-                           zion_ => zion,                                       &
-                           rhopb_ => rhopb,                                     &
-                           solvent_temperature_ => solvent_temperature
-#endif
   !
   USE esm,           ONLY: do_comp_esm, &
                            esm_bc_ => esm_bc, &
@@ -175,9 +144,10 @@ SUBROUTINE iosys()
                             lkpoint_dir_      => lkpoint_dir, &
                             tqr_              => tqr, &
                             io_level, ethr, lscf, lbfgs, lmd, &
-                            ldamped, lbands, llang,           &
+                            ldamped, lbands, llang, use_SMC,  &
                             lconstrain, restart, twfcollect, &
-                            llondon, do_makov_payne, &
+                            llondon, do_makov_payne, lxdm, &
+                            ts_vdw_           => ts_vdw, &
                             lecrpa_           => lecrpa, &
                             smallmem
   USE control_flags, ONLY: scf_must_converge_ => scf_must_converge
@@ -220,10 +190,8 @@ SUBROUTINE iosys()
 
   USE read_pseudo_mod,       ONLY : readpp
 
-#if defined __MS2
-  USE MS2,                   ONLY : MS2_enabled_ => MS2_enabled, &
-                                    MS2_handler_ => MS2_handler
-#endif
+  USE qmmm, ONLY : qmmm_config
+
   !
   ! ... CONTROL namelist
   !
@@ -233,11 +201,10 @@ SUBROUTINE iosys()
                                pseudo_dir, disk_io, tefield, dipfield, lberry, &
                                gdir, nppstr, wf_collect,lelfield,lorbm,efield, &
                                nberrycyc, lkpoint_dir, efield_cart, lecrpa,    &
-                               vdw_table_name, memory
+                               vdw_table_name, memory, tqmmm,                  &
+                               lcalc_z2, z2_m_threshold, z2_z_threshold,       &
+                               efield_phase
 
-#if defined __MS2
-  USE input_parameters, ONLY : MS2_enabled, MS2_handler
-#endif
   !
   ! ... SYSTEM namelist
   !
@@ -256,31 +223,18 @@ SUBROUTINE iosys()
                                x_gamma_extrapolation, nqx1, nqx2, nqx3,     &
                                exxdiv_treatment, yukawa, ecutvcut,          &
                                exx_fraction, screening_parameter, ecutfock, &
-#ifdef __ENVIRON
-                               do_environ,                                  &
-#endif
+                               gau_parameter,                               &
                                edir, emaxpos, eopreg, eamp, noncolin, lambda, &
                                angle1, angle2, constrained_magnetization,     &
                                B_field, fixed_magnetization, report, lspinorb,&
-                               starting_spin_angle,                           &
-                               assume_isolated, spline_ps, london, london_s6, &
-                               london_rcut, one_atom_occupations, &
-                               esm_bc, esm_efield, esm_w, esm_nfit
-#ifdef __ENVIRON
-  !
-  ! ... ENVIRON namelist
-  !
-  USE input_parameters, ONLY : verbose, environ_thr, environ_type,      &
-                               stype, rhomax, rhomin, tbeta,            &
-                               env_static_permittivity, eps_mode,       &
-                               solvationrad, atomicspread, add_jellium, &
-                               ifdtype, nfdpoint,                       &
-                               mixtype, ndiis, mixrhopol, tolrhopol,    &
-                               env_surface_tension, delta,              &
-                               env_pressure,                            &
-                               env_ioncc_concentration, zion, rhopb,    &
-                               solvent_temperature
-#endif
+                               starting_spin_angle, assume_isolated,spline_ps,&
+                               vdw_corr, london, london_s6, london_rcut,      &
+                               ts_vdw, ts_vdw_isolated, ts_vdw_econv_thr,     &
+                               xdm, xdm_a1, xdm_a2,                           &
+                               one_atom_occupations,                          &
+                               esm_bc, esm_efield, esm_w, esm_nfit,           &
+                               space_group, uniqueb, origin_choice,           &
+                               rhombohedral
   !
   ! ... ELECTRONS namelist
   !
@@ -294,12 +248,13 @@ SUBROUTINE iosys()
   !
   ! ... IONS namelist
   !
-  USE input_parameters, ONLY : phase_space, ion_dynamics, ion_positions, tolp, &
+  USE input_parameters, ONLY : ion_dynamics, ion_positions, tolp, &
                                tempw, delta_t, nraise, ion_temperature,        &
                                refold_pos, remove_rigid_rot, upscale,          &
                                pot_extrapolation,  wfc_extrapolation,          &
                                w_1, w_2, trust_radius_max, trust_radius_min,   &
-                               trust_radius_ini, bfgs_ndim
+                               trust_radius_ini, bfgs_ndim, rd_pos, sp_pos, &
+                               rd_for, rd_if_pos => if_pos, lsg
   !
   ! ... CELL namelist
   !
@@ -321,15 +276,20 @@ SUBROUTINE iosys()
   USE constraints_module,    ONLY : init_constraint
   USE read_namelists_module, ONLY : read_namelists, sm_not_set
   USE london_module,         ONLY : init_london, lon_rcut, scal6
-  USE us, ONLY : spline_ps_ => spline_ps
+  USE xdm_module,            ONLY : init_xdm, a1i, a2i
+  USE tsvdw_module,          ONLY : vdw_isolated, vdw_econv_thr
+  USE us,                    ONLY : spline_ps_ => spline_ps
   !
-  USE input_parameters,       ONLY : deallocate_input_parameters
+  USE input_parameters,      ONLY : deallocate_input_parameters
+  USE wyckoff,               ONLY : nattot, sup_spacegroup
   !
   IMPLICIT NONE
   !
   CHARACTER(LEN=256), EXTERNAL :: trimcheck
+  INTEGER, EXTERNAL :: read_config_from_file
   !
-  INTEGER  :: ia, image, nt, inlc
+  INTEGER  :: ia, nt, inlc, ibrav_sg, ierr
+  LOGICAL  :: exst, parallelfs
   REAL(DP) :: theta, phi
   !
   !
@@ -393,10 +353,12 @@ SUBROUTINE iosys()
         !
         CONTINUE
         !
-     CASE( 'langevin' )
+     CASE( 'langevin', 'langevin-smc', 'langevin+smc' )
         !
         llang       = .true.
         temperature = tempw
+        use_SMC     = ( trim( ion_dynamics ) == 'langevin-smc' .OR. & 
+                        trim( ion_dynamics ) == 'langevin+smc' )
         !
      CASE DEFAULT
         !
@@ -502,7 +464,7 @@ SUBROUTINE iosys()
             '(5x,"Presently no symmetry can be used with electric field",/)' )
   ENDIF
   IF ( tefield .and. tstress ) THEN
-     tstress = .false.
+     lstres = .false.
      WRITE( stdout, &
             '(5x,"Presently stress not available with electric field",/)' )
   ENDIF
@@ -510,12 +472,9 @@ SUBROUTINE iosys()
      CALL errore( 'iosys', 'LSDA not available with electric field' , 1 )
   ENDIF
   !
-  ! ... define memory related internal switches
+  ! ... define memory- and disk-related internal switches
   !
-  IF( TRIM( memory ) == 'small' ) THEN
-     smallmem = .TRUE.
-  END IF
-  !
+  smallmem = ( TRIM( memory ) == 'small' )
   twfcollect = wf_collect
   !
   ! ... Set Values for electron and bands
@@ -811,15 +770,18 @@ SUBROUTINE iosys()
   CASE( 'restart' )
      !
      restart = .true.
-     !
+     IF ( TRIM(startingwfc) /= 'file' ) THEN
+        CALL infomsg('input','WARNING: "startingwfc" set to '//TRIM(startingwfc)//' may spoil restart')
+     END IF
+     IF ( TRIM(startingpot) /= 'file' ) THEN
+        CALL infomsg('input','WARNING: "startingpot" set to '//TRIM(startingpot)//' may spoil restart')
+        startingpot = 'file'
+     END IF
      IF ( trim( ion_positions ) == 'from_input' ) THEN
-        !
+        CALL infomsg('input','WARNING: restarting from positions as given in input')
         startingconfig = 'input'
-        !
      ELSE
-        !
         startingconfig = 'file'
-        !
      ENDIF
      !
   CASE DEFAULT
@@ -834,15 +796,17 @@ SUBROUTINE iosys()
      !
      io_level = 2
      !
+  CASE ( 'medium' )
+     !
+     io_level = 1
+     !
   CASE ( 'low' )
      !
      io_level = 0
-     restart  = .false.
      !
   CASE ( 'none' )
      !
      io_level = -1
-     restart  = .false.
      IF ( twfcollect ) THEN
         CALL infomsg('iosys', 'minimal I/O required, wf_collect reset to FALSE')
         twfcollect= .false.
@@ -850,24 +814,29 @@ SUBROUTINE iosys()
      !
   CASE DEFAULT
      !
-     io_level = 1
+     ! In the scf case, it is usually convenient to write to RAM;
+     ! otherwise it is preferrable to write to disk, since the number
+     ! of k-points can be large, leading to large RAM requirements
      !
-     IF ( lscf ) restart  = .false.
+     IF ( lscf ) THEN
+        io_level = 0
+     ELSE
+        io_level = 1
+     END IF
      !
   END SELECT
   !
   Hubbard_U(:)    = Hubbard_U(:) / rytoev
-  Hubbard_J0(:)    = Hubbard_J0(:) / rytoev
+  Hubbard_J0(:)   = Hubbard_J0(:) / rytoev
   Hubbard_J(:,:)  = Hubbard_J(:,:) / rytoev
   Hubbard_alpha(:)= Hubbard_alpha(:) / rytoev
-  Hubbard_beta(:)= Hubbard_beta(:) / rytoev
+  Hubbard_beta(:) = Hubbard_beta(:) / rytoev
   !
   ethr = diago_thr_init
   !
   IF ( startingpot /= 'atomic' .and. startingpot /= 'file' ) THEN
      !
      CALL infomsg( 'iosys', 'wrong startingpot: use default (1)' )
-     !
      IF ( lscf ) THEN
         startingpot = 'atomic'
      ELSE 
@@ -879,7 +848,6 @@ SUBROUTINE iosys()
   IF ( .not. lscf .and. startingpot /= 'file' ) THEN
      !
      CALL infomsg( 'iosys', 'wrong startingpot: use default (2)' )
-     !
      startingpot = 'file'
      !
   ENDIF
@@ -889,16 +857,13 @@ SUBROUTINE iosys()
             startingwfc /= 'atomic+random' .and. &
             startingwfc /= 'file' ) THEN
      !
-     CALL infomsg( 'iosys', 'wrong startingwfc: use default' )
-     !
-     startingwfc = 'atomic'
+     CALL infomsg( 'iosys', 'wrong startingwfc: use default (atomic+random)' )
+     startingwfc = 'atomic+random'
      !
   ENDIF
   ! 
   IF (one_atom_occupations .and. startingwfc /= 'atomic' ) THEN
-
      CALL infomsg( 'iosys', 'one_atom_occupations requires startingwfc atomic' )
-
      startingwfc = 'atomic'
   ENDIF
   !
@@ -1047,25 +1012,15 @@ SUBROUTINE iosys()
   !
   SELECT CASE( trim( mixing_mode ) )
   CASE( 'plain' )
-     !
      imix = 0
-     !
   CASE( 'TF' )
-     !
      imix = 1
-     !
   CASE( 'local-TF' )
-     !
      imix = 2
-     !
   CASE( 'potential' )
-     !
      CALL errore( 'iosys', 'potential mixing no longer implemented', 1 )
-     !
   CASE DEFAULT
-     !
      CALL errore( 'iosys', 'unknown mixing ' // trim( mixing_mode ), 1 )
-     !
   END SELECT
   !
   starting_scf_threshold = tr2
@@ -1078,28 +1033,20 @@ SUBROUTINE iosys()
   !
   SELECT CASE( trim( verbosity ) )
   CASE( 'debug', 'high', 'medium' )
-     !
      iverbosity = 1
-     !
   CASE( 'low', 'default', 'minimal' )
-     !
      iverbosity = 0 
-     !
   CASE DEFAULT
-     !
      iverbosity = 0
-     !
   END SELECT
   !
-  tmp_dir = trimcheck ( outdir )
-  !
-  IF ( lberry .OR. lelfield ) THEN
+  IF ( lberry .OR. lelfield .OR. lorbm ) THEN
      IF ( npool > 1 ) CALL errore( 'iosys', &
           'Berry Phase/electric fields not implemented with pools', 1 )
-     IF ( noncolin .AND. okvan )  CALL errore( 'iosys', &
-         'Noncolinear Berry Phase/electric fields not implemented with USPP', 1 )
      IF ( lgauss .OR. ltetra ) CALL errore( 'iosys', &
           'Berry Phase/electric fields only for insulators!', 1 )
+     IF ( lmovecell ) CALL errore( 'iosys', &
+          'Berry Phase/electric fields not implemented with variable cell', 1 )
   END IF
   !
   ! ... Copy values from input module to PW internals
@@ -1107,11 +1054,25 @@ SUBROUTINE iosys()
   nppstr_     = nppstr
   gdir_       = gdir
   lberry_     = lberry
+  lcalc_z2_   = lcalc_z2
+  z2_m_threshold_ = z2_m_threshold
+  z2_z_threshold_ = z2_z_threshold
   lelfield_   = lelfield
   lorbm_      = lorbm
   efield_     = efield
   nberrycyc_  = nberrycyc
   efield_cart_ = efield_cart
+  SELECT CASE(efield_phase)
+     CASE( 'none' )
+        phase_control=0
+     CASE ('write')
+        phase_control=1
+     CASE ('read')
+        phase_control=2
+     CASE DEFAULT
+        CALL errore( 'iosys', &
+          'Unknown efield_phase', 1 )
+  END SELECT
   tqr_        = tqr
   real_space_ = real_space
   !
@@ -1222,75 +1183,6 @@ SUBROUTINE iosys()
   w_1_              = w_1
   w_2_              = w_2
   !
-#ifdef __ENVIRON
-  !
-  ! ...  Environ
-  !
-  do_environ_   = do_environ
-  verbose_      = verbose
-  environ_thr_  = environ_thr
-  !
-  stype_    = stype
-  rhomax_   = rhomax
-  rhomin_   = rhomin
-  tbeta_    = tbeta
-  IF ( stype .EQ. 1 ) THEN
-    tbeta_  = LOG( rhomax / rhomin )
-  END IF
-  !
-  eps_mode_ = eps_mode
-  ALLOCATE( solvationrad_( ntyp ) )
-  solvationrad_( 1:ntyp ) = solvationrad( 1:ntyp )
-  ALLOCATE( atomicspread_( ntyp ) )
-  atomicspread_( 1:ntyp ) = atomicspread( 1:ntyp )
-  IF ( do_environ ) CALL environ_initions_allocate( nat_, ntyp )
-  add_jellium_ = add_jellium
-  !
-  ifdtype_   = ifdtype
-  nfdpoint_  = nfdpoint
-  !
-  mixtype_   = mixtype
-  ndiis_     = ndiis
-  mixrhopol_ = mixrhopol
-  tolrhopol_ = tolrhopol
-  !
-  delta_     = delta
-  !
-  zion_      = zion
-  rhopb_     = rhopb
-  solvent_temperature_ = solvent_temperature
-  !
-  SELECT CASE (TRIM(environ_type))
-  ! if a specific environ is selected use hardcoded parameters
-  CASE ('vacuum')
-    ! vacuum, all flags off
-    env_static_permittivity_ = 1.D0
-    env_surface_tension_ = 0.D0
-    env_pressure_ = 0.D0
-    env_periodicity = 3
-    env_ioncc_concentration = 0.D0
-  CASE ('water')
-    ! water, experimental and SCCS tuned parameters
-    env_static_permittivity_ = 78.3D0
-    env_surface_tension_ = 50.D0*1.D-3*bohr_radius_si**2/rydberg_si
-    env_pressure_ = -0.35D0*1.D9/rydberg_si*bohr_radius_si**3
-    env_periodicity = 3
-    env_ioncc_concentration = 0.D0
-  CASE ('input')
-    ! take values from input, this is the default option
-    env_static_permittivity_ = env_static_permittivity
-    env_surface_tension_ = &
-      env_surface_tension*1.D-3*bohr_radius_si**2/rydberg_si
-    env_pressure_ = env_pressure*1.D9/rydberg_si*bohr_radius_si**3
-    env_periodicity = 3
-    env_ioncc_concentration_ = env_ioncc_concentration &
-    * bohr_radius_si**3 / amu_si
-  CASE DEFAULT
-    call errore ('iosys','unrecognized value for environ_type',1) 
-  END SELECT    
-  !
-#endif
-  !
   ! ... ESM
   !
   esm_bc_ = esm_bc
@@ -1300,17 +1192,93 @@ SUBROUTINE iosys()
   !
   IF (trim(occupations) /= 'from_input') one_atom_occupations_=.false.
   !
-  llondon     = london
-  lon_rcut    = london_rcut
-  scal6       = london_s6
+  !  ... initialize variables for vdW (dispersions) corrections
   !
-#if defined __MS2
+  SELECT CASE( TRIM( vdw_corr ) )
+    !
+    CASE( 'grimme-d2', 'Grimme-D2', 'DFT-D', 'dft-d' )
+      !
+      llondon= .TRUE.
+      ts_vdw_= .FALSE.
+      lxdm   = .FALSE.
+      !
+    CASE( 'TS', 'ts', 'ts-vdw', 'ts-vdW', 'tkatchenko-scheffler' )
+      !
+      llondon= .FALSE.
+      ts_vdw_= .TRUE.
+      lxdm   = .FALSE.
+      !
+    CASE( 'XDM', 'xdm' )
+       !
+      llondon= .FALSE.
+      ts_vdw_= .FALSE.
+      lxdm   = .TRUE.
+      !
+    CASE DEFAULT
+      !
+      llondon= .FALSE.
+      ts_vdw_= .FALSE.
+      lxdm   = .FALSE.
+      !
+  END SELECT
+  IF ( london ) THEN
+     CALL infomsg("iosys","london is obsolete, use ""vdw_corr='grimme-d2'"" instead")
+     llondon = .TRUE.
+  END IF
+  IF ( xdm ) THEN
+     CALL infomsg("iosys","xdm is obsolete, use ""vdw_corr='xdm'"" instead")
+     lxdm = .TRUE.
+  END IF
+  IF ( ts_vdw ) THEN
+     CALL infomsg("iosys","ts_vdw is obsolete, use ""vdw_corr='TS'"" instead")
+     ts_vdw_ = .TRUE.
+  END IF
+  IF ( llondon.AND.lxdm .OR. llondon.AND.ts_vdw_ .OR. lxdm.AND.ts_vdw_ ) &
+     CALL errore("iosys","must choose a unique vdW correction!", 1)
   !
-  ! MS2 specific parameters
+  IF ( llondon) THEN
+     lon_rcut    = london_rcut
+     scal6       = london_s6
+  END IF
+  IF ( lxdm ) THEN
+     a1i = xdm_a1
+     a2i = xdm_a2
+  END IF
+  IF ( ts_vdw_ ) THEN
+     vdw_isolated = ts_vdw_isolated
+     vdw_econv_thr= ts_vdw_econv_thr
+  END IF
   !
-  MS2_enabled_ = MS2_enabled
-  MS2_handler_ = MS2_handler
-#endif
+  !  calculate all the atomic positions if only the inequivalent ones
+  !  have been given.
+  !  NB: ibrav is an output of this routine
+  !
+  IF (space_group /= 0 .AND. .NOT. lsg ) &
+     CALL errore('input','space_group requires crystal_sg atomic &
+                                                   &coordinates',1 )
+  IF (lsg) THEN
+     IF (space_group==0) &
+        CALL errore('input','The option crystal_sg requires the space group &
+                                                   &number',1 )
+        
+     CALL sup_spacegroup(rd_pos,sp_pos,rd_for,rd_if_pos,space_group,nat,&
+              uniqueb,rhombohedral,origin_choice,ibrav_sg)
+     IF (ibrav==-1) THEN
+        ibrav=ibrav_sg
+     ELSEIF (ibrav /= ibrav_sg) THEN
+        CALL errore ('input','Input ibrav not compatible with space group &
+                                                   &number',1 )
+     ENDIF
+     nat_=nattot
+  ENDIF
+  !
+  ! QM/MM specific parameters
+  !
+  IF (.NOT. tqmmm) CALL qmmm_config( mode=-1 )
+  !
+  do_makov_payne  = .false.
+  do_comp_mt      = .false.
+  do_comp_esm     = .false.
   !
   SELECT CASE( trim( assume_isolated ) )
       !
@@ -1320,9 +1288,6 @@ SUBROUTINE iosys()
       IF ( ibrav < 1 .OR. ibrav > 3 ) CALL errore(' iosys', &
               'Makov-Payne correction defined only for cubic lattices', 1)
       !
-      do_comp_mt     = .false.
-      do_comp_esm    = .false.
-      !
     CASE( 'dcc' )
       !
       CALL errore('iosys','density countercharge correction currently disabled',1)
@@ -1330,74 +1295,30 @@ SUBROUTINE iosys()
     CASE( 'martyna-tuckerman', 'm-t', 'mt' )
       !
       do_comp_mt     = .true.
-      do_makov_payne = .false.
-      do_comp_esm    = .false.
       !
     CASE( 'esm' )
       !
       do_comp_esm    = .true.
-      do_comp_mt     = .false.
-      do_makov_payne = .false.
       !
-#ifdef __ENVIRON
-    CASE( 'slabx' )
-      !
-      do_environ_     = .true.
-      env_periodicity = 2
-      slab_axis       = 1
-      do_makov_payne  = .false.
-      do_comp_mt      = .false.
-      do_comp_esm     = .false.
-      !
-    CASE( 'slaby' ) 
-      !
-      do_environ_     = .true.
-      env_periodicity = 2
-      slab_axis       = 2
-      do_makov_payne  = .false.
-      do_comp_mt      = .false.
-      do_comp_esm     = .false.
-      !
-    CASE( 'slabz' ) 
-      !
-      do_environ_     = .true.
-      env_periodicity = 2
-      slab_axis       = 3
-      do_makov_payne  = .false.
-      do_comp_mt      = .false.
-      do_comp_esm     = .false.
-      !
-    CASE( 'pcc' ) 
-      !
-      do_environ_     = .true.
-      env_periodicity = 0
-      do_makov_payne  = .false.
-      do_comp_mt      = .false.
-      do_comp_esm     = .false.
-      !
-#endif
-    CASE( 'none' )
-      !
-      do_makov_payne = .false.
-      do_comp_mt     = .false.
-      do_comp_esm    = .false.
-      !
-    CASE DEFAULT
-      !
-      call errore ('iosys','unrecognized value for assume_isolated',1)
   END SELECT
-#ifdef __ENVIRON
-  IF ( env_ioncc_concentration .GT. 0.D0 .AND. env_periodicity .NE. 2 ) &
-      call errore ('iosys','ioncc requires slab boundary conditions',1)
-#endif
+  !
+  IF ( do_comp_mt .AND. lstres ) THEN
+     lstres = .false.
+     WRITE( stdout, &
+          '(5x,"Stress calculation not meaningful in isolated systems",/)' )
+  END IF
+  !
+  CALL plugin_read_input()
   !
   ! ... read following cards
   !
+
   ALLOCATE( ityp( nat_ ) )
   ALLOCATE( tau(    3, nat_ ) )
   ALLOCATE( force(  3, nat_ ) )
   ALLOCATE( if_pos( 3, nat_ ) )
   ALLOCATE( extfor( 3, nat_ ) )
+
   IF ( tfixed_occ ) THEN
      IF ( nspin_ == 4 ) THEN
         ALLOCATE( f_inp( nbnd_, 1 ) )
@@ -1416,16 +1337,46 @@ SUBROUTINE iosys()
   !
   call cell_base_init ( ibrav, celldm, a, b, c, cosab, cosac, cosbc, &
                         trd_ht, rd_ht, cell_units )
+
+  !
+  ! ... Files (for compatibility) and directories
+  !     This stuff must be done before calling read_config_from_file!
+  !
+  input_drho  = ' '
+  output_drho = ' '
+  tmp_dir = trimcheck ( outdir )
+  IF ( .not. trim( wfcdir ) == 'undefined' ) THEN
+     wfc_dir = trimcheck ( wfcdir )
+  ELSE
+     wfc_dir = tmp_dir
+  ENDIF
+  !
+!   IF ( lmovecell ) THEN
+  at_old    = at
+  omega_old = omega
+!   ENDIF
+  !
+  ! ... Read atomic positions and unit cell from data file, if needed,
+  ! ... overwriting what has just been read before from input
+  !
+  ierr = 1
+  IF ( startingconfig == 'file' )   ierr = read_config_from_file(nat, at_old,omega_old, lmovecell, at, bg, omega, tau)
+  !
+  ! ... read_config_from_file returns 0 if structure successfully read
+  ! ... Atomic positions (tau) must be converted to internal units
+  ! ... only if they were read from input, not from file
+  !
+  IF ( ierr /= 0 ) CALL convert_tau ( tau_format, nat_, tau)
   !
   ! ... set up k-points
   !
   CALL init_start_k ( nk1, nk2, nk3, k1, k2, k3, k_points, nkstot, xk, wk )
   gamma_only = ( k_points == 'gamma' )
   !
+  IF ( real_space .AND. .NOT. gamma_only ) &
+     CALL errore ('iosys', 'Real space only with Gamma point', 1)
   IF ( lelfield .AND. gamma_only ) &
       CALL errore( 'iosys', 'electric fields not available for k=0 only', 1 )
-  !
-  CALL convert_tau ( tau_format, nat_, tau)
   !
   IF ( wmass == 0.D0 ) THEN
      !
@@ -1477,8 +1428,8 @@ SUBROUTINE iosys()
   ! ... read the vdw kernel table if needed
   !
   inlc = get_inlc()
-  if (inlc == 1 .or. inlc == 2) then
-      call initialize_kernel_table()
+  if (inlc > 0) then
+      call initialize_kernel_table(inlc)
   endif
   !
   ! ... if DFT finite size corrections are needed, define the appropriate volume
@@ -1490,9 +1441,9 @@ SUBROUTINE iosys()
   ! ... and initialize a few other variables
   !
   IF ( lmovecell ) THEN
-     !
-     at_old    = at
-     omega_old = omega
+     ! The next two lines have been moved before the call to read_config_from_file:
+     !      at_old    = at
+     !      omega_old = omega
      IF ( cell_factor_ <= 0.D0 ) cell_factor_ = 1.2D0
      !
      IF ( cmass <= 0.D0 ) &
@@ -1508,6 +1459,7 @@ SUBROUTINE iosys()
   ! ... allocate arrays for dispersion correction
   !
   IF ( llondon) CALL init_london ( )
+  IF ( lxdm) CALL init_xdm ( )
   !
   ! ... variables for constrained dynamics are set here
   !
@@ -1519,41 +1471,26 @@ SUBROUTINE iosys()
      CALL init_constraint( nat, tau, ityp, alat )
   END IF
   !
-  ! ... read atomic positions and unit cell from data file
-  ! ... must be done before "verify_tmpdir" because the latter
-  ! ... removes the data file in a run from scratch
-  !
-  IF ( startingconfig == 'file' ) CALL read_config_from_file()
-  !
-  CALL verify_tmpdir( tmp_dir )
-  !
-  IF ( .not. trim( wfcdir ) == 'undefined' ) THEN
-     !
-     wfc_dir = trimcheck ( wfcdir )
-     !
-     CALL verify_tmpdir( wfc_dir )
-     !
-  ENDIF
-  !
-  CALL restart_from_file()
-  !
-  ! ... Files
-  !
-  input_drho  = ' '
-  output_drho = ' '
-  !
-  IF (real_space ) THEN
-     IF ( gamma_only ) THEN
-        WRITE( stdout, '(5x,"Real space treatment of Beta functions, &
-         &V.1 (BE SURE TO CHECK MANUAL!)",/)' )
-     ELSE
-        CALL errore ('iosys', 'Real space only with Gamma point', 1)
-     END IF
-  ENDIF
-  !
-  ! Deallocation of temp input arrays
+  ! ... End of reading input parameters
   !
   CALL deallocate_input_parameters ()  
+  !
+  ! ... Initialize temporary directory(-ies)
+  !
+  CALL check_tempdir ( tmp_dir, exst, parallelfs )
+  IF ( .NOT. exst .AND. restart ) THEN
+     CALL infomsg('iosys', 'restart disabled: needed files not found')
+     restart = .false.
+  ELSE IF ( .NOT. exst .AND. (lbands .OR. .NOT. lscf) ) THEN
+     CALL errore('iosys', 'bands or non-scf calculation not possible: ' // &
+                          'needed files are missing', 1)
+  ELSE IF ( exst .AND. .NOT.restart ) THEN
+     CALL clean_tempdir ( tmp_dir )
+  END IF
+  IF ( TRIM(wfc_dir) /= TRIM(tmp_dir) ) &
+     CALL check_tempdir( wfc_dir, exst, parallelfs )
+
+  ! CALL restart_from_file()
   !
   RETURN
   !
@@ -1566,13 +1503,16 @@ SUBROUTINE read_cards_pw ( psfile, tau_format )
   USE kinds,              ONLY : DP
   USE input_parameters,   ONLY : atom_label, atom_pfile, atom_mass, taspc, &
                                  tapos, rd_pos, atomic_positions, if_pos,  &
-                                 sp_pos, f_inp, rd_for, tavel, sp_vel, rd_vel
-  USE dynamics_module,    ONLY : tavel_ => tavel, vel
+                                 sp_pos, f_inp, rd_for, tavel, sp_vel, rd_vel, &
+                                 lsg
+  USE dynamics_module,    ONLY : vel
   USE cell_base,          ONLY : at, ibrav
   USE ions_base,          ONLY : nat, ntyp => nsp, ityp, tau, atm, extfor
   USE fixed_occ,          ONLY : tfixed_occ, f_inp_ => f_inp
   USE ions_base,          ONLY : if_pos_ =>  if_pos, amass, fixatom
-  USE control_flags,      ONLY : lfixatom, textfor
+  USE control_flags,      ONLY : textfor, tv0rd
+  USE wyckoff,            ONLY : nattot, tautot, ityptot, extfortot, &
+                                 if_postot, clean_spacegroup
   !
   IMPLICIT NONE
   !
@@ -1607,21 +1547,30 @@ SUBROUTINE read_cards_pw ( psfile, tau_format )
   textfor = .false.
   IF( any( rd_for /= 0.0_DP ) ) textfor = .true.
   !
-  DO ia = 1, nat
-     !
-     tau(:,ia) = rd_pos(:,ia)
-     ityp(ia)  = sp_pos(ia)
-     extfor(:,ia) = rd_for(:,ia)
-     !
-  ENDDO
+  IF (lsg) THEN
+     tau(:,:)=tautot(:,:)
+     ityp(:) = ityptot(:)
+     extfor(:,:) = extfortot(:,:)
+     if_pos_(:,:) = if_postot(:,:)
+     CALL clean_spacegroup()
+  ELSE 
+     DO ia = 1, nat
+        !
+        tau(:,ia) = rd_pos(:,ia)
+        ityp(ia)  = sp_pos(ia)
+        extfor(:,ia) = rd_for(:,ia)
+        if_pos_(:,ia) = if_pos(:,ia)
+        !
+     ENDDO
+  ENDIF
   !
   ! ... check for initial velocities read from input file
   !
   IF ( tavel .AND. ANY ( sp_pos(:) /= sp_vel(:) ) ) &
       CALL errore("cards","list of species in block ATOMIC_VELOCITIES &
                  & must be identical to those in ATOMIC_POSITIONS",1)
-  tavel_ = tavel
-  IF ( tavel_ ) THEN
+  tv0rd = tavel
+  IF ( tv0rd ) THEN
      ALLOCATE( vel(3, nat) )
      DO ia = 1, nat
         vel(:,ia) = rd_vel(:,ia)
@@ -1632,9 +1581,7 @@ SUBROUTINE read_cards_pw ( psfile, tau_format )
   ! ... if_pos whose value is 0 when the coordinate is to be kept fixed, 1
   ! ... otherwise. 
   !
-  if_pos_(:,:) = if_pos(:,1:nat)
   fixatom = COUNT( if_pos_(1,:)==0 .AND. if_pos_(2,:)==0 .AND. if_pos_(3,:)==0 )
-  lfixatom = ANY ( if_pos_ == 0 )
   !
   tau_format = trim( atomic_positions )
   !
@@ -1697,123 +1644,71 @@ SUBROUTINE convert_tau (tau_format, nat_, tau)
   !
 END SUBROUTINE convert_tau
 !-----------------------------------------------------------------------
-SUBROUTINE verify_tmpdir( tmp_dir )
+SUBROUTINE check_tempdir ( tmp_dir, exst, pfs )
   !-----------------------------------------------------------------------
   !
-  USE wrappers,         ONLY : f_mkdir
-  USE input_parameters, ONLY : restart_mode
-  USE control_flags,    ONLY : lbands
-  USE io_files,         ONLY : prefix, xmlpun, &
-                               delete_if_present, check_writable
-  USE pw_restart,       ONLY : pw_readfile
-  USE mp_global,        ONLY : mpime, nproc
-  USE io_global,        ONLY : ionode
-  USE mp,               ONLY : mp_barrier
-  USE xml_io_base,      ONLY : copy_file
+  ! ... Verify if tmp_dir exists, creates it if not
+  ! ... On output:
+  ! ...    exst= .t. if tmp_dir exists
+  ! ...    pfs = .t. if tmp_dir visible from all procs of an image
+  !
+  USE wrappers,      ONLY : f_mkdir_safe
+  USE io_global,     ONLY : ionode, ionode_id
+  USE mp_images,     ONLY : intra_image_comm, nproc_image, me_image
+  USE mp,            ONLY : mp_barrier, mp_bcast, mp_sum
   !
   IMPLICIT NONE
   !
-  CHARACTER(len=*), INTENT(inout) :: tmp_dir
+  CHARACTER(len=*), INTENT(in) :: tmp_dir
+  LOGICAL, INTENT(out)         :: exst, pfs
   !
   INTEGER             :: ios, image, proc, nofi
-  LOGICAL             :: exst
   CHARACTER (len=256) :: file_path, filename
   CHARACTER(len=6), EXTERNAL :: int_to_char
   !
+  ! ... create tmp_dir on ionode
+  ! ... f_mkdir_safe returns -1 if tmp_dir already exists
+  ! ...                       0 if         created
+  ! ...                       1 if         cannot be created
   !
-  file_path = trim( tmp_dir ) // trim( prefix )
+  IF ( ionode ) ios = f_mkdir_safe( TRIM(tmp_dir) )
+  CALL mp_bcast ( ios, ionode_id, intra_image_comm )
+  exst = ( ios == -1 )
+  IF ( ios > 0 ) CALL errore ('check_tempdir','tmp_dir cannot be opened',1)
   !
+  ! ... let us check now if tmp_dir is visible on all nodes
+  ! ... if not, a local tmp_dir is created on each node
   !
-  IF ( restart_mode == 'from_scratch' ) THEN
-     !
-     ! ... let us try to create the scratch directory
-     !
-     CALL parallel_mkdir ( tmp_dir )
-     !
-  ENDIF
-  !
-  !
-  ! ... if starting from scratch all temporary files are removed
-  ! ... from tmp_dir ( only by the master node )
-  !
-  IF ( restart_mode == 'from_scratch' ) THEN
-     !
-     ! ... xml data file in save directory is removed
-     !     but, header is read anyway to store qexml version
-     !
-     CALL pw_readfile( 'header', ios )
-     !
-     IF ( ionode ) THEN
-        !
-        IF ( .not. lbands ) THEN
-            !
-            ! save a bck copy of datafile.xml (AF)
-            !
-            filename = trim( file_path ) // '.save/' // trim( xmlpun )
-            INQUIRE( FILE = filename, EXIST = exst )
-            !
-            IF ( exst ) CALL copy_file( trim(filename), trim(filename) // '.bck' )
-            !
-            CALL delete_if_present( trim(filename) )
-            !
-        ENDIF
-        !
-        ! ... extrapolation file is removed
-        !
-        CALL delete_if_present( trim( file_path ) // '.update' )
-        !
-        ! ... MD restart file is removed
-        !
-        CALL delete_if_present( trim( file_path ) // '.md' )
-        !
-        ! ... BFGS restart file is removed
-        !
-        CALL delete_if_present( trim( file_path ) // '.bfgs' )
-        !
-     ENDIF
-     !
-  ENDIF
+  ios = f_mkdir_safe( TRIM(tmp_dir) )
+  CALL mp_sum ( ios, intra_image_comm )
+  pfs = ( ios == -nproc_image ) ! actually this is true only if .not.exst 
   !
   RETURN
   !
-END SUBROUTINE verify_tmpdir
-
+END SUBROUTINE check_tempdir
+!
 !-----------------------------------------------------------------------
-SUBROUTINE parallel_mkdir ( tmp_dir )
+SUBROUTINE clean_tempdir( tmp_dir )
   !-----------------------------------------------------------------------
   !
-  ! ... Safe creation of the scratch directory in the parallel case
-  ! ... Works on both parallel and distributed file systems
-  ! ... Not really a smart algorithm, though
-  !
-  USE wrappers,      ONLY : f_mkdir
-  USE mp_global,     ONLY : mpime, nproc
-  USE mp,            ONLY : mp_barrier, mp_sum
-  USE io_files,      ONLY : check_writable
+  USE io_files,         ONLY : prefix, delete_if_present
+  USE io_global,        ONLY : ionode
   !
   IMPLICIT NONE
   !
   CHARACTER(len=*), INTENT(in) :: tmp_dir
   !
-  INTEGER             :: ios, proc
-  CHARACTER(len=6), EXTERNAL :: int_to_char
+  CHARACTER (len=256) :: file_path, filename
   !
-  ! ... the scratch directory is created sequentially by all the cpus
+  ! ... remove temporary files from tmp_dir ( only by the master node )
   !
-  DO proc = 0, nproc - 1
-     !
-     IF ( proc == mpime ) ios = f_mkdir( trim( tmp_dir ) )
-     CALL mp_barrier()
-     !
-  ENDDO
-  !
-  ! ... each job checks whether the scratch directory is writable
-  ! ... note that tmp_dir should end by a "/"
-  !
-  IF ( ios /= 0 ) CALL errore( 'parallel_mkdir', trim( tmp_dir ) // &
-                             & ' non existent or non writable', 1 )
+  file_path = trim( tmp_dir ) // trim( prefix )
+  IF ( ionode ) THEN
+     CALL delete_if_present( trim( file_path ) // '.update' )
+     CALL delete_if_present( trim( file_path ) // '.md' )
+     CALL delete_if_present( trim( file_path ) // '.bfgs' )
+  ENDIF
   !
   RETURN
   !
-END SUBROUTINE parallel_mkdir
-
+END SUBROUTINE clean_tempdir

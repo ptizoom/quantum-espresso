@@ -15,9 +15,9 @@ SUBROUTINE allocate_wfc()
   !
   USE io_global, ONLY : stdout
   USE wvfct,     ONLY : npwx, nbnd
-  USE basis,     ONLY : natomwfc
+  USE basis,     ONLY : natomwfc, swfcatom
   USE fixed_occ, ONLY : one_atom_occupations
-  USE ldaU,      ONLY : swfcatom, lda_plus_u, U_projection
+  USE ldaU,      ONLY : wfcU, nwfcU, lda_plus_u, U_projection
   USE noncollin_module,     ONLY : noncolin, npol
   USE wavefunctions_module, ONLY : evc
   USE wannier_new, ONLY : use_wannier
@@ -25,16 +25,12 @@ SUBROUTINE allocate_wfc()
   IMPLICIT NONE
   !
   !
-  IF (noncolin) THEN
-     ALLOCATE( evc( npwx*npol, nbnd ) )    
-     IF ( ( lda_plus_u .AND. (U_projection.NE.'pseudo') ) &
-        .OR. one_atom_occupations ) ALLOCATE( swfcatom( npwx*npol, natomwfc) )
-  ELSE
-     ALLOCATE( evc( npwx, nbnd ) )    
-     IF ( ( lda_plus_u .AND. (U_projection.NE.'pseudo') ) .OR. use_wannier &
-        .OR. one_atom_occupations ) ALLOCATE( swfcatom( npwx, natomwfc) )
-  ENDIF
+  ALLOCATE( evc( npwx*npol, nbnd ) )    
+  IF ( one_atom_occupations .OR. use_wannier ) &
+     ALLOCATE( swfcatom( npwx*npol, natomwfc) )
+  IF ( lda_plus_u .AND. (U_projection.NE.'pseudo') ) &
+     ALLOCATE( wfcU(npwx*npol, nwfcU) )
   !
   RETURN
   !
-END subroutine allocate_wfc
+END SUBROUTINE allocate_wfc

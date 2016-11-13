@@ -19,9 +19,10 @@ PROGRAM wannier_plot
   USE io_files,      ONLY : prefix, tmp_dir
   USE wannier_new,   ONLY : nwan, plot_wan_num, plot_wan_spin
   USE mp,            ONLY : mp_bcast
+  USE mp_world,      ONLY : world_comm
   USE io_global,     ONLY : ionode, stdout
   USE mp_global,     ONLY : mp_startup
-  USE environment,   ONLY : environment_start
+  USE environment,   ONLY : environment_start, environment_end
 
   IMPLICIT NONE
   !
@@ -64,7 +65,7 @@ PROGRAM wannier_plot
      tmp_dir = trimcheck (outdir)
   ENDIF
   !
-  CALL mp_bcast( ios, ionode_id )
+  CALL mp_bcast( ios, ionode_id, world_comm )
   IF ( ios /= 0 ) CALL errore('wannier_ham','reading inputpp namelist',abs(ios))
   CALL read_file
   CALL openfil_pp
@@ -82,6 +83,8 @@ PROGRAM wannier_plot
 
   CALL stop_pp
 
+  CALL environment_end ( 'WANNIER_PLOT' )
+
   CALL wannier_clean()
 
 END PROGRAM wannier_plot
@@ -98,7 +101,7 @@ SUBROUTINE plot_wannier(nc,n0)
   USE constants,     ONLY : rytoev , tpi
   USE buffers
   USE symm_base,     ONLY : nsym
-  USE ldaU,          ONLY : swfcatom
+  USE basis,         ONLY : swfcatom
   USE fft_base,      ONLY : dffts, dfftp
   USE fft_interfaces,ONLY : invfft
   USE gvect

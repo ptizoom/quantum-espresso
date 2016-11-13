@@ -1,4 +1,4 @@
-include make.sys
+sinclude make.sys
 
 default :
 	@echo 'to install, type at the shell prompt:'
@@ -15,14 +15,18 @@ default :
 	@echo '  upf          utilities for pseudopotential conversion'
 	@echo '  tddfpt       time dependent dft code'
 	@echo '  gui          Graphical User Interface '
-	@echo '  pwall        same as "make pw ph pp pwcond neb"'
-	@echo '  all          same as "make pwall cp ld1 upf tddfpt"'
+	@echo '  gwl          GW with Lanczos chains '
 	@echo '  xspectra     X-ray core-hole spectroscopy calculations '
+	@echo '  pwall        same as "make pw ph pp pwcond neb"'
+	@echo '  all          same as "make pwall cp ld1 upf tddfpt gwl"'
 	@echo '  gipaw        NMR and EPR spectra'
 	@echo '  w90          Maximally localised Wannier Functions'
 	@echo '  want         Quantum Transport with Wannier functions'
 	@echo '  yambo        electronic excitations with plane waves'
 	@echo '  plumed       Metadynamics plugin for pw or cp'
+	@echo '  epw          Electron-Phonon Coupling with wannier functions, EPW package' 
+	@echo '  gpu          Download the latest QE-GPU package'
+	@echo '  couple       Library interface for coupling to external codes'
 	@echo '  clean        remove executables and objects'
 	@echo '  veryclean    revert distribution to the original status'
 	@echo '  tar          create a tarball of the source tree'
@@ -34,79 +38,83 @@ default :
 ###########################################################
 # Main targets
 ###########################################################
-pw : bindir mods liblapack libblas libs libiotk libenviron
+# The syntax "( cd PW ; $(MAKE) TLDEPS= all || exit 1)" below
+# guarantees that error code 1 is returned in case of error and make stops
+# If "|| exit 1" is not present, the error code from make in subdirectories
+# is not returned and make goes on even if compilation has failed
+#
+pw : bindir mods liblapack libblas libs libiotk 
 	if test -d PW ; then \
-	( cd PW ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ) ; fi
+	( cd PW ; $(MAKE) TLDEPS= all || exit 1) ; fi
+
+pw-lib : bindir mods liblapack libblas libs libiotk
+	if test -d PW ; then \
+	( cd PW ; $(MAKE) TLDEPS= pw-lib || exit 1) ; fi
 
 cp : bindir mods liblapack libblas libs libiotk
 	if test -d CPV ; then \
-	( cd CPV ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ) ; fi
+	( cd CPV ; $(MAKE) TLDEPS= all || exit 1) ; fi
 
 ph : bindir mods libs pw
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile phonon
+	( cd install ; $(MAKE) -f plugins_makefile phonon || exit 1 )
 
 neb : bindir mods libs pw
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 tddfpt : bindir mods libs pw ph
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 pp : bindir mods libs pw
 	if test -d PP ; then \
-	( cd PP ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ) ; fi
+	( cd PP ; $(MAKE) TLDEPS= all || exit 1 ) ; fi
 
 pwcond : bindir mods libs pw pp
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 acfdt : bindir mods libs pw ph
 	if test -d ACFDT ; then \
-	( cd ACFDT ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ) ; fi
+	( cd ACFDT ; $(MAKE) TLDEPS= all || exit 1 ) ; fi
 
-gipaw : pw neb
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+gwl : ph
+	if test -d GWW ; then \
+	( cd GWW ; $(MAKE) TLDEPS= all || exit 1 ) ; fi
+
+gipaw : pw
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 ld1 : bindir liblapack libblas mods libs
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
-upf : mods libs
+upf : mods libs liblapack libblas
 	if test -d upftools ; then \
-	( cd upftools ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ) ; fi
+	( cd upftools ; $(MAKE) TLDEPS= all || exit 1 ) ; fi
 
 pw_export : libiotk bindir mods libs pw
 	if test -d PP ; then \
-	( cd PP ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= pw_export.x ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= pw_export.x ; fi ) ; fi
+	( cd PP ; $(MAKE) TLDEPS= pw_export.x || exit 1 ) ; fi
 
 xspectra : bindir mods libs pw
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
+
+couple : pw cp
+	if test -d COUPLE ; then \
+	( cd COUPLE ; $(MAKE) TLDEPS= all || exit 1 ) ; fi
 
 gui : touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 pwall : pw neb ph pp pwcond acfdt
-all   : pwall cp ld1 upf tddfpt
+all   : pwall cp ld1 upf tddfpt gwl xspectra
 
 ###########################################################
 # Auxiliary targets used by main targets:
 # compile modules, libraries, directory for binaries, etc
 ###########################################################
 mods : libiotk libelpa
-	( cd Modules ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi )
+	( cd Modules ; $(MAKE) TLDEPS= all || exit 1 )
 libs : mods
-	( cd clib ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi )
-	( cd flib ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= $(FLIB_TARGETS) ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= $(FLIB_TARGETS) ; fi )
-
-libenviron :  mods
-	( if test -d Environ ; then cd Environ ; if test "$(MAKE)" = "" ;  \
-	then make $(MFLAGS) TLDEPS= all; else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ; fi )
+	( cd clib ; $(MAKE) TLDEPS= all || exit 1 )
+	( cd flib ; $(MAKE) TLDEPS= $(FLIB_TARGETS) || exit 1 )
 
 bindir :
 	test -d bin || mkdir bin
@@ -115,16 +123,16 @@ bindir :
 # Targets for external libraries
 ############################################################
 libblas : touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f extlibs_makefile $@
+	cd install ; $(MAKE) -f extlibs_makefile $@
 
 liblapack: touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f extlibs_makefile $@
+	cd install ; $(MAKE) -f extlibs_makefile $@
 
 libelpa: touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f extlibs_makefile $@
-	
+	cd install ; $(MAKE) -f extlibs_makefile $@
+
 libiotk: touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f extlibs_makefile $@
+	cd install ; $(MAKE) -f extlibs_makefile $@
 
 # In case of trouble with iotk and compilers, add
 # FFLAGS="$(FFLAGS_NOOPT)" after $(MFLAGS)
@@ -134,16 +142,22 @@ libiotk: touch-dummy
 #########################################################
 
 w90: bindir libblas liblapack
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 want : touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 yambo: touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 plumed: touch-dummy
-	cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile $@
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
+
+epw: touch-dummy
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
+
+gpu: touch-dummy
+	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
 touch-dummy :
 	$(dummy-variable)
@@ -163,13 +177,29 @@ inst :
 		fi ; \
 	done )
 
+# Contains workaround for name conflicts (dos.x and bands.x) with WANT
 links : bindir
 	( cd bin/ ; \
 	rm -f *.x ; \
 	for exe in ../*/*/*.x ../*/bin/* ; do \
 	    if test ! -L $$exe ; then ln -fs $$exe . ; fi \
-	done \
+	done ; \
+	[ -f ../WANT/wannier/dos.x ] &&  ln -fs ../WANT/wannier/dos.x ../bin/dos_want.x ; \
+	[ -f ../PP/src/dos.x ] &&  ln -fs ../PP/src/dos.x ../bin/dos.x ; \
+	[ -f ../WANT/wannier/bands.x ] &&  ln -fs ../WANT/wannier/bands.x ../bin/bands_want.x ; \
+	[ -f ../PP/src/dos.x ] &&  ln -fs ../PP/src/bands.x ../bin/bands.x ; \
+	[ -f ../W90/wannier90.x ] &&  ln -fs ../W90/wannier90.x ../bin/wannier90.x ; \
 	)
+
+#########################################################
+# 'make install' works based on --with-prefix
+# - If the final directory does not exists it creates it
+#########################################################
+
+install : touch-dummy
+	if test -d bin ; then \
+	mkdir -p $(PREFIX) ; for x in `find . -name *.x -type f` ; do cp $$x $(PREFIX)/ ; done ; \
+	fi
 
 
 #########################################################
@@ -177,30 +207,29 @@ links : bindir
 #########################################################
 
 # remove object files and executables
-clean :
+clean : doc_clean
 	touch make.sys 
 	for dir in \
 		CPV Modules PP PW \
-		ACFDT \
+		ACFDT COUPLE GWW XSpectra \
 		clib flib pwtools upftools \
 		dev-tools extlibs Environ \
 	; do \
 	    if test -d $$dir ; then \
 		( cd $$dir ; \
-		if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= clean ; \
-		else $(MAKE) $(MFLAGS) TLDEPS= clean ; fi ) \
+		$(MAKE) TLDEPS= clean ) \
 	    fi \
 	done
-	- @(cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile clean)
-	- @(cd install ; $(MAKE) $(MFLAGS) -f extlibs_makefile clean)
+	- @(cd install ; $(MAKE) -f plugins_makefile clean)
+	- @(cd install ; $(MAKE) -f extlibs_makefile clean)
 	- /bin/rm -rf bin/*.x tmp
 	- cd PW/tests; /bin/rm -rf CRASH *.out *.out? ; cd -
 	- cd CPV/tests; /bin/rm -rf CRASH *.out *.out? 
 
 # remove configuration files too
 distclean veryclean : clean
-	- @(cd install ; $(MAKE) $(MFLAGS) -f plugins_makefile veryclean)
-	- @(cd install ; $(MAKE) $(MFLAGS) -f extlibs_makefile veryclean)
+	- @(cd install ; $(MAKE) -f plugins_makefile veryclean)
+	- @(cd install ; $(MAKE) -f extlibs_makefile veryclean)
 	- rm -rf install/patch-plumed
 	- cd install ; rm -f config.log configure.msg config.status \
 	CPV/version.h ChangeLog* intel.pcl */intel.pcl
@@ -209,9 +238,6 @@ distclean veryclean : clean
 	- cd install; ./clean.sh ; cd -
 	- cd include; ./clean.sh ; cd -
 	- rm -f espresso.tar.gz
-	- for dir in Doc; do \
-	    test -d $$dir && ( cd $$dir ; $(MAKE) $(MFLAGS) TLDEPS= clean ) \
-	done
 	- rm -rf make.sys
 
 tar :
@@ -219,7 +245,7 @@ tar :
 	# do not include unneeded stuff 
 	find ./ -type f | grep -v -e /.svn/ -e'/\.' -e'\.o$$' \
              -e'\.mod$$' -e'\.a$$' -e'\.d$$' -e'\.i$$' -e'\.F90$$' -e'\.x$$' \
-	     -e'~$$' -e'\./GUI' | xargs tar rvf espresso.tar
+	     -e'~$$' -e'\./GUI' -e '\./tempdir' | xargs tar rvf espresso.tar
 	gzip espresso.tar
 
 #########################################################
@@ -228,9 +254,7 @@ tar :
 tar-gui :
 	@if test -d GUI/PWgui ; then \
 	    cd GUI/PWgui ; \
-	    if test "$(MAKE)" = "" ; then \
-		make $(MFLAGS) TLDEPS= clean svninit pwgui-source; \
-	    else $(MAKE) $(MFLAGS) TLDEPS= clean svninit pwgui-source; fi; \
+	    $(MAKE) TLDEPS= clean svninit pwgui-source; \
 	    mv PWgui-*.tgz ../.. ; \
 	else \
 	    echo ; \
@@ -245,11 +269,17 @@ tar-gui :
 # "latex2html" and "convert" (from Image-Magick) are needed.
 doc : touch-dummy
 	if test -d Doc ; then \
-	( cd Doc ; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi ) ; fi
+	( cd Doc ; $(MAKE) TLDEPS= all ) ; fi
 	for dir in */Doc; do \
-	( if test -f $$dir/Makefile ; then cd $$dir; if test "$(MAKE)" = "" ; then make $(MFLAGS) TLDEPS= all ; \
-	else $(MAKE) $(MFLAGS) TLDEPS= all ; fi  ; fi ); done
+	( if test -f $$dir/Makefile ; then \
+	( cd $$dir; $(MAKE) TLDEPS= all ) ; fi ) ;  done
+
+doc_clean :
+	if test -d Doc ; then \
+	( cd Doc ; $(MAKE) TLDEPS= clean ) ; fi
+	for dir in */Doc; do \
+	( if test -f $$dir/Makefile ; then \
+	( cd $$dir; $(MAKE) TLDEPS= clean ) ; fi ) ;  done
 
 depend:
 	@echo 'Checking dependencies...'

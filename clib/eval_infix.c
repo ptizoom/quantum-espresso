@@ -240,7 +240,7 @@ BOOL is_empty_val()
 /* ritorna un valore diverso da zero per "e", "E", "d o "D", o se il carattere prima lo era */
 BOOL is_scientific(char strChar)
 {
-    BOOL static was_scientific = FALSE;
+    static BOOL was_scientific = FALSE;
 
     if (was_scientific)
     {
@@ -470,7 +470,6 @@ double BinaryOperation(double left, double right, char op, char* strError)
 /* Calcola e restituisce il risultato di un'espressione in forma infissa */
 double EvalInfix(const char *strExpression, char * strError)
 {
-    int i = 0;
     Token tok;
     Token tok_temp;
     double left, right;
@@ -485,6 +484,7 @@ double EvalInfix(const char *strExpression, char * strError)
     if ( strError[0] != '\0' )
         return 0.0;
 
+    left = right = 0.0;
     while ( (PreviousTokenType = GetNextToken(strExpression, &tok, TRUE)) != EOL )
     {
         if ( tok.Type == UNKNOWN )
@@ -709,21 +709,3 @@ double eval_infix( int *ierr, const char *strExpression, int len )
   return result;
 }
 
-/* FORTRAN interface */
-double F77_FUNC_(eval_infix_wrapper,EVAL_INFIX_WRAPPER)( int *ierr, const int *strExpression, const int *len )
-{
-	int    i;
-        double result = 0.0;
-	char   tmp[256];
-	if( *len < 1 ) {
-		*ierr = 2;
-	} else if( *len > 256 ) {
-		*ierr = 3;
-	} else {
-		for( i = 0; i < *len; i ++ ) {
-			tmp[i] = (char)strExpression[i];
-		}
-		result = eval_infix( ierr, tmp, *len );
-	}
-	return result;
-}

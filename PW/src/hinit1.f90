@@ -20,7 +20,7 @@ SUBROUTINE hinit1()
   USE lsda_mod,      ONLY : nspin
   USE scf,           ONLY : vrs, vltot, v, kedtau
   USE control_flags, ONLY : tqr
-  USE realus,        ONLY : qpointlist
+  USE realus,        ONLY : generate_qpointlist
   USE wannier_new,   ONLY : use_wannier
   USE martyna_tuckerman, ONLY : tag_wg_corr_as_obsolete
   USE scf,           ONLY : rho
@@ -46,13 +46,12 @@ SUBROUTINE hinit1()
   !
   CALL set_vrs( vrs, vltot, v%of_r, kedtau, v%kin_r, dfftp%nnr, nspin, doublegrid )
   !
-  IF ( tqr ) CALL qpointlist()
+  IF ( tqr ) CALL generate_qpointlist()
   !
   ! ... update the D matrix and the PAW coefficients
   !
   IF (okpaw) THEN
-!     CALL paw_atomic_becsum()
-     CALL compute_becsum(.true.)
+     CALL compute_becsum(1)
      CALL PAW_potential(rho%bec, ddd_paw)
      CALL PAW_symmetrize_ddd(ddd_paw)
   ENDIF
@@ -62,7 +61,8 @@ SUBROUTINE hinit1()
   ! ... and recalculate the products of the S with the atomic wfcs used 
   ! ... in LDA+U calculations
   !
-  IF ( lda_plus_u .OR. use_wannier ) CALL orthoatwfc()
+  IF ( lda_plus_u ) CALL orthoUwfc () 
+  IF ( use_wannier ) CALL orthoatwfc( .true. )
   !
   call tag_wg_corr_as_obsolete
   !

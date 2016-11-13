@@ -38,8 +38,10 @@ NAMELIST: &DOS
    Variable:       outdir
    
    Type:           CHARACTER
-   Default:        './'
-   Description:    directory containing the input file
+   Description:    directory containing the input data,
+                   i.e. the same as in pw.x
+   Default:        value of the ESPRESSO_TMPDIR environment variable if set;
+                   current directory ('./') otherwise
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------

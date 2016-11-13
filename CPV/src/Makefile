@@ -2,12 +2,12 @@
 
 include	../../make.sys
 
-# location of needed modules
+# location of needed modules and included files (if any)
 MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../Modules $(MOD_FLAG).
+IFLAGS=
 
 FOBJS = \
 berryion.o \
-berry_phase.o \
 bforceion.o \
 cell_nose.o \
 cg.o \
@@ -31,6 +31,13 @@ electrons_nose.o \
 energies.o \
 ensemble_dft.o \
 exch_corr.o \
+exx_cg.o \
+exx_es.o \
+exx_gs.o \
+exx_module.o \
+exx_pair.o \
+exx_psi.o \
+exx_vofr.o \
 fft.o \
 forces.o \
 fromscra.o \
@@ -45,6 +52,7 @@ input.o \
 ions_nose.o \
 ions_positions.o \
 ksstates.o \
+ldaU_cp.o \
 ldaU.o \
 ldaUpen.o \
 mainvar.o \
@@ -60,8 +68,7 @@ ortho_base.o \
 ortho.o \
 phasefactor.o \
 plugin_initialization.o \
-plugin_forces.o \
-polarization.o \
+plugin_ext_forces.o \
 potentials.o \
 pres_ai_mod.o \
 print_out.o \
@@ -75,6 +82,7 @@ qqberry.o \
 restart.o \
 restart_sub.o \
 runcp.o \
+sic.o \
 smallbox.o \
 smallbox_grid.o \
 smallbox_gvec.o \
@@ -100,10 +108,14 @@ QEMODS=../../Modules/libqemod.a
 
 TLDEPS= bindir mods libs libiotk
 
-LIBOBJS        = ../../flib/ptools.a ../../flib/flib.a ../../clib/clib.a ../../iotk/src/libiotk.a
+LIBOBJS= ../../flib/ptools.a ../../flib/flib.a ../../clib/clib.a ../../iotk/src/libiotk.a
 
-all : cp
-cp : tldeps libcp.a cp.x cppp.x wfdd.x
+all : tldeps libcp.a manycp.x cp.x cppp.x wfdd.x
+
+manycp.x : manycp.o libcp.a $(QEMODS) $(LIBOBJS)
+	$(LD) $(LDFLAGS) -o manycp.x manycp.o \
+		libcp.a $(QEMODS) $(LIBOBJS) $(LIBS)
+	- ( cd ../../bin ; ln -fs ../CPV/src/cp.x . )
 
 cp.x : cprstart.o libcp.a $(QEMODS) $(LIBOBJS)
 	$(LD) $(LDFLAGS) -o cp.x cprstart.o \
@@ -128,13 +140,13 @@ wfdd.x : wfdd.o
 	$(LD) $(LDFLAGS) -o $@ wfdd.o $(QEMODS) $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin ; ln -fs ../CPV/src/$@ . )
 
-
-tldeps:
-	test -n "$(TLDEPS)" && ( cd ../.. ; $(MAKE) $(MFLAGS) $(TLDEPS) || exit 1) || :
+tldeps :
+	if test -n "$(TLDEPS)" ; then \
+	( cd ../.. ; $(MAKE) $(TLDEPS) || exit 1 ) ; fi
 
 clean :
 	- /bin/rm -f cppp.x *.o *.mod cpver.h *.i core* *.F90 fort* \
-		*.cpp *.d *.L *.a *.s cp.x
-	-/bin/rm -rf ../../bin/cppp.x ../../bin/cp.x
+		*.cpp *.d *.L *.a *.s cp.x manycp.x wfdd.x
+	-/bin/rm -rf ../../bin/manycp.x ../../bin/cppp.x ../../bin/cp.x ../../bin/wfdd.x
 
 include make.depend

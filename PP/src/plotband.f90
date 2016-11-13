@@ -16,6 +16,10 @@ PROGRAM plotband
   !   e.g. 0,0,0, can appear more than once but not in sequence)
   ! If these rules are violated, unpredictable results may follow
 
+  !!!
+  USE parser
+  USE kinds, ONLY : DP
+  !!!
   IMPLICIT NONE
   INTEGER, PARAMETER :: stdout=6
   real, ALLOCATABLE :: e(:,:), k(:,:), e_in(:), kx(:)
@@ -35,7 +39,7 @@ PROGRAM plotband
   real :: emin = 1.e10, emax =-1.e10, etic, eref, deltaE, Ef
 
   INTEGER, PARAMETER :: max_lines=99
-  real :: mine
+  real :: mine, dxmod, dxmod_save
   INTEGER :: point(max_lines+1), nrap(max_lines)
   INTEGER :: ilines, irap, ibnd, ipoint, jnow
 
@@ -44,6 +48,14 @@ PROGRAM plotband
 
   LOGICAL :: exist_rap
   LOGICAL, ALLOCATABLE :: todo(:,:)
+  CHARACTER(LEN=6), EXTERNAL :: int_to_char
+  !!!
+  LOGICAL :: exist_proj
+  CHARACTER(len=256) :: filename2, line, field
+  INTEGER :: nat, ntyp, atwfclst(99), natomwfc, nprojwfc, nwfc, idum
+  REAL(DP) :: proj, fdum
+  REAL(DP), ALLOCATABLE :: sumproj(:,:), p_rap(:,:)
+  !!!
 
 
   CALL get_file ( filename )
@@ -57,12 +69,14 @@ PROGRAM plotband
   ENDIF
 
   filename1=trim(filename)//".rap"
+  !!! replace with inquire statement?
   exist_rap=.true.
   OPEN(unit=21,file=filename1,form='formatted',status='old',err=100,iostat=ios)
 
 100 IF (ios /= 0) THEN
      exist_rap=.false.
   ENDIF
+  !!!
   IF (exist_rap) THEN
      READ (21, plot_rap, iostat=ios)
      IF (nks_rap/=nks.or.nbnd_rap/=nbnd.or.ios/=0) THEN
@@ -83,6 +97,39 @@ PROGRAM plotband
      ALLOCATE(todo(nbnd,2))
      ALLOCATE (is_in_range_rap(nbnd))
   ENDIF
+  !!!
+  filename2=trim(filename)//".proj"
+  exist_proj=.false.
+  INQUIRE(file=filename2,exist=exist_proj)
+  IF (exist_proj) THEN
+     OPEN(UNIT=22, FILE=filename2, FORM='formatted', STATUS='old', IOSTAT=ios)
+     IF (ios/=0) STOP 'Error opening projection file '
+     READ (22, *, ERR=22, IOSTAT=ios) ! empty line
+     READ (22, '(8i8)', ERR=22, IOSTAT=ios) idum, idum, idum, idum, idum, &
+          idum, nat, ntyp ! FFT grid (ignored), nat, ntyp
+     READ (22, '(i6,6f12.8)', ERR=22, IOSTAT=ios) idum, fdum, fdum, fdum, fdum, &
+        fdum, fdum ! ibrav, celldm(1-6)
+     IF (idum == 0) THEN ! read and discard the three cell vectors
+        READ (22, *, ERR=22, IOSTAT=ios)
+        READ (22, *, ERR=22, IOSTAT=ios)
+        READ (22, *, ERR=22, IOSTAT=ios)
+     ENDIF
+     DO i=1,1+nat+ntyp
+        READ(22, *, ERR=22, IOSTAT=ios) ! discard atomic positions
+     ENDDO
+     READ (22, '(3i8)',ERR=22, IOSTAT=ios) natomwfc, nks_rap, nbnd_rap
+     READ (22, *, ERR=22, IOSTAT=ios) ! discard another line
+
+     IF (nks_rap/=nks.or.nbnd_rap/=nbnd.or.ios/=0) THEN
+        WRITE(6,'("file with projections not compatible with bands")')
+        exist_proj=.false.
+     ELSE
+        ALLOCATE( sumproj(nbnd,nks) )
+        ALLOCATE( p_rap(nbnd,nks) )
+     ENDIF
+  ENDIF
+  !!!
+
 
   high_symmetry=.false.
 
@@ -108,9 +155,39 @@ PROGRAM plotband
   ENDDO
   CLOSE(unit=1)
   IF (exist_rap) CLOSE(unit=21)
+
+  !!!
+  ! First read the list of atomic wavefunctions from the input,
+  ! then read the entire projection file and sum up the projections
+  ! onto the selected wavefunctions.
+  !!!
+  IF (exist_proj) THEN
+     atwfclst(:) = -1
+     PRINT '("List of atomic wavefunctions: ",$)'
+     READ (5,'(A)') line
+     CALL field_count( nprojwfc, line )
+     DO nwfc = 1,nprojwfc
+        CALL get_field(nwfc, field, line)
+        READ(field,*) atwfclst(nwfc)
+     ENDDO
+
+     sumproj(:,:) = 0.D0
+     DO nwfc = 1, natomwfc
+        READ(22, *, ERR=23, IOSTAT=ios)
+        DO n=1,nks
+           DO ibnd=1,nbnd
+              READ(22, '(2i8,f20.10)', ERR=23, IOSTAT=ios) idum,idum,proj
+              IF ( ANY( atwfclst(:) == nwfc ) ) sumproj(ibnd,n) = sumproj(ibnd,n) + proj
+           ENDDO
+        ENDDO
+     ENDDO
+     CLOSE(22)
+  ENDIF
+  !!!
+
 !
-!  Now find the high symmetry points. Note that here we neglect what has been
-!  read in the representation file
+!  Now find the high symmetry points in addition to those already identified
+!  in the representation file
 !
   DO n=1,nks
      IF (n==1 .OR. n==nks) THEN
@@ -126,21 +203,40 @@ PROGRAM plotband
 !  The gamma point is a high symmetry point
 !
         IF (k(1,n)**2+k(2,n)**2+k(3,n)**2 < 1.0d-9) high_symmetry(n)=.true.
+!
+!   save the typical length of dk
+!
+        IF (n==2) dxmod_save = sqrt( k1(1)**2 + k1(2)**2 + k1(3)**2)
+
      ENDIF
   ENDDO
 
   kx(1) = 0.d0
   DO n=2,nks
-     IF (high_symmetry(n).AND.high_symmetry(n-1)) THEN
+     dxmod=sqrt ( (k(1,n)-k(1,n-1))**2 + &
+                  (k(2,n)-k(2,n-1))**2 + &
+                  (k(3,n)-k(3,n-1))**2 )
+     IF (dxmod > 5*dxmod_save) THEN
 !
-!   Account for the case in which in a plot a point k and a point k+G
-!   are joined in a single point
+!   A big jump in dxmod is a sign that the point k(:,n) and k(:,n-1)
+!   are quite distant and belong to two different lines. We put them on
+!   the same point in the graph 
 !
         kx(n)=kx(n-1)
+     ELSEIF (dxmod > 1.d-5) THEN
+!
+!  This is the usual case. The two points k(:,n) and k(:,n-1) are in the
+!  same path.
+!
+        kx(n) = kx(n-1) +  dxmod
+        dxmod_save = dxmod
      ELSE
-        kx(n) = kx(n-1) + sqrt ( (k(1,n)-k(1,n-1))**2 + &
-                                 (k(2,n)-k(2,n-1))**2 + &
-                                 (k(3,n)-k(3,n-1))**2 )
+!
+!  This is the case in which dxmod is almost zero. The two points coincide
+!  in the graph, but we do not save dxmod.
+!
+        kx(n) = kx(n-1) +  dxmod
+
      ENDIF
   ENDDO
 
@@ -152,25 +248,48 @@ PROGRAM plotband
   ENDDO
   PRINT '("Range:",2f10.4,"eV  Emin, Emax > ",$)', emin, emax
   READ(5,*) emin, emax
-
+!
+!  Since the minimum and miximum energies are given in input we can
+!  sign the bands that are completely outside this range.
+!
   is_in_range = .false.
   DO i=1,nbnd
      is_in_range(i) = any (e(i,1:nks) >= emin .and. e(i,1:nks) <= emax)
   ENDDO
+!
+!  Now we compute how many paths there are: nlines
+!  The first point of this path: point(iline)
+!  How many points are in each path: npoints(iline)
+!
   DO n=1,nks
      IF (high_symmetry(n)) THEN
         IF (n==1) THEN
-           nlines=0
+!
+!   first point. Initialize the number of lines, and the number of point
+!   and say that this line start at the first point
+!
+           nlines=1
            npoints(1)=1
+           point(1)=1
         ELSEIF (n==nks) THEN
-           npoints(nlines+1) = npoints(nlines+1)+1
-           nlines=nlines+1
+!
+!    Last point. Here we save the last point of this line, but
+!    do not increase the number of lines
+!
+           npoints(nlines) = npoints(nlines)+1
+           point(nlines+1)=n
         ELSE
-           npoints(nlines+1) = npoints(nlines+1)+1
+!
+!   Middle line. The current line has one more points, and there is a new
+!   line that has to be initialized. It has one point and its first point
+!   is the current k.
+!
+           npoints(nlines) = npoints(nlines)+1
            nlines=nlines+1
-           npoints(nlines+1) = 1
+           IF (nlines>max_lines) CALL errore('plotband','too many lines',1)
+           npoints(nlines) = 1
+           point(nlines)=n
         ENDIF
-        point(nlines+1)=n
         IF (n==1) THEN
            WRITE( stdout,'("high-symmetry point: ",3f7.4,&
                          &"   x coordinate   0.0000")') (k(i,n),i=1,3)
@@ -179,7 +298,11 @@ PROGRAM plotband
                          &"   x coordinate",f9.4)') (k(i,n),i=1,3), kx(n)
         ENDIF
      ELSE
-        npoints(nlines+1) = npoints(nlines+1)+1
+!
+!   This k is not an high symmetry line so we just increase the number of
+!   points of this line.
+!
+        npoints(nlines) = npoints(nlines)+1
      ENDIF
   ENDDO
   !
@@ -189,7 +312,12 @@ PROGRAM plotband
      PRINT '("skipping ...")'
      GOTO 25
   ENDIF
-  IF (.not.exist_rap) THEN
+  IF (.NOT.exist_rap) THEN
+!
+!  Here the symmetry analysis has not been done. So simply save the bands
+!  on output. The odd one from left to right, the even one from right to
+!  left.
+!
      OPEN (unit=2,file=filename,form='formatted',status='unknown',&
            iostat=ios)
      ! draw bands
@@ -209,8 +337,8 @@ PROGRAM plotband
 !   representation. Each file contains the bands of that representation.
 !   The file is called filename.#line.#rap
 !
-!
 !   First determine for each line how many representations are there
+!   in each line
 !
      DO ilines=1,nlines
         nrap(ilines)=0
@@ -220,7 +348,8 @@ PROGRAM plotband
               nrap(ilines)=max(nrap(ilines),rap(ibnd,n))
            ENDDO
         ENDDO
-        WRITE(6,*) 'lines nrap',ilines, nrap(ilines)
+        IF (nrap(ilines) > 12) CALL errore("plotband",&
+                                           "Too many representations",1)
      ENDDO
 !
 !   Then, for each line and for each representation along that line
@@ -231,51 +360,48 @@ PROGRAM plotband
 !   Along this line the symmetry decomposition has not been done.
 !   Plot all the bands as in the standard case
 !
-           IF (ilines<10) THEN
-              WRITE(filename1,'(a,".",i1)') trim(filename), ilines
-           ELSE
-              WRITE(filename1,'(a,".",i2)') trim(filename), ilines
-           ENDIF
+           filename1=TRIM(filename) // "." // TRIM(int_to_char(ilines))
+
            OPEN (unit=2,file=filename1,form='formatted',status='unknown',&
                 iostat=ios)
            ! draw bands
            DO i=1,nbnd
               IF (is_in_range(i)) THEN
-                 IF ( mod(i,2) /= 0) THEN
-                    WRITE (2,'(2f10.4)') (kx(n), e(i,n),n=point(ilines),&
-                                                          point(ilines+1))
+                 !!!
+                 IF (exist_proj) THEN
+                    IF ( mod(i,2) /= 0) THEN
+                       WRITE (2,'(3f10.4)') (kx(n), e(i,n), sumproj(i,n), &
+                          n=point(ilines),point(ilines+1))
+                    ELSE
+                       WRITE (2,'(3f10.4)') (kx(n), e(i,n), sumproj(i,n), &
+                          n=point(ilines+1),point(ilines),-1)
+                    ENDIF
                  ELSE
-                    WRITE (2,'(2f10.4)') (kx(n), e(i,n),n=point(ilines+1), &
+                 !!!
+                    IF ( mod(i,2) /= 0) THEN
+                       WRITE (2,'(2f10.4)') (kx(n), e(i,n),n=point(ilines),&
+                                                          point(ilines+1))
+                    ELSE
+                       WRITE (2,'(2f10.4)') (kx(n), e(i,n),n=point(ilines+1), &
                                                           point(ilines),-1 )
+                    ENDIF
                  ENDIF
               ENDIF
            ENDDO
            CLOSE (unit = 2)
         ENDIF
+
         todo=.true.
         DO irap=1, nrap(ilines)
 !
 !     open a file
 !
-           IF (ilines>99.or.irap>12) THEN
-              WRITE(6,'("too many lines or rap")')
-              STOP
-           ENDIF
-           IF (ilines < 10) THEN
-              IF (irap < 10 ) THEN
-                 WRITE(filename1,'(a,".",i1,".",i1)') trim(filename),ilines,irap
-              ELSE
-                 WRITE(filename1,'(a,".",i1,".",i2)') trim(filename),ilines,irap
-              ENDIF
-           ELSE
-              IF (irap < 10 ) THEN
-                 WRITE(filename1,'(a,".",i2,".",i1)') trim(filename),ilines,irap
-              ELSE
-                 WRITE(filename1,'(a,".",i2,".",i2)') trim(filename),ilines,irap
-              ENDIF
-           ENDIF
+           filename1=TRIM(filename) // "." // TRIM(int_to_char(ilines)) &
+                                   //  "." // TRIM(int_to_char(irap))
            OPEN (unit=2,file=filename1,form='formatted',status='unknown',&
                  iostat=ios)
+           IF (ios /= 0) CALL errore("plotband","opening file" &
+                                     //TRIM(filename1),1) 
 !  For each k point along this line selects only the bands which belong
 !  to the irap representation
            nbnd_rapk=100000
@@ -285,6 +411,9 @@ PROGRAM plotband
                  IF (rap(i,n)==irap) THEN
                     nbnd_rapk(n) = nbnd_rapk(n) + 1
                     e_rap(nbnd_rapk(n),n)=e(i,n)
+                    !!!
+                    IF (exist_proj) p_rap(nbnd_rapk(n),n)=sumproj(i,n)
+                    !!!
                  ENDIF
               ENDDO
            ENDDO
@@ -298,6 +427,9 @@ PROGRAM plotband
                  IF (abs(e_rap(i,point(ilines)+1)-e(j,point(ilines)))<mine &
                                                         .and. todo(j,1)) THEN
                     e_rap(i,point(ilines))=e(j,point(ilines))
+                    !!!
+                    IF (exist_proj) p_rap(i,point(ilines))=sumproj(j,point(ilines))
+                    !!!
                     mine=abs( e_rap(i,point(ilines)+1)-e(j,point(ilines)))
                     jnow=j
                  ENDIF
@@ -310,6 +442,9 @@ PROGRAM plotband
                  IF (abs(e_rap(i,point(ilines+1)-1)- &
                           e(j,point(ilines+1)))<mine .and. todo(j,2)) THEN
                     e_rap(i,point(ilines+1))=e(j,point(ilines+1))
+                    !!!
+                    IF (exist_proj) p_rap(i,point(ilines+1))=sumproj(j,point(ilines+1))
+                    !!!
                     mine=abs(e_rap(i,point(ilines+1)-1)-e(j,point(ilines+1)) )
                     jnow=j
                  ENDIF
@@ -323,19 +458,31 @@ PROGRAM plotband
            ENDDO
            DO i=1,minval(nbnd_rapk)
               IF (is_in_range_rap(i)) THEN
-                 IF ( mod(i,2) /= 0) THEN
-                    WRITE (2,'(2f10.4)') (kx(n), e_rap(i,n), &
-                                        n=point(ilines),point(ilines+1))
+                 !!!
+                 IF (exist_proj) THEN
+                    IF ( mod(i,2) /= 0) THEN
+                       WRITE (2,'(3f10.4)') (kx(n), e_rap(i,n), p_rap(i,n), &
+                          n=point(ilines),point(ilines+1))
+                    ELSE
+                       WRITE (2,'(3f10.4)') (kx(n), e_rap(i,n), p_rap(i,n), &
+                          n=point(ilines+1),point(ilines),-1)
+                    ENDIF
                  ELSE
-                    WRITE (2,'(2f10.4)') (kx(n), e_rap(i,n), &
-                                       n=point(ilines+1),point(ilines),-1)
+                 !!!
+                    IF ( mod(i,2) /= 0) THEN
+                       WRITE (2,'(2f10.4)') (kx(n), e_rap(i,n), &
+                                           n=point(ilines),point(ilines+1))
+                    ELSE
+                       WRITE (2,'(2f10.4)') (kx(n), e_rap(i,n), &
+                                          n=point(ilines+1),point(ilines),-1)
+                    ENDIF
                  ENDIF
               ENDIF
            ENDDO
            IF (minval(nbnd_rapk)==0) THEN
               CLOSE (unit = 2,status='delete')
            ELSE
-              CLOSE (unit = 2)
+              CLOSE (unit = 2,status='keep')
            ENDIF
         ENDDO
      ENDDO
@@ -349,6 +496,11 @@ PROGRAM plotband
      DEALLOCATE(rap)
      DEALLOCATE(k_rap)
      DEALLOCATE(todo)
+     DEALLOCATE(is_in_range_rap)
+  ENDIF
+  IF (exist_proj) THEN
+     DEALLOCATE(sumproj)
+     DEALLOCATE(p_rap)
   ENDIF
   PRINT '("output file (ps) > ",$)'
   READ(5,'(a)',end=30,err=30)  filename
@@ -356,7 +508,7 @@ PROGRAM plotband
      PRINT '("stopping ...")'
      GOTO 30
   ENDIF
-  OPEN (unit=1,file=filename,form='formatted',status='unknown',&
+  OPEN (unit=1,file=TRIM(filename),form='formatted',status='unknown',&
        iostat=ios)
   PRINT '("Efermi > ",$)'
   READ(5,*) Ef
@@ -432,6 +584,7 @@ PROGRAM plotband
            ni=nf
            nf=nf + npoints(nl)-1
            n_interp= 2*(nf-ni)+1
+           IF (n_interp < 7) CYCLE
            DO n=1,n_interp
               k_interp(n)=kx(ni)+(n-1)*(kx(nf)-kx(ni))/(n_interp-1)
            ENDDO
@@ -457,6 +610,10 @@ PROGRAM plotband
 
   STOP
 20 PRINT '("Error reading k-point # ",i4)', n
+  STOP
+22 PRINT '("Error reading projection file header")'
+  STOP
+23 PRINT '("Error reading projections")'
   STOP
 
 CONTAINS

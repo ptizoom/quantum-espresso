@@ -13,14 +13,14 @@
    <blockquote>
 <h3>TABLE OF CONTENTS</h3>
 <blockquote>
-<p><a href="#id2842148">INTRODUCTION</a></p>
-<p><a href="#id2842151">&amp;INPUT_PW2BGW</a><blockquote>
-<a href="#id2842155">prefix</a> | <a href="#id2842358">outdir</a> | <a href="#id2842373">real_or_complex</a> | <a href="#id2842390">symm_type</a> | <a href="#id2842410">wfng_flag</a> | <a href="#id2842426">wfng_file</a> | <a href="#id2842441">wfng_kgrid</a> | <a href="#id2842458">wfng_nk1</a> | <a href="#id2842474">wfng_nk2</a> | <a href="#id2842489">wfng_nk3</a> | <a href="#id2842504">wfng_dk1</a> | <a href="#id2842520">wfng_dk2</a> | <a href="#id2842536">wfng_dk3</a> | <a href="#id2842551">wfng_occupation</a> | <a href="#id2842566">wfng_nvmin</a> | <a href="#id2842582">wfng_nvmax</a> | <a href="#id2842597">rhog_flag</a> | <a href="#id2842613">rhog_file</a> | <a href="#id2842629">vxcg_flag</a> | <a href="#id2842645">vxcg_file</a> | <a href="#id2842661">vxc0_flag</a> | <a href="#id2842676">vxc0_file</a> | <a href="#id2842692">vxc_flag</a> | <a href="#id2842707">vxc_file</a> | <a href="#id2842723">vxc_integral</a> | <a href="#id2842743">vxc_diag_nmin</a> | <a href="#id2842758">vxc_diag_nmax</a> | <a href="#id2842773">vxc_offdiag_nmin</a> | <a href="#id2842789">vxc_offdiag_nmax</a> | <a href="#id2842804">vxc_zero_rho_core</a> | <a href="#id2842821">vscg_flag</a> | <a href="#id2842836">vscg_file</a> | <a href="#id2842852">vkbg_flag</a> | <a href="#id2842868">vkbg_file</a>
+<p><a href="#idm1680">INTRODUCTION</a></p>
+<p><a href="#idm1296">&amp;INPUT_PW2BGW</a><blockquote>
+<a href="#idm768">prefix</a> | <a href="#idp23584">outdir</a> | <a href="#idp25312">real_or_complex</a> | <a href="#idp27280">symm_type</a> | <a href="#idp29760">wfng_flag</a> | <a href="#idp31568">wfng_file</a> | <a href="#idp33424">wfng_kgrid</a> | <a href="#idp35488">wfng_nk1</a> | <a href="#idp37328">wfng_nk2</a> | <a href="#idp39168">wfng_nk3</a> | <a href="#idp41008">wfng_dk1</a> | <a href="#idp42896">wfng_dk2</a> | <a href="#idp44784">wfng_dk3</a> | <a href="#idp46672">wfng_occupation</a> | <a href="#idp48464">wfng_nvmin</a> | <a href="#idp50304">wfng_nvmax</a> | <a href="#idp52176">rhog_flag</a> | <a href="#idp54048">rhog_file</a> | <a href="#idp55952">rhog_nvmin</a> | <a href="#idp58176">rhog_nvmax</a> | <a href="#idp60048">vxcg_flag</a> | <a href="#idp61968">vxcg_file</a> | <a href="#idp63904">vxc0_flag</a> | <a href="#idp65728">vxc0_file</a> | <a href="#idp67616">vxc_flag</a> | <a href="#idp69472">vxc_file</a> | <a href="#idp71360">vxc_integral</a> | <a href="#idp73728">vxc_diag_nmin</a> | <a href="#idp75568">vxc_diag_nmax</a> | <a href="#idp77408">vxc_offdiag_nmin</a> | <a href="#idp79248">vxc_offdiag_nmax</a> | <a href="#idp81088">vxc_zero_rho_core</a> | <a href="#idp83200">vscg_flag</a> | <a href="#idp85072">vscg_file</a> | <a href="#idp86960">vkbg_flag</a> | <a href="#idp88816">vkbg_file</a>
 </blockquote></p>
 </blockquote>
 </blockquote>
    <blockquote>
-<a name="id2842148"><h3>INTRODUCTION</h3></a><blockquote><pre>
+<a name="idm1680"><h3>INTRODUCTION</h3></a><blockquote><pre>
 Converts the output files produced by pw.x to the input files for BerkeleyGW.
 
 You cannot use USPP, PAW, or spinors in a pw.x run for BerkeleyGW.
@@ -49,10 +49,10 @@ Structure of the input data:
    /
    </pre></blockquote>
 </blockquote>
-   <a name="id2842151"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm1296"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: INPUT_PW2BGW</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="id2842155"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm768"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">prefix</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -67,7 +67,7 @@ prefix of files saved by program pw.x
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842358"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp23584"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">outdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -82,7 +82,7 @@ the scratch directory where the massive data-files are written
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842373"><a name="real_or_complex"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp25312"><a name="real_or_complex"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">real_or_complex</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -100,7 +100,7 @@ without inversion symmetry and time-reversal symmetry)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842390"><a name="symm_type"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp27280"><a name="symm_type"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">symm_type</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -121,7 +121,7 @@ system or you will get errors in BerkeleyGW.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842410"><a name="wfng_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp29760"><a name="wfng_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -136,7 +136,7 @@ write wavefunctions in G-space to BerkeleyGW WFN file
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842426"><a name="wfng_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp31568"><a name="wfng_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -151,7 +151,7 @@ name of BerkeleyGW WFN output file. Not used if wfng_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842441"><a name="wfng_kgrid"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp33424"><a name="wfng_kgrid"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_kgrid</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -170,7 +170,7 @@ k-grid dimensions, we patch these parameters into BerkeleyGW WFN file
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842458"><a name="wfng_nk1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp35488"><a name="wfng_nk1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_nk1</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -186,7 +186,7 @@ Not used if wfng_kgrid = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842474"><a name="wfng_nk2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp37328"><a name="wfng_nk2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_nk2</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -202,7 +202,7 @@ Not used if wfng_kgrid = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842489"><a name="wfng_nk3"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp39168"><a name="wfng_nk3"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_nk3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -218,7 +218,7 @@ Not used if wfng_kgrid = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842504"><a name="wfng_dk1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp41008"><a name="wfng_dk1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_dk1</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -234,7 +234,7 @@ along b_1 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842520"><a name="wfng_dk2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp42896"><a name="wfng_dk2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_dk2</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -250,7 +250,7 @@ along b_2 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842536"><a name="wfng_dk3"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp44784"><a name="wfng_dk3"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_dk3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -266,7 +266,7 @@ along b_3 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842551"><a name="wfng_occupation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp46672"><a name="wfng_occupation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_occupation</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -281,7 +281,7 @@ overwrite occupations in BerkeleyGW WFN file
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842566"><a name="wfng_nvmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp48464"><a name="wfng_nvmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_nvmin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -297,7 +297,7 @@ Not used if wfng_occupation = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842582"><a name="wfng_nvmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp50304"><a name="wfng_nvmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfng_nvmax</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -313,7 +313,7 @@ Not used if wfng_occupation = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842597"><a name="rhog_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp52176"><a name="rhog_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhog_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -329,7 +329,7 @@ Only used for the GPP model in sigma code in BerkeleyGW
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842613"><a name="rhog_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp54048"><a name="rhog_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhog_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -345,7 +345,44 @@ code in BerkeleyGW. Not used if rhog_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842629"><a name="vxcg_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp55952"><a name="rhog_nvmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhog_nvmin</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> 0
+         </td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+index of the lowest band used for calculation of charge density. This is
+needed if one wants to exclude semicore states from charge density used
+for the GPP model in sigma code in BerkeleyGW. Make sure to include the
+same k-points as in scf calculation. Self-consistent charge density is
+used if rhog_nvmin = 0 and rhog_nvmax = 0. Not used if rhog_flag = .FALSE.
+BEWARE: this feature is highly experimental and may not work at all in
+parallel, with pools, with spins, etc.
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idp58176"><a name="rhog_nvmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhog_nvmax</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> 0
+         </td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+index of the highest band used for calculation of charge density. See
+description of rhog_nvmin for more details
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idp60048"><a name="vxcg_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxcg_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -362,7 +399,7 @@ recommended to use vxc_flag instead
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842645"><a name="vxcg_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp61968"><a name="vxcg_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxcg_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -378,7 +415,7 @@ it is recommended to use vxc_flag instead. Not used if vxcg_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842661"><a name="vxc0_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp63904"><a name="vxc0_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc0_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -393,7 +430,7 @@ write Vxc(G = 0) to text file. Only for testing, not required for BerkeleyGW
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842676"><a name="vxc0_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp65728"><a name="vxc0_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc0_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -409,7 +446,7 @@ BerkeleyGW. Not used if vxc0_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842692"><a name="vxc_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp67616"><a name="vxc_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -425,7 +462,7 @@ Only used in sigma code in BerkeleyGW
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842707"><a name="vxc_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp69472"><a name="vxc_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -441,7 +478,7 @@ in BerkeleyGW. Not used if vxc_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842723"><a name="vxc_integral"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp71360"><a name="vxc_integral"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_integral</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -459,7 +496,7 @@ potential in R-space. It is recommended to use 'g'. Not used if vxc_flag = .FALS
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842743"><a name="vxc_diag_nmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp73728"><a name="vxc_diag_nmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_diag_nmin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -474,7 +511,7 @@ minimum band index for diagonal Vxc matrix elements. Not used if vxc_flag = .FAL
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842758"><a name="vxc_diag_nmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp75568"><a name="vxc_diag_nmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_diag_nmax</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -489,7 +526,7 @@ maximum band index for diagonal Vxc matrix elements. Not used if vxc_flag = .FAL
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842773"><a name="vxc_offdiag_nmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp77408"><a name="vxc_offdiag_nmin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_offdiag_nmin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -504,7 +541,7 @@ minimum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = 
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842789"><a name="vxc_offdiag_nmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp79248"><a name="vxc_offdiag_nmax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_offdiag_nmax</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -519,24 +556,26 @@ maximum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = 
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842804"><a name="vxc_zero_rho_core"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp81088"><a name="vxc_zero_rho_core"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vxc_zero_rho_core</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
 </tr>
 <tr>
 <td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
-<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> .FALSE.
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> .TRUE.
          </td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
 set to .TRUE. to zero out NLCC or to .FALSE. to keep NLCC when computing
-exchange-correlation potential. For details, see Hybertsen &amp; Louie PRB 34,
-5390 (1986), Eq. (38) and discussion afterwards
+exchange-correlation potential. This flag has no effect for pseudopotentials
+without NLCC. BEWARE: setting vxc_zero_rho_core to .FALSE. will produce
+incorrect results. This functionality is only included for testing purposes
+and is not meant to be used in a production environment
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842821"><a name="vscg_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp83200"><a name="vscg_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vscg_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -552,7 +591,7 @@ BerkeleyGW VSC file. Only used in SAPO code in BerkeleyGW
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842836"><a name="vscg_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp85072"><a name="vscg_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vscg_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>
@@ -568,7 +607,7 @@ Not used if vscg_flag = .FALSE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842852"><a name="vkbg_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp86960"><a name="vkbg_flag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vkbg_flag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -584,7 +623,7 @@ Only used in SAPO code in BerkeleyGW
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="id2842868"><a name="vkbg_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idp88816"><a name="vkbg_file"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vkbg_file</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">STRING</td>

@@ -10,16 +10,17 @@ MODULE read_xml_module
   !
   USE input_parameters
   !
-  USE io_global, ONLY : ionode, ionode_id, xmlinputunit
+  USE io_global, ONLY : ionode, ionode_id, xmlinputunit => qestdin
   USE mp,        ONLY : mp_bcast
+  USE mp_images, ONLY : intra_image_comm
   USE iotk_module, ONLY : iotk_attlenx
   !
   ! ...default and checkin of fields
   !
   USE read_namelists_module, ONLY : control_defaults, system_defaults,&
-       ee_defaults, electrons_defaults, wannier_ac_defaults, ions_defaults, &
+       electrons_defaults, wannier_ac_defaults, ions_defaults, &
        cell_defaults, press_ai_defaults, wannier_defaults, control_bcast, &
-       system_bcast, ee_bcast, electrons_bcast, ions_bcast,cell_bcast, &
+       system_bcast, electrons_bcast, ions_bcast,cell_bcast, &
        press_ai_bcast, wannier_bcast, wannier_ac_bcast, control_checkin, &
        system_checkin, electrons_checkin, ions_checkin, cell_checkin, &
        wannier_checkin, wannier_ac_checkin, fixval
@@ -27,8 +28,8 @@ MODULE read_xml_module
   !
   USE read_xml_fields_module, ONLY : read_xml_fields
   USE read_xml_cards_module, ONLY : card_xml_atomic_species, card_xml_atomic_list, &
-       card_xml_chain, card_xml_cell, card_xml_kpoints, card_xml_occupations, &
-       card_xml_constraints, card_xml_climbing_images, card_xml_plot_wannier, card_default, card_bcast
+       card_xml_cell, card_xml_kpoints, card_xml_occupations, &
+       card_xml_constraints, card_xml_plot_wannier, card_default, card_bcast
   !
   !
   IMPLICIT NONE
@@ -43,7 +44,7 @@ CONTAINS
   !
   !
   !--------------------------------------------------------!
-  !    This routine organizes reading of the xml file      !
+  !    This routine organizes the reading of the xml file  !
   !    depending on the program                            !
   !--------------------------------------------------------!
   SUBROUTINE read_xml( prog, attr )
@@ -61,15 +62,8 @@ CONTAINS
     CASE ('PW')
        !
        CALL read_xml_common( attr, 'PW' )
-       !
-       !
        CALL read_xml_pw()
        !
-       !
-!    CASE ('NEB')
-!       !
-!       CALL read_xml_common( attr, 'PW' )
-!       !
     CASE ('CP')
        !
        CALL read_xml_common( attr, 'CP' )
@@ -114,7 +108,6 @@ CONTAINS
     CALL electrons_defaults( prog )
     CALL ions_defaults( prog )
     CALL cell_defaults( prog )
-    CALL ee_defaults( prog )
     CALL wannier_defaults( prog )
     CALL wannier_ac_defaults( prog )
     !
@@ -124,20 +117,20 @@ CONTAINS
     IF (ionode) THEN
        !
        CALL iotk_scan_attr( attr, 'calculation', dummy, found = found, ierr = ierr )
-       IF ( .not. found ) CALL errore( 'read_xml_cp', 'attribute calculation of root &
+       IF ( .not. found ) CALL errore( 'read_xml_common', 'attribute calculation of root &
             &node is compulsory', abs(ierr) )
        !
-       IF ( ierr /= 0 ) CALL errore( 'read_xml_cp', 'error reading calculation &
+       IF ( ierr /= 0 ) CALL errore( 'read_xml_common', 'error reading calculation &
             &attribute of root node', 1 )
        calculation = trim( dummy )
        !
        CALL iotk_scan_attr( attr, 'prefix', dummy, found = found, ierr = ierr )
-       IF ( ierr /= 0 ) CALL errore( 'read_xml_cp', 'error reading prefix attribute &
+       IF ( ierr /= 0 ) CALL errore( 'read_xml_common', 'error reading prefix attribute &
             &of root node', abs(ierr) )
        IF ( found ) prefix = trim( dummy )
        !
        CALL iotk_scan_attr( attr, 'title', dummy, found = found, ierr = ierr )
-       IF ( ierr /= 0 ) CALL errore( 'read_xml_cp', 'error reading title attribute &
+       IF ( ierr /= 0 ) CALL errore( 'read_xml_common', 'error reading title attribute &
             &of root node', 1 )
        IF ( found ) title = trim( dummy )
        !
@@ -145,9 +138,9 @@ CONTAINS
     !
     !  ... bcast the read attributes
     !
-    CALL mp_bcast( calculation, ionode_id )
-    CALL mp_bcast( prefix, ionode_id )
-    CALL mp_bcast( title, ionode_id )
+    CALL mp_bcast( calculation, ionode_id, intra_image_comm )
+    CALL mp_bcast( prefix, ionode_id, intra_image_comm )
+    CALL mp_bcast( title, ionode_id, intra_image_comm )
     
     !
     ! ... fixing some default values using the calculation variable
@@ -189,7 +182,7 @@ CONTAINS
   !
   !
   !--------------------------------------------------------!
-  ! The rest of the reading for PW program: fields and     !
+  ! The remaining part of the reading for PW: fields and   !
   ! other cards                                            !
   !--------------------------------------------------------!
   SUBROUTINE read_xml_pw( )
@@ -208,10 +201,9 @@ CONTAINS
     LOGICAL :: found_al, found
     !
     !
-    ! ... reading ATOMIC_LIST or CHAIN cards
+    ! ... reading ATOMIC_LIST card
     !
     CALL card_default( 'ATOMIC_LIST' )
-    CALL card_default( 'CHAIN' )
     !
     IF ( ionode ) THEN
        !
@@ -228,33 +220,15 @@ CONTAINS
           CALL card_xml_atomic_list( )
           !
        ELSE
-          ! ... due to a iotk problem with gfortran compiler
-          CALL iotk_rewind( xmlinputunit )
           !
-          CALL iotk_scan_begin( xmlinputunit, 'chain', found = found, ierr = ierr )
-          IF ( ierr /= 0 ) CALL errore( 'read_xml_pw', 'error scanning begin &
-               &of chain card', abs( ierr ) )
+          CALL errore('read_xml_pw',"card atomic_list is missing", 1 )
           !
-          IF ( found ) THEN
-             CALL iotk_scan_end( xmlinputunit, 'chain', ierr = ierr )
-             IF ( ierr /= 0 ) CALL errore( 'read_xml_pw', 'error scanning &
-                  &end of chain card', ABS( ierr ) )
-             CALL card_xml_chain( )
-          ELSE
-             CALL errore('read_xml_pw',"neither atomic_list nor chain found", 1 )
-          ENDIF
        ENDIF
     ENDIF
     !
-    CALL mp_bcast( found_al, ionode_id)
+    CALL mp_bcast( found_al, ionode_id, intra_image_comm)
     !
-    IF (found_al) THEN
-       CALL card_bcast( 'ATOMIC_LIST' )
-    ELSE
-       CALL card_bcast( 'CHAIN' )
-    ENDIF
-    !
-    !
+    CALL card_bcast( 'ATOMIC_LIST' )
     !
     ! ... reading all the FIELDS
     !
@@ -276,11 +250,11 @@ CONTAINS
     IF ( calculation == 'nscf' .or. calculation == 'bands'  ) THEN
        !
        IF (startingpot == 'none') startingpot = 'file'
-       IF (startingwfc == 'none') startingwfc = 'atomic'
+       IF (startingwfc == 'none') startingwfc = 'atomic+random'
        !
     ELSE IF ( restart_mode == 'from_scratch' ) THEN
        !
-       IF (startingwfc == 'none') startingwfc = 'atomic'
+       IF (startingwfc == 'none') startingwfc = 'atomic+random'
        IF (startingpot == 'none') startingpot = 'atomic'
        !
     ELSE
@@ -315,7 +289,6 @@ CONTAINS
     CALL ions_bcast( )
     CALL cell_bcast()
     CALL press_ai_bcast()
-    CALL ee_bcast()
     CALL wannier_bcast()
     CALL wannier_ac_bcast()
     !
@@ -349,7 +322,7 @@ CONTAINS
        !
     END IF
     !
-    CALL mp_bcast ( found, ionode_id )
+    CALL mp_bcast ( found, ionode_id, intra_image_comm )
     !
     IF ( found ) CALL card_bcast( 'CONSTRAINTS' )
     !
@@ -409,43 +382,9 @@ CONTAINS
        !
     END IF
     !
-    CALL mp_bcast ( found, ionode_id )
+    CALL mp_bcast ( found, ionode_id, intra_image_comm )
     !
     IF ( found ) CALL card_bcast( 'OCCUPATIONS' )
-    !
-       !
-    ! ... reading CLIMBING_IMAGES card
-    !
-    card = 'climbing_images'
-    CALL card_default( 'CLIMBING_IMAGES' )
-    !
-    IF ( ionode ) THEN
-       !
-       CALL iotk_scan_begin( xmlinputunit, trim( card ), found = found, ierr = ierr )
-       IF ( ierr /= 0 ) GO TO 9
-       !
-       IF ( found ) THEN
-          !
-          CALL card_xml_climbing_images()
-          !
-          CALL iotk_scan_end( xmlinputunit, trim( card ), ierr = ierr )
-          IF ( ierr /= 0 ) GOTO 10
-          !
-       ELSE
-          !
-          ! ... due to a iotk problem with gfortran compiler
-          CALL iotk_rewind( xmlinputunit )
-          !
-       END IF
-       !
-    END IF
-    !
-    CALL mp_bcast ( found, ionode_id )
-    !
-    IF ( found ) CALL card_bcast( 'CLIMBING_IMAGES' )
-    !
-    !
-    !
     !
     RETURN
     !
@@ -484,11 +423,7 @@ CONTAINS
     !
     IF ( ionode ) THEN
        !
-       IF ( ( trim( calculation ) == 'neb' ) .or. ( trim( calculation ) == 'smd' ) ) THEN
-          CALL card_xml_chain ( )
-       ELSE
-          CALL card_xml_atomic_list ( )
-       END IF
+       CALL card_xml_atomic_list ( )
        !
     END IF
     !
@@ -527,7 +462,6 @@ CONTAINS
     CALL ions_bcast( )
     CALL cell_bcast()
     CALL press_ai_bcast()
-    CALL ee_bcast()
     CALL wannier_bcast()
     CALL wannier_ac_bcast()
     !
@@ -561,7 +495,7 @@ CONTAINS
        !
     END IF
     !
-    CALL mp_bcast ( found, ionode_id )
+    CALL mp_bcast ( found, ionode_id, intra_image_comm )
     !
     IF ( found ) CALL card_bcast( 'CONSTRAINTS' )
     !
@@ -591,43 +525,9 @@ CONTAINS
        !
     END IF
     !
-    CALL mp_bcast ( found, ionode_id )
+    CALL mp_bcast ( found, ionode_id, intra_image_comm )
     !
     IF ( found ) CALL card_bcast( 'OCCUPATIONS' )
-    !
-    !
-    ! ... reading CLIMBING_IMAGES card
-    !
-    card = 'climbing_images'
-    CALL card_default( 'CLIMBING_IMAGES' )
-    !
-    IF ( ionode ) THEN
-       !
-       CALL iotk_scan_begin( xmlinputunit, trim( card ), found = found, ierr = ierr )
-       IF ( ierr /= 0 ) GO TO 9
-       !
-       IF ( found ) THEN
-          !
-          CALL card_xml_climbing_images()
-          !
-          CALL iotk_scan_end( xmlinputunit, trim( card ), ierr = ierr )
-          IF ( ierr /= 0 ) GOTO 10
-          !
-       ELSE
-          !
-          ! ... due to a iotk problem with gfortran compiler
-          CALL iotk_rewind( xmlinputunit )
-          !
-       END IF
-       !
-    END IF
-    !
-    CALL mp_bcast ( found, ionode_id )
-    !
-    IF ( found ) CALL card_bcast( 'CLIMBING_IMAGES' )
-    !
-    !
-    ! ... reading CLIMBING_IMAGES card
     !
     card = 'plot_wannier'
     CALL card_default( 'PLOT_WANNIER' )
@@ -653,7 +553,7 @@ CONTAINS
        !
     END IF
     !
-    CALL mp_bcast ( found, ionode_id )
+    CALL mp_bcast ( found, ionode_id, intra_image_comm )
     !
     IF ( found ) CALL card_bcast( 'PLOT_WANNIER' )
     !
@@ -662,8 +562,8 @@ CONTAINS
     !
     RETURN
     !
-9   CALL errore('read_xml_pw', 'error reading begin tag of '//card//' card', ABS( ierr ) )
-10  CALL errore('read_xml_pw', 'error reading end tag of '//card//' card', ABS( ierr ) )
+9   CALL errore('read_xml_cp', 'error reading begin tag of '//card//' card', ABS( ierr ) )
+10  CALL errore('read_xml_cp', 'error reading end tag of '//card//' card', ABS( ierr ) )
     !
     !
   END SUBROUTINE read_xml_cp

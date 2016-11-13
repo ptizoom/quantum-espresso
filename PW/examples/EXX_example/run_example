@@ -24,7 +24,7 @@ x_gamma_extrapolation=".TRUE."
 exxdiv_treatment="gygi-baldereschi"
 if [ ! -z "$1" ] ; then exxdiv_treatment="$1" ; fi
 if [ "$exxdiv_treatment" = "vcut_ws" ] ; then x_gamma_extrapolation=.FALSE. ; fi
-if [ "$exxdiv_treatment" = "vcut_spheric" ] ; then x_gamma_extrapolation=.FALSE. ; fi
+if [ "$exxdiv_treatment" = "vcut_spherical" ] ; then x_gamma_extrapolation=.FALSE. ; fi
 ecutvcut=0.7
 
 $ECHO
@@ -81,11 +81,6 @@ $ECHO
 $ECHO "  running pw.x as: $PW_COMMAND"
 $ECHO
 
-# clean TMP_DIR
-$ECHO "  cleaning $TMP_DIR...\c"
-rm -rf $TMP_DIR/*
-$ECHO " done"
-
 $ECHO
 $ECHO "  running PBE0 calculation for Si with nq=1,2,4 \c"
 $ECHO
@@ -100,6 +95,7 @@ cat > si.in << EOF
     prefix='silicon',
     pseudo_dir = '$PSEUDO_DIR/',
     outdir='$TMP_DIR/'
+    tstress = .TRUE.
  /
  &system    
     ibrav=  2, celldm(1) =10.20, nat=  2, ntyp= 1,
@@ -135,7 +131,10 @@ $PW_COMMAND < si.in > si.PBE0_nq=${nq}.out
 $ECHO " done"
 grep -e ! si.PBE0_nq=${nq}.out | tail -1
 
-#rm -f si.in
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/silicon*
+$ECHO " done"
 
 done
 
@@ -187,7 +186,66 @@ $PW_COMMAND < si.in > si.hse_nq=${nq}.out
 $ECHO " done"
 grep -e ! si.hse_nq=${nq}.out | tail -1
 
-#rm -f si.in
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/silicon*
+$ECHO " done"
+
+done
+
+
+$ECHO
+$ECHO "  running Gau-PBE calculation for Si with nq=1,2,4 \c"
+$ECHO
+
+for nq in 1 2 4 ; do
+
+# self-consistent calculation
+cat > si.in << EOF
+ &control
+    calculation = 'scf'
+    restart_mode='from_scratch',
+    prefix='silicon',
+    pseudo_dir = '$PSEUDO_DIR/',
+    outdir='$TMP_DIR/'
+ /
+ &system    
+    ibrav=  2, celldm(1) =10.20, nat=  2, ntyp= 1,
+    ecutwfc =12.0,  nbnd = 8,
+    input_dft='gaupbe', nqx1 = $nq, nqx2 = $nq, nqx3 = $nq, 
+    x_gamma_extrapolation = .false.
+    exxdiv_treatment = 'none'
+ /
+ &electrons
+    mixing_beta = 0.7 
+ /
+ATOMIC_SPECIES
+ Si  28.086  Si.pz-vbc.UPF
+ATOMIC_POSITIONS
+ Si 0.00 0.00 0.00 
+ Si 0.25 0.25 0.25 
+K_POINTS
+  10
+   0.1250000  0.1250000  0.1250000   1.00
+   0.1250000  0.1250000  0.3750000   3.00
+   0.1250000  0.1250000  0.6250000   3.00
+   0.1250000  0.1250000  0.8750000   3.00
+   0.1250000  0.3750000  0.3750000   3.00
+   0.1250000  0.3750000  0.6250000   6.00
+   0.1250000  0.3750000  0.8750000   6.00
+   0.1250000  0.6250000  0.6250000   3.00
+   0.3750000  0.3750000  0.3750000   1.00
+   0.3750000  0.3750000  0.6250000   3.00
+EOF
+$ECHO "  running the scf calculation for Si with nq = $nq ...\c"
+$PW_COMMAND < si.in > si.gaupbe_nq=${nq}.out
+$ECHO " done"
+grep -e ! si.gaupbe_nq=${nq}.out | tail -1
+
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/silicon*
+$ECHO " done"
 
 done
 
@@ -199,15 +257,18 @@ $ECHO "  pseudo directory changed to:      $PSEUDO_DIR"
 $ECHO
 
 
-for xc in pbe0 hse ; do
+for xc in pbe0 hse gaupbe; do
 
 $ECHO "  Exchange and correlation is: " $xc "...\c"
 $ECHO
 
+if [ "$xc" = "gaupbe" ] ; then x_gamma_extrapolation=.FALSE. ; fi
+if [ "$xc" = "gaupbe" ] ; then exxdiv_treatment=none ; fi
+if [ "$xc" = "gaupbe" ] ; then ecutvcut=0.0 ; fi
+
 ps=1nlcc
 ecut=80
 
-rm -fr $TMP_DIR/*
 cat > o.inp << EOF
 &CONTROL
                  calculation = 'scf' ,
@@ -249,7 +310,11 @@ $ECHO "  running oxygen atom..\c"
 $PW_COMMAND < o.inp > o.$xc.$ps.out-$ecut
 $ECHO " done"
 
-rm -fr $TMP_DIR/*
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/o.*
+$ECHO " done"
+
 cat > c.inp << EOF
 &CONTROL
                  calculation = 'scf' ,
@@ -291,7 +356,11 @@ $ECHO "  running carbon atom..\c"
 $PW_COMMAND < c.inp > c.$xc.$ps.out-$ecut
 $ECHO " done"
 
-rm -fr $TMP_DIR/*
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/c.*
+$ECHO " done"
+
 cat > n.inp << EOF
 &CONTROL
                  calculation = 'scf' ,
@@ -333,7 +402,11 @@ $ECHO "  running nitrogen atom..\c"
 $PW_COMMAND < n.inp > n.$xc.$ps.out-$ecut
 $ECHO " done"
 
-rm -fr $TMP_DIR/*
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/n.*
+$ECHO " done"
+
 b=0.3169 
 cat > n2.inp << EOF
 &CONTROL
@@ -376,7 +449,10 @@ $ECHO "  running n2 molecule..\c"
 $PW_COMMAND < n2.inp > n2.$xc.$ps.out-$ecut
 $ECHO " done"
 
-rm -fr $TMP_DIR/*
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/n2.*
+$ECHO " done"
 
 b=0.3256
 cat > co.inp << EOF
@@ -421,7 +497,11 @@ $ECHO "  running co molecule..\c"
 $PW_COMMAND < co.inp > co.$xc.$ps.out-$ecut
 $ECHO " done" 
 
-rm -fr $TMP_DIR/*
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/n2.*
+$ECHO " done"
+
 b=0.3478
 cat > o2.inp << EOF
 &CONTROL
@@ -466,6 +546,11 @@ EOF
 $ECHO "  running o2 molecule..\c"
 $PW_COMMAND < o2.inp > o2.$xc.$ps.out-$ecut
 $ECHO " done"
+# clean TMP_DIR
+$ECHO "  cleaning $TMP_DIR...\c"
+rm -rf $TMP_DIR/o2.*
+$ECHO " done"
+
 $ECHO
 cat > summarize << EOF
 grep -e ! n.$xc.$ps.out-$ecut  | tail -1 | awk '{print \$5}' > N
@@ -483,6 +568,4 @@ sh summarize
 $ECHO 
 done
 
-#rm -f *.inp
-rm -fr $TMP_DIR/*
 $ECHO "$EXAMPLE_DIR : done"

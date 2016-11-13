@@ -16,17 +16,16 @@ subroutine wannier_proj(ik, wan_func)
   USE io_files
   USE wannier_new,      ONLY : wan_in, nwan, use_energy_int
   USE ions_base,        ONLY : nat, ityp
-  USE basis,            ONLY : natomwfc
   USE wvfct,            ONLY : nbnd, npw, npwx, et
   USE lsda_mod,         ONLY : lsda, isk
   USE constants,        ONLY : rytoev
-  USE ldaU,             ONLY : swfcatom
+  USE basis,            ONLY : swfcatom
   USE control_flags,    ONLY : gamma_only
   USE uspp_param,       ONLY : upf 
   USE wavefunctions_module, ONLY : evc
   USE gvect,                ONLY : gstart
   USE noncollin_module, ONLY : npol
-  USE buffers
+  USE buffers,          ONLY : get_buffer, save_buffer
 
   
   implicit none
@@ -48,15 +47,18 @@ subroutine wannier_proj(ik, wan_func)
   current_spin = 1
   IF (lsda) current_spin  = isk(ik)
   
-  !Read current wavefunctions
+  ! Read current wavefunctions
+  !
   evc = ZERO
-  call davcio( evc, nwordwfc, iunwfc, ik, -1 )  
+  ! See comment in PP/src/openfil.f90 why davcio and not get_buffer
+  ! call get_buffer ( evc, nwordwfc, iunwfc, ik )  
+  call davcio ( evc, 2*nwordwfc, iunwfc, ik, -1 )  
   ! Reads ortho-atomic wfc
   ! You should prepare data using orthoatwfc.f90
   swfcatom = ZERO
-  CALL davcio (swfcatom, nwordatwfc, iunsat, ik, -1)
+  CALL get_buffer (swfcatom, nwordatwfc, iunsat, ik)
   
-  ! generates trial wavefunctions as a summ of ingridients
+  ! generates trial wavefunctions as a sum of ingredients
   trialwf = ZERO
   do iwan=1, nwan
      do j=1,wan_in(iwan,current_spin)%ning
@@ -68,7 +70,7 @@ subroutine wannier_proj(ik, wan_func)
      end do
   end do
   
-  ! copmputes <\Psi|\hat S|\phi> for all \Psi and \phi
+  ! computes <\Psi|\hat S|\phi> for all \Psi and \phi
   ! later one should select only few columns 
   pp = ZERO
   DO ibnd = 1, nbnd

@@ -11,13 +11,27 @@ TOPDIR=`pwd`
 
 if test $# = 0
 then
-    dirs=" Modules clib PW/src CPV/src flib PW/tools upftools PP/src PWCOND/src \
-           PHonon/Gamma PHonon/PH PHonon/D3 atomic/src VdW/src XSpectra/src \
-	   GWW/gww GWW/pw4gww GWW/head ACFDT NEB/src Environ/src TDDFPT/src" 
+    dirs=" Modules clib PW/src CPV/src flib PW/tools upftools PP/src PWCOND/src\
+           PHonon/Gamma PHonon/PH PHonon/D3 PHonon/FD atomic/src XSpectra/src \
+           ACDFT NEB/src TDDFPT/src GIPAW/src GWW/pw4gww GWW/gww GWW/head" 
           
+elif
+    test $1 = "-addson" 
+then
+    echo "The script for adding new dependencies is running"
+    echo "Usage: $0 -addson DIR DEPENDENCY_DIRS"
+    echo "$0 assumes that the new dependencies are in $TOPDIR/../"
+#    ninput=$#
+#    echo "number of input arguments: $ninput"
+    dirs=$2
+    shift
+    shift
+    add_deps=$*
+    echo "dependencies in $add_deps will be searched for $dirs"
 else
     dirs=$*
 fi
+
 
 for dir in $dirs; do
 
@@ -34,36 +48,40 @@ for dir in $dirs; do
     LEVEL2=../..
     DEPENDS="$LEVEL1/include $LEVEL1/iotk/src"
     case $DIR in 
-        EE | flib | upftools )
+        flib | upftools )
              DEPENDS="$LEVEL1/include $LEVEL1/iotk/src $LEVEL1/Modules" ;;
 	PP/src  )
              DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
                       $LEVEL2/PW/src" ;;
-	VdW/src ) 
-	     DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
-	              $LEVEL2/PW/src $LEVEL2/PHonon/PH" ;;
 	ACFDT ) 
              DEPENDS="$LEVEL1/include $LEVEL1/iotk/src $LEVEL1/Modules \
                       $LEVEL1/PW/src $LEVEL1/PHonon/PH" ;;
-
-	PW/src | Environ/src )
+	PW/src )
 	     DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules" ;;
-	PW/tools | PWCOND/src )
+	PW/tools | PWCOND/src | PHonon/FD )
 	     DEPENDS="$LEVEL2/include $LEVEL2/PW/src $LEVEL2/iotk/src $LEVEL2/Modules" ;;
 	CPV/src | atomic/src | GWW/gww )
              DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules" ;;
-	PHonon/PH | PHonon/Gamma | XSpectra/src  | PWCOND/src | GWW/pw4gww | NEB/src )
+	PHonon/PH | PHonon/Gamma | XSpectra/src  | PWCOND/src | GWW/pw4gww | NEB/src | GIPAW/src )
              DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
                       $LEVEL2/PW/src" ;;
 	PHonon/D3 )
 	     DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
 	              $LEVEL2/PW/src $LEVEL2/PHonon/PH" ;;	
-	GWW/head )
+        GWW/pw4gww )
+            DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
+                       $LEVEL2/PW/src  " ;;
+	GWW/gww )
+            DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules " ;;
+        GWW/head )
              DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
-                      $LEVEL2/PW/src $LEVEL2/PHonon/PH $LEVEL1/pw4gww " ;;
+                      $LEVEL2/PW/src $LEVEL2/PHonon/PH " ;;
 	TDDFPT/src )
              DEPENDS="$LEVEL2/include $LEVEL2/iotk/src $LEVEL2/Modules \
                       $LEVEL2/PW/src $LEVEL2/PHonon/PH" ;;
+    *)
+# if addson needs a make.depend file
+	DEPENDS="$DEPENDS $add_deps"
 
     esac
 
@@ -82,8 +100,8 @@ for dir in $dirs; do
 
         if test "$DIR" = "Modules"
         then
-            sed '/@mpi@/d' make.depend > make.depend.tmp
-            sed '/@elpa1@/d' make.depend.tmp > make.depend
+            sed '/@mpi@/d;/@elpa1@/d' make.depend > make.depend.tmp
+            sed '/@mkl_dfti/d' make.depend.tmp > make.depend
         fi
 
         if test "$DIR" = "clib"
@@ -92,10 +110,10 @@ for dir in $dirs; do
             sed 's/@fftw.c@/fftw.c/' make.depend.tmp > make.depend
         fi
 
-        if test "$DIR" = "PW/src"
+        if test "$DIR" = "PW/src" || test "$DIR" = "TDDFPT/src"
         then
-            mv make.depend make.depend.tmp
-            sed '/@environ_base@/d' make.depend.tmp > make.depend
+            sed '/@environ_/d'  make.depend > make.depend.tmp
+            sed '/@solvent_tddfpt@/d' make.depend.tmp > make.depend
         fi
 
         rm -f make.depend.tmp
@@ -108,6 +126,8 @@ for dir in $dirs; do
        else
            echo directory $DIR : ok
        fi
+    else
+       echo directory $DIR : not present in $TOPDIR 
     fi
 done
 if test "$notfound" = ""

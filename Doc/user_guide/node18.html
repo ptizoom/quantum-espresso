@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,7 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="user_guide.css">
@@ -26,26 +26,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html372"
+<A NAME="tex2html366"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html368"
+<A NAME="tex2html362"
   HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html362"
+<A NAME="tex2html356"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html370"
+<A NAME="tex2html364"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html373"
+<B> Next:</B> <A NAME="tex2html367"
   HREF="node19.html">3.4 Tricks and problems</A>
-<B> Up:</B> <A NAME="tex2html369"
+<B> Up:</B> <A NAME="tex2html363"
   HREF="node15.html">3 Parallelism</A>
-<B> Previous:</B> <A NAME="tex2html363"
+<B> Previous:</B> <A NAME="tex2html357"
   HREF="node17.html">3.2 Running on parallel</A>
- &nbsp; <B>  <A NAME="tex2html371"
+ &nbsp; <B>  <A NAME="tex2html365"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -55,15 +55,15 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <UL>
 <LI><UL>
-<LI><A NAME="tex2html374"
+<LI><A NAME="tex2html368"
   HREF="node18.html#SECTION00043010000000000000">3.3.0.1 About communications</A>
-<LI><A NAME="tex2html375"
+<LI><A NAME="tex2html369"
   HREF="node18.html#SECTION00043020000000000000">3.3.0.2 Choosing parameters</A>
-<LI><A NAME="tex2html376"
+<LI><A NAME="tex2html370"
   HREF="node18.html#SECTION00043030000000000000">3.3.0.3 Massively parallel calculations</A>
 </UL>
 <BR>
-<LI><A NAME="tex2html377"
+<LI><A NAME="tex2html371"
   HREF="node18.html#SECTION00043100000000000000">3.3.1 Understanding parallel I/O</A>
 </UL>
 <!--End of Table of Child-Links-->
@@ -125,11 +125,8 @@ arrays whose dimension is the number of Kohn-Sham states
 (or a small multiple of it). All such arrays are distributed block-like
 across the ``linear-algebra group'', a subgroup of the pool of processors,
 organized in a square 2D grid. As a consequence the number of processors
-in the linear-algebra group is given by <I>n</I><SUP>2</SUP>
-<tex2html_verbatim_mark>, where <I>n</I>
-<tex2html_verbatim_mark> is an integer;
-<I>n</I><SUP>2</SUP>
-<tex2html_verbatim_mark> must be smaller than the number of processors in the PW group.
+in the linear-algebra group is given by <I>n</I><SUP>2</SUP>, where <I>n</I> is an integer;
+<I>n</I><SUP>2</SUP> must be smaller than the number of processors in the PW group.
 The diagonalization is then performed
 in parallel using standard linear algebra operations.
 (This diagonalization is used by, but should not be confused with,
@@ -161,11 +158,13 @@ needed beyond 8 processors per pool.
 To control the number of processors in each group,
 command line switches: 
 <TT>-nimage</TT>, <TT>-npools</TT>, <TT>-nband</TT>,
-<TT>-ntg</TT>, <TT>-northo</TT> or <TT>-ndiag</TT>
+<TT>-ntg</TT>, <TT>-ndiag</TT> or <TT>-northo</TT>
+(shorthands, respectively: <TT>-ni</TT>, <TT>-nk</TT>, <TT>-nb</TT>,
+<TT>-nt</TT>, <TT>-nd</TT>)
 are used.
 As an example consider the following command line:
 <PRE>
-mpirun -np 4096 ./neb.x -nimage 8 -npool 2 -ntg 4 -ndiag 144 -input my.input
+mpirun -np 4096 ./neb.x -ni 8 -nk 2 -nt 4 -nd 144 -i my.input
 </PRE>
 This executes a NEB calculation on 4096 processors, 8 images (points in the configuration
 space in this case) at the same time, each of 
@@ -177,8 +176,8 @@ of the subspace Hamiltonian is distributed to a square grid of 144
 processors (12x12).
 
 <P>
-Default values are: <TT>-nimage 1 -npool 1 -ntg 1</TT> ; 
-<TT>ndiag</TT> is set to 1 if ScaLAPACK is not compiled,
+Default values are: <TT>-ni 1 -nk 1 -nt 1</TT> ; 
+<TT>nd</TT> is set to 1 if ScaLAPACK is not compiled,
 it is set to the square integer smaller than or equal to  half the number 
 of processors of each pool.
 
@@ -200,10 +199,8 @@ matrices, yielding better speed-up than the internal algorithms for
 large (<!-- MATH
  $> 1000\times 1000$
  -->
-&gt; 1000 <TT>x</TT> 1000
-<tex2html_verbatim_mark>) matrices, when using a large number of processors 
-(&gt; 512
-<tex2html_verbatim_mark>). You need to have <TT>-D__SCALAPACK</TT> added to DFLAGS 
+&gt; 1000 <TT>x</TT> 1000) matrices, when using a large number of processors 
+(&gt; 512). You need to have <TT>-D__SCALAPACK</TT> added to DFLAGS 
 in <TT>make.sys</TT>, LAPACK_LIBS set to something like:
 <PRE>
     LAPACK_LIBS = -lscalapack -lblacs -lblacsF77init -lblacs -llapack
@@ -304,8 +301,7 @@ codes running on a different  number of processors.
 <P>
 In addition to the above, other restrictions to file
 interoperability apply: e.g., <TT>CP</TT> can read only files
-produced by <TT>PWscf</TT> for the <I>k</I> = 0
-<tex2html_verbatim_mark> case. 
+produced by <TT>PWscf</TT> for the <I>k</I> = 0 case. 
 
 <P>
 The directory for data is specified in input variables
@@ -329,43 +325,47 @@ need to access your files that are scattered in an unpredictable
 way across disks residing on different nodes.
 
 <P>
-You can use input variable <TT>disk_io='minimal'</TT>, or even 
-<TT>'none'</TT>, if you run
-into trouble (or into angry system managers) with excessive I/O with <TT>pw.x</TT>. 
-The code will store wavefunctions into RAM during the calculation.
-Note however that this will increase your memory usage and may limit 
-or prevent restarting from interrupted runs. For very large runs,
-you may also want to use <TT>wf_collect=.false.</TT> and (CP only)
+You can use input variable <TT>disk_io</TT> to reduce the the
+amount of I/O done by <TT>pw.x</TT>. Since v.5.1, the dafault value is 
+<TT>disk_io='low'</TT>, so the code will store wavefunctions 
+into RAM and not on disk during the calculation. Specify
+<TT>disk_io='medium'</TT> only if you have too many k-points 
+and you run into trouble with memory; choose <TT>disk_io='none'</TT> 
+if you do not need to keep final data files. 
+
+<P>
+For very large <TT>cp.x</TT> runs, you may consider using 
+<TT>wf_collect=.false.</TT>, <TT>memory='small'</TT> and
 <TT>saverho=.false.</TT> to reduce I/O to the strict minimum.
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html372"
+<A NAME="tex2html366"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html368"
+<A NAME="tex2html362"
   HREF="node15.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html362"
+<A NAME="tex2html356"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html370"
+<A NAME="tex2html364"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html373"
+<B> Next:</B> <A NAME="tex2html367"
   HREF="node19.html">3.4 Tricks and problems</A>
-<B> Up:</B> <A NAME="tex2html369"
+<B> Up:</B> <A NAME="tex2html363"
   HREF="node15.html">3 Parallelism</A>
-<B> Previous:</B> <A NAME="tex2html363"
+<B> Previous:</B> <A NAME="tex2html357"
   HREF="node17.html">3.2 Running on parallel</A>
- &nbsp; <B>  <A NAME="tex2html371"
+ &nbsp; <B>  <A NAME="tex2html365"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Layla Martin-Samos Colomer
-2012-11-21
+paolo giannozzi
+2015-03-08
 </ADDRESS>
 </BODY>
 </HTML>

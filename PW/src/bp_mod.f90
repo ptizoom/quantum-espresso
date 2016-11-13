@@ -12,19 +12,26 @@ MODULE bp
   ! ... The variables needed for the Berry phase polarization calculation
   !
   USE kinds, ONLY: DP
+  USE becmod, ONLY : bec_type
   !
   SAVE
   PRIVATE
   PUBLIC:: lberry, lelfield, lorbm, gdir, nppstr, nberrycyc, evcel, evcelp, evcelm, &
            fact_hepsi, bec_evcel, mapgp_global, mapgm_global, nppstr_3d, &
            ion_pol, el_pol, fc_pol, l_el_pol_old, el_pol_old, el_pol_acc, &
-           nx_el, l3dstring, efield, efield_cart, efield_cry, transform_el
+           nx_el, l3dstring, efield, efield_cart, efield_cry, transform_el,&
+           mapg_owner, phase_control
+  PUBLIC :: lcalc_z2, z2_m_threshold, z2_z_threshold
   PUBLIC :: allocate_bp_efield, deallocate_bp_efield, bp_global_map
+  PUBLIC :: pdl_tot
   !
   LOGICAL :: &
        lberry  =.false., & ! if .TRUE. calculate polarization using Berry phase
        lelfield=.false., & ! if .TRUE. finite electric field using Berry phase
        lorbm=.false.       ! if .TRUE. calculate orbital magnetization (Kubo terms)
+  LOGICAL :: &
+       lcalc_z2 =.false.   ! if .TRUE. calculate Z2 without inversion symmetry
+  REAL(DP) :: z2_m_threshold, z2_z_threshold
   INTEGER :: &
        gdir,        &! G-vector for polarization calculation
        nppstr,      &! number of k-points (parallel vector)
@@ -39,8 +46,9 @@ MODULE bp
                      ! wavefunctions for  storing projectors for  electric field operator
   COMPLEX(DP), ALLOCATABLE, TARGET :: fact_hepsi(:,:)
                      ! factors for hermitean electric field operators
-  COMPLEX(DP), ALLOCATABLE, TARGET :: bec_evcel(:,:) 
-                     !for storing bec's factors with evcel
+  !COMPLEX(DP), ALLOCATABLE, TARGET :: bec_evcel(:,:) 
+  !                   !for storing bec's factors with evcel
+  TYPE(bec_type) :: bec_evcel
   INTEGER, ALLOCATABLE, TARGET :: mapgp_global(:,:)
                      ! map for G'= G+1 correspondence
   INTEGER, ALLOCATABLE, TARGET :: mapgm_global(:,:)
@@ -59,6 +67,9 @@ MODULE bp
   REAL(DP) :: efield_cart(3)   ! electric field vector in cartesian units
   REAL(DP) :: efield_cry(3)    ! electric field vector in crystal units
   REAL(DP) :: transform_el(3,3)! transformation matrix from cartesian coordinates to normed reciprocal space
+  INTEGER, ALLOCATABLE :: mapg_owner(:,:)
+  REAL(DP) :: pdl_tot         ! the total phase calculated from bp_c_phase
+  INTEGER  :: phase_control! 0 no control, 1 write, 2 read
 !
 CONTAINS
  
@@ -70,9 +81,10 @@ CONTAINS
 
    IMPLICIT NONE
 
-   IF ( lberry .OR. lelfield .OR. lorbm ) THEN
+   IF ( lberry .OR. lelfield .OR. lorbm .OR. lcalc_z2) THEN
       ALLOCATE(mapgp_global(ngm_g,3))
       ALLOCATE(mapgm_global(ngm_g,3))
+      ALLOCATE(mapg_owner(2,ngm_g))
    ENDIF
 
    l_el_pol_old=.false.
@@ -87,10 +99,11 @@ CONTAINS
 
    IMPLICIT NONE
 
-   IF ( lberry .OR. lelfield .OR. lorbm ) THEN
+   IF ( lberry .OR. lelfield .OR. lorbm .OR. lcalc_z2) THEN
       IF ( ALLOCATED(mapgp_global) ) DEALLOCATE(mapgp_global)
       IF ( ALLOCATED(mapgm_global) ) DEALLOCATE(mapgm_global)
       IF ( ALLOCATED(nx_el) ) DEALLOCATE(nx_el)
+      IF ( ALLOCATED(mapg_owner) ) DEALLOCATE (mapg_owner)
    ENDIF
 
    RETURN
@@ -101,6 +114,7 @@ CONTAINS
     !this subroutine sets up the global correspondence map G+1 and G-1
 
     USE mp,                   ONLY : mp_sum
+    USE mp_images,            ONLY : me_image, intra_image_comm
     USE gvect,                ONLY : ngm_g, g, ngm, ig_l2g
     USE fft_base,             ONLY : dfftp
     USE cell_base,            ONLY : at
@@ -111,7 +125,7 @@ CONTAINS
     INTEGER, ALLOCATABLE :: ln_g(:,:,:)
     INTEGER, ALLOCATABLE :: g_ln(:,:)
 
-    IF ( .NOT.lberry .AND. .NOT. lelfield .AND. .NOT. lorbm ) RETURN
+    IF ( .NOT.lberry .AND. .NOT. lelfield .AND. .NOT. lorbm .AND. .NOT. lcalc_z2) RETURN
     ! set up correspondence ln_g ix,iy,iz ---> global g index in
     ! (for now...) coarse grid
     ! and inverse realtion global g (coarse) to ix,iy,iz
@@ -126,7 +140,7 @@ CONTAINS
        mk3=nint(g(1,ig)*at(1,3)+g(2,ig)*at(2,3)+g(3,ig)*at(3,3))
        ln_g(mk1,mk2,mk3)=ig_l2g(ig)
     ENDDO
-    CALL mp_sum(ln_g(:,:,:))
+    CALL mp_sum(ln_g(:,:,:),intra_image_comm)
 
 
     g_ln(:,:)= 0!it means also not found
@@ -138,7 +152,7 @@ CONTAINS
        g_ln(2,ig_l2g(ig))=mk2
        g_ln(3,ig_l2g(ig))=mk3
     ENDDO
-    CALL mp_sum(g_ln(:,:))
+    CALL mp_sum(g_ln(:,:),intra_image_comm)
 
 !loop on direction
     DO idir=1,3
@@ -152,8 +166,15 @@ CONTAINS
           mapgm_global(ig,idir)=ln_g(imk(1),imk(2),imk(3))
        ENDDO
     ENDDO
-    DEALLOCATE(ln_g,g_ln)
 
+    mapg_owner=0
+    DO ig=1,ngm
+       mapg_owner(1,ig_l2g(ig))=me_image+1
+       mapg_owner(2,ig_l2g(ig))=ig
+    END DO
+    call mp_sum(mapg_owner, intra_image_comm)
+
+    DEALLOCATE(ln_g,g_ln)
 
     RETURN
 

@@ -22,7 +22,7 @@ PROGRAM pp
   !
   USE io_global,  ONLY : ionode
   USE mp_global,  ONLY : mp_startup
-  USE environment,ONLY : environment_start
+  USE environment,ONLY : environment_start, environment_end
 
   !
   IMPLICIT NONE
@@ -42,6 +42,8 @@ PROGRAM pp
   CALL extract (filplot, plot_num)
   !
   CALL chdens (filplot, plot_num)
+  !
+  CALL environment_end ( 'POST-PROC' )
   !
   CALL stop_pp()
   !
@@ -67,11 +69,12 @@ SUBROUTINE extract (filplot,plot_num)
   USE vlocal,    ONLY : strf
   USE io_files,  ONLY : tmp_dir, prefix
   USE io_global, ONLY : ionode, ionode_id
-  USE mp_global,     ONLY : nproc, nproc_pool, nproc_file, nproc_pool_file
+  USE mp_global,     ONLY : nproc_pool, nproc_file, nproc_pool_file
   USE control_flags, ONLY : twfcollect
   USE noncollin_module, ONLY : i_cons
   USE paw_variables, ONLY : okpaw
   USE mp,        ONLY : mp_bcast
+  USE mp_world,  ONLY : world_comm
   USE constants, ONLY : rytoev
 
   IMPLICIT NONE
@@ -121,32 +124,32 @@ SUBROUTINE extract (filplot,plot_num)
      !
   ENDIF
   !
-  CALL mp_bcast (ios, ionode_id)
+  CALL mp_bcast (ios, ionode_id, world_comm)
   !
   IF ( ios /= 0) CALL errore ('postproc', 'reading inputpp namelist', abs(ios))
   !
   ! ... Broadcast variables
   !
-  CALL mp_bcast( tmp_dir, ionode_id )
-  CALL mp_bcast( prefix, ionode_id )
-  CALL mp_bcast( plot_num, ionode_id )
-  CALL mp_bcast( sample_bias, ionode_id )
-  CALL mp_bcast( spin_component, ionode_id )
-  CALL mp_bcast( z, ionode_id )
-  CALL mp_bcast( dz, ionode_id )
-  CALL mp_bcast( emin, ionode_id )
-  CALL mp_bcast( emax, ionode_id )
-  CALL mp_bcast( kband, ionode_id )
-  CALL mp_bcast( kpoint, ionode_id )
-  CALL mp_bcast( filplot, ionode_id )
-  CALL mp_bcast( lsign, ionode_id )
-  CALL mp_bcast( epsilon, ionode_id )
+  CALL mp_bcast( tmp_dir, ionode_id, world_comm )
+  CALL mp_bcast( prefix, ionode_id, world_comm )
+  CALL mp_bcast( plot_num, ionode_id, world_comm )
+  CALL mp_bcast( sample_bias, ionode_id, world_comm )
+  CALL mp_bcast( spin_component, ionode_id, world_comm )
+  CALL mp_bcast( z, ionode_id, world_comm )
+  CALL mp_bcast( dz, ionode_id, world_comm )
+  CALL mp_bcast( emin, ionode_id, world_comm )
+  CALL mp_bcast( emax, ionode_id, world_comm )
+  CALL mp_bcast( kband, ionode_id, world_comm )
+  CALL mp_bcast( kpoint, ionode_id, world_comm )
+  CALL mp_bcast( filplot, ionode_id, world_comm )
+  CALL mp_bcast( lsign, ionode_id, world_comm )
+  CALL mp_bcast( epsilon, ionode_id, world_comm )
   !
   ! no task specified: do nothing and return
   !
   IF (plot_num == -1) RETURN
   !
-  IF (plot_num < 0 .or. plot_num > 19) CALL errore ('postproc', &
+  IF (plot_num < 0 .or. plot_num > 20) CALL errore ('postproc', &
           'Wrong plot_num', abs (plot_num) )
 
   IF (plot_num == 7 .or. plot_num == 13 .or. plot_num==18) THEN
@@ -166,20 +169,18 @@ SUBROUTINE extract (filplot,plot_num)
          (plot_num==8).or.(plot_num==10)
   IF ( needwf ) THEN
      CALL read_file ( )
+     IF (nproc_pool /= nproc_pool_file .and. .not. twfcollect)  &
+        CALL errore('postproc', &
+        'pw.x run with a different number of procs/pools. Use wf_collect=.true.',1)
+     CALL openfil_pp ( )
   ELSE
      CALL read_xml_file ( )
   END IF
   !
-  IF (nproc_pool /= nproc_pool_file .and. .not. twfcollect .and. needwf)  &
-     CALL errore('postproc',&
-     'pw.x run with a different number of procs/pools. Use wf_collect=.true.',1)
-
   IF ( ( two_fermi_energies .or. i_cons /= 0) .and. &
        ( plot_num==3 .or. plot_num==4 .or. plot_num==5 ) ) &
      CALL errore('postproc',&
      'Post-processing with constrained magnetization is not available yet',1)
-  !
-  CALL openfil_pp ( )
   !
   ! The following line sets emax to its default value if not set
   ! It is done here because Ef must be read from file

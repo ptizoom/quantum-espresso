@@ -1412,8 +1412,8 @@ CONTAINS
         ALLOCATE( rwork( MAX(1, 3*n-2) ), zwork( MAX(1, 2*n-1)) )
         CALL ZHPEV(jobz, uplo, n, ap, w, z, ldz, zwork, rwork, INFO)
         DEALLOCATE( rwork, zwork )
-        IF( info .NE. 0 ) THEN
-          CALL errore( ' dspev_drv ', ' diagonalization failed ',info )
+        IF( INFO .NE. 0 ) THEN
+          CALL errore( ' dspev_drv ', ' diagonalization failed ',INFO )
         END IF
 #endif
         RETURN
@@ -1462,7 +1462,11 @@ CONTAINS
   SUBROUTINE pzheevd_drv( tv, n, nb, h, w, ortho_cntx )
 
      USE kinds,     ONLY : DP
-
+     USE mp_diag,   ONLY : ortho_comm
+     USE mp,        ONLY : mp_comm_free
+#if defined(__ELPA)
+     USE elpa1
+#endif
      IMPLICIT NONE
      
      LOGICAL, INTENT(IN)  :: tv
@@ -1477,7 +1481,7 @@ CONTAINS
 
      COMPLEX(DP) :: ztmp( 4 )
      REAL(DP)    :: rtmp( 4 )
-     INTEGER     :: itmp( 4 )
+     INTEGER     :: itmp( 4 ),ldw
      COMPLEX(DP), ALLOCATABLE :: work(:)
      COMPLEX(DP), ALLOCATABLE :: v(:,:)
      REAL(DP),    ALLOCATABLE :: rwork(:)
@@ -1485,19 +1489,37 @@ CONTAINS
      INTEGER     :: LWORK, LRWORK, LIWORK
      INTEGER     :: desch( 10 ), info
      CHARACTER   :: jobv
+#if defined(__ELPA)
+     INTEGER     :: nprow,npcol,my_prow, my_pcol,mpi_comm_rows, mpi_comm_cols
+#endif 
+
      !
      IF( tv ) THEN
         ALLOCATE( v( SIZE( h, 1 ), SIZE( h, 2 ) ) )
         jobv = 'V'
      ELSE
-        CALL errore( ' pzheevd_drv ', ' pzheevd does not compute eigenvalue only ', ABS( info ) )
+        CALL errore('pzheevd_drv', 'pzheevd does not compute eigenvalue only',1)
      END IF
 
-     CALL descinit( desch, n, n, nb, nb, 0, 0, ortho_cntx, SIZE( h, 1 ) , info )
+     call descinit( desch, n, n, nb, nb, 0, 0, ortho_cntx, size(h,1), info )
+     
+#if defined(__ELPA)
+     CALL BLACS_Gridinfo( ortho_cntx, nprow, npcol, my_prow, my_pcol )
+     CALL get_elpa_row_col_comms(ortho_comm, my_prow, my_pcol,mpi_comm_rows,mpi_comm_cols)
+     CALL solve_evp_complex(n, n, h, size(h,1), w, v, size(h,1), nb, &
+                          mpi_comm_rows, mpi_comm_cols)
+     h = v
+
+     CALL mp_comm_free( mpi_comm_rows )
+     CALL mp_comm_free( mpi_comm_cols )
+
+#else
+!
 
      lwork = -1
      lrwork = -1
      liwork = -1
+     !
      CALL PZHEEVD( 'V', 'L', n, h, 1, 1, desch, w, v, 1, 1, &
                    desch, ztmp, LWORK, rtmp, LRWORK, itmp, LIWORK, INFO )
 
@@ -1514,13 +1536,13 @@ CONTAINS
      CALL PZHEEVD( 'V', 'L', n, h, 1, 1, desch, w, v, 1, 1, &
                    desch, work, LWORK, rwork, LRWORK, iwork, LIWORK, INFO )
 
-     IF( info /= 0 ) CALL errore( ' cdiaghg ', ' PZHEEVD ', ABS( info ) )
+    IF( info /= 0 ) CALL errore( ' cdiaghg ', ' PZHEEVD ', ABS( info ) )
 
      IF( tv ) h = v
-
-     DEALLOCATE( work )
-     DEALLOCATE( rwork )
-     DEALLOCATE( iwork )
+#endif
+     IF( ALLOCATED (rwork) )DEALLOCATE( work )
+     IF ( ALLOCATED (rwork) )DEALLOCATE( rwork )
+     IF ( ALLOCATED (iwork) )DEALLOCATE( iwork )
      IF( ALLOCATED( v ) ) DEALLOCATE( v )
      RETURN
   END SUBROUTINE pzheevd_drv

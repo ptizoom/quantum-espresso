@@ -35,11 +35,14 @@ input_description -distribution {Quantum Espresso} -package PWscf -program bands
 	    }
 	}
 
-	var outdir -type CHARACTER {     
-	    info {
-		temporary directory where pw.x files resides
-	    }
-	}
+        var outdir -type CHARACTER {
+            info {
+                   directory containing the input data,
+                   i.e. the same as in pw.x }
+            default {
+                      value of the ESPRESSO_TMPDIR environment variable if set;
+                      current directory ('./') otherwise }
+        }
 
 	var filband -type CHARACTER {     
 	    info {
@@ -64,6 +67,21 @@ input_description -distribution {Quantum Espresso} -package PWscf -program bands
 	    }
 	}
 
+        var lp -type LOGICAL {
+            default { .false. }
+            info {
+                If .true. matrix elements of the momentum operator p between
+                conduction and valence bands are written to file "filp" 
+            }
+
+        }      
+        var filp -type CHARACTER {
+            default { 'p_avg.dat' }
+            info {
+                If "lp" is set to .true., file name for matrix elements of p
+	    }
+
+        }      
 	var lsym -type LOGICAL {
 	    info {
 		If .true. the bands are classified according to the
@@ -92,7 +110,7 @@ input_description -distribution {Quantum Espresso} -package PWscf -program bands
                 xk, yk, energy
                 xk, yk, energy
                 ..  ..  ..
-                enegies are written in eV and xk in units 2\pi/a.
+                energies are written in eV and xk in units 2\pi/a.
         }
 
       }           

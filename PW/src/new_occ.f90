@@ -20,9 +20,8 @@ SUBROUTINE new_evc()
   USE io_global,            ONLY : stdout
   USE kinds,                ONLY : DP
   USE constants,            ONLY : rytoev
-  USE basis,                ONLY : natomwfc
+  USE basis,                ONLY : natomwfc, swfcatom
   USE klist,                ONLY : nks, ngk
-  USE ldaU,                 ONLY : swfcatom
   USE lsda_mod,             ONLY : lsda, current_spin, nspin, isk
   USE wvfct,                ONLY : nbnd, npw, npwx, igk, wg, et
   USE control_flags,        ONLY : gamma_only, iverbosity
@@ -31,7 +30,7 @@ SUBROUTINE new_evc()
   USE gvect,                ONLY : gstart
   USE io_files,             ONLY : iunigk, nwordwfc, iunwfc, nwordatwfc, iunsat
   USE buffers,              ONLY : get_buffer, save_buffer
-  USE mp_global,            ONLY : intra_bgrp_comm
+  USE mp_bands,             ONLY : intra_bgrp_comm
   USE mp,                   ONLY : mp_sum
 
   IMPLICIT NONE
@@ -75,7 +74,7 @@ SUBROUTINE new_evc()
         READ (iunigk) igk
         CALL get_buffer  (evc, nwordwfc, iunwfc, ik)
      END IF
-     CALL davcio (swfcatom, nwordatwfc, iunsat, ik, - 1)
+     CALL get_buffer (swfcatom, nwordatwfc, iunsat, ik)
      !
      ! make the projection on the atomic wavefunctions,
      !
@@ -94,9 +93,8 @@ SUBROUTINE new_evc()
            ENDIF
         ENDDO
      ENDDO
-#ifdef __MPI
+
      CALL mp_sum ( proj, intra_bgrp_comm )
-#endif
 
      IF ( iverbosity > 0 ) THEN
         DO ibnd=1,nbnd

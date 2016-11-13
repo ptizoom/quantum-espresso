@@ -19,7 +19,7 @@ MODULE paw_onecenter
     !
     USE kinds,          ONLY : DP
     USE paw_variables,  ONLY : paw_info, rad, radial_grad_style, vs_rad
-    USE mp_global,      ONLY : nproc_image, me_image, intra_image_comm
+    USE mp_images,      ONLY : nproc_image, me_image, intra_image_comm
     USE mp,             ONLY : mp_sum
     !
     IMPLICIT NONE
@@ -32,6 +32,7 @@ MODULE paw_onecenter
                              ! and derivatives of D^1-~D^1 coefficients
     PUBLIC :: PAW_rho_lm     ! uses becsum to generate one-center charges
                              ! (all-electron and pseudo) on radial grid
+    PUBLIC :: PAW_h_potential ! computes hartree potential, only used by paw_exx
     !
     INTEGER, SAVE :: paw_comm, me_paw, nproc_paw
     !
@@ -45,9 +46,8 @@ MODULE paw_onecenter
     !
     LOGICAL :: with_small_so = .FALSE.
     !
-    ! the following macro controls the use of several fine-grained clocks
-    ! set it to 'if(.false.) CALL' (without quotes) in order to disable them,
-    ! set it to 'CALL' to enable them.
+    ! the following global variable controls the use of several fine-grained clocks
+    ! set it to .false. in order to disable them, set it to .true. to enable them.
     !
     LOGICAL, PARAMETER :: TIMING = .false.
     !
@@ -96,7 +96,7 @@ SUBROUTINE PAW_potential(becsum, d, energy, e_cmp)
    ! fake cross band occupations to select only one pfunc at a time:
    REAL(DP)                :: becfake(nhm*(nhm+1)/2,nat,nspin)
    REAL(DP)                :: integral           ! workspace
-   REAL(DP)                :: energy_xc, energy_h, energy_tot
+   REAL(DP)                :: energy_tot
    REAL(DP)                :: sgn                ! +1 for AE -1 for PS
 
    CALL start_clock('PAW_pot')
@@ -117,7 +117,6 @@ SUBROUTINE PAW_potential(becsum, d, energy, e_cmp)
    !
    me_paw    = mp_rank( paw_comm )
    nproc_paw = mp_size( paw_comm )
-
    !
    atoms: DO ia = ia_s, ia_e
       !
@@ -175,8 +174,7 @@ SUBROUTINE PAW_potential(becsum, d, energy, e_cmp)
 
             ! First compute the Hartree potential (it does not depend on spin...):
             CALL PAW_h_potential(i, rho_lm, v_lm(:,:,1), energy)
-               !
-               !    
+            !
       ! NOTE: optional variables works recursively: e.g. if energy is not present here
             ! it will not be present in PAW_h_potential too!
             !IF (present(energy)) write(*,*) 'H',i%a,i_what,sgn*energy
@@ -206,8 +204,7 @@ SUBROUTINE PAW_potential(becsum, d, energy, e_cmp)
                      IF (i_what == AE) THEN
                         CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc, rho_lm)
                         IF (with_small_so) &
-                        CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc_rel, &
-                                           msmall_lm)
+                          CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc_rel, msmall_lm)
                      ELSE
                         CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%ptfunc, rho_lm, upf(i%t)%qfuncl)
                         !                  optional argument for pseudo part --> ^^^
@@ -220,16 +217,13 @@ SUBROUTINE PAW_potential(becsum, d, energy, e_cmp)
                            rho_lm(j,lm,is) = rho_lm(j,lm,is) * savedv_lm(j,lm,is)
                         END DO
                         ! Integrate!
-                        CALL simpson(kkbeta,rho_lm(1,lm,is),g(i%t)%rab(1),&
-                                                             integral)
+                        CALL simpson(kkbeta,rho_lm(1,lm,is),g(i%t)%rab(1), integral)
                         d(nmb,i%a,is) = d(nmb,i%a,is) + sgn * integral
                         IF (is>1.and.with_small_so.AND.i_what== AE ) THEN
                            DO j=1, imesh
-                              msmall_lm(j,lm,is)=msmall_lm(j,lm,is)*&
-                                                 g_lm(j,lm,is)
+                              msmall_lm(j,lm,is)=msmall_lm(j,lm,is)*g_lm(j,lm,is)
                            ENDDO
-                           CALL simpson(kkbeta,msmall_lm(1,lm,is),&
-                                                 g(i%t)%rab(1), integral)
+                           CALL simpson(kkbeta,msmall_lm(1,lm,is), g(i%t)%rab(1), integral)
                            d(nmb,i%a,is) = d(nmb,i%a,is) + sgn * integral
                         ENDIF
                      ENDDO
@@ -308,7 +302,7 @@ FUNCTION PAW_ddot(bec1,bec2)
     !
     atoms: DO ia = ia_s, ia_e
     !
-    i%a = ia           ! the index of the atom
+    i%a = ia          ! the index of the atom
     i%t = ityp(ia)    ! the type of atom ia
     i%m = g(i%t)%mesh ! radial mesh size for atom ia
     i%b = upf(i%t)%nbeta
@@ -357,11 +351,10 @@ FUNCTION PAW_ddot(bec1,bec2)
                DO lm = 1, i%l**2
                   ! I can use rho_lm_save as workspace
                   DO k = 1, i%m
-                      rho_lm_save(k,lm,1) = (rho_lm_save(k,lm,1)- &
-                      rho_lm_save(k,lm,2)) * (rho_lm(k,lm,1)-rho_lm(k,lm,2))
+                      rho_lm_save(k,lm,1) = (rho_lm_save(k,lm,1)- rho_lm_save(k,lm,2)) &
+                                          * (rho_lm(k,lm,1)-rho_lm(k,lm,2))
                   ENDDO
-                  CALL simpson (upf(i%t)%kkbeta,rho_lm_save(:,lm,1),&
-                                                g(i%t)%rab,integral)
+                  CALL simpson (upf(i%t)%kkbeta,rho_lm_save(:,lm,1),g(i%t)%rab,integral)
                   !
                   ! Sum all the energies in PAW_ddot
                   PAW_ddot = PAW_ddot + i_sign * integral * 0.5_DP* e2/pi
@@ -429,22 +422,14 @@ SUBROUTINE PAW_xc_potential(i, rho_lm, rho_core, v_lm, energy)
 
     REAL(DP), ALLOCATABLE :: rho_rad(:,:)       ! workspace (only one radial slice of rho)
     !
-    REAL(DP), ALLOCATABLE :: msmall_rad(:,:)    ! workspace 
-    REAL(DP)              :: hatr(3)            ! aux, used to integrate energy
-
     REAL(DP), ALLOCATABLE :: e_rad(:)           ! aux, used to store radial slices of energy
     REAL(DP), ALLOCATABLE :: e_of_tid(:)        ! aux, for openmp parallel reduce
     REAL(DP)              :: e                  ! aux, used to integrate energy
     !
     INTEGER               :: ix,k               ! counters on directions and radial grid
     INTEGER               :: lsd                ! switch for local spin density
-
-    REAL(DP)              :: exc_ret, stmp
-    !
     REAL(DP)              :: arho, amag, zeta, ex, ec, vx(2), vc(2), vs
-    !
-    INTEGER               :: ipol, kpol
-
+    INTEGER               :: kpol
     INTEGER               :: mytid, ntids
 
 #ifdef __OPENMP
@@ -587,16 +572,17 @@ END SUBROUTINE PAW_xc_potential
 !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!!  !!!! 
 !!! add gradient correction to v_xc, code mostly adapted from ../atomic/vxcgc.f90
 !!! in order to support non-spherical charges (as Y_lm expansion)
-!!! Note that the first derivative in vxcgc becames a gradient, while the second is a divergence.
-!!! We also have to temporary store some additional Y_lm components in order not to loose
+!!! Note that the first derivative in vxcgc becomes a gradient, while the second is a divergence.
+!!! We also have to temporarily store some additional Y_lm components in order not to loose
 !!! precision during the calculation, even if only the ones up to lmax_rho (the maximum in the
 !!! density of charge) matter when computing \int v * rho 
 SUBROUTINE PAW_gcxc_potential(i, rho_lm,rho_core, v_lm, energy)
     USE lsda_mod,               ONLY : nspin
     USE noncollin_module,       ONLY : noncolin, nspin_mag, nspin_gga
     USE atom,                   ONLY : g => rgrid
-    USE constants,              ONLY : sqrtpi, fpi,pi,e2, eps => eps12, eps2 => eps24
-    USE funct,                  ONLY : gcxc, gcx_spin_vec, gcc_spin, gcx_spin
+    USE constants,              ONLY : sqrtpi, fpi,pi,e2
+    USE funct,                  ONLY : gcxc, gcx_spin_vec, gcc_spin, &
+                                       gcc_spin_more, igcc_is_lyp
     USE mp,                     ONLY : mp_sum
     !
     TYPE(paw_info), INTENT(IN) :: i   ! atom's minimal info
@@ -604,6 +590,8 @@ SUBROUTINE PAW_gcxc_potential(i, rho_lm,rho_core, v_lm, energy)
     REAL(DP), INTENT(IN)    :: rho_core(i%m)            ! core charge, radial and spherical
     REAL(DP), INTENT(INOUT) :: v_lm(i%m,i%l**2,nspin)   ! potential to be updated
     REAL(DP),OPTIONAL,INTENT(INOUT) :: energy           ! if present, add GC to energy
+    
+    REAL(DP),PARAMETER      :: epsr = 1.e-6_dp, epsg = 1.e-10_dp ! (as in PW/src/gradcorr.f90)
 
     REAL(DP),ALLOCATABLE    :: rho_rad(:,:)! charge density sampled
     REAL(DP),ALLOCATABLE    :: grad(:,:,:) ! gradient
@@ -620,15 +608,15 @@ SUBROUTINE PAW_gcxc_potential(i, rho_lm,rho_core, v_lm, energy)
     REAL(DP), ALLOCATABLE :: vout_lm(:,:,:)   ! potential as lm components
     REAL(DP), ALLOCATABLE :: segni_rad(:,:)   ! sign of the magnetization
 
-    REAL(DP),ALLOCATABLE    :: e_rad(:)                   ! aux, used to store energy
-    REAL(DP)                :: e, e_gcxc                  ! aux, used to integrate energy
+    REAL(DP),ALLOCATABLE    :: e_rad(:)               ! aux, used to store energy
+    REAL(DP)                :: e, e_gcxc              ! aux, used to integrate energy
 
-    INTEGER  :: k, ix, is, lm                             ! counters on spin and mesh
-    REAL(DP) :: sx,sc,v1x,v2x,v1c,v2c                     ! workspace
-    REAL(DP) :: v1xup, v1xdw, v2xup, v2xdw, v1cup, v1cdw  ! workspace
-    REAL(DP) :: sgn, arho                                 ! workspace
-    REAL(DP) :: rup, rdw, co2                             ! workspace
-    REAL(DP) :: rh, zeta, grh2
+    INTEGER  :: k, ix, is, lm                         ! counters on spin and mesh
+    REAL(DP) :: sx,sc,v1x,v2x,v1c,v2c                 ! workspace
+    REAL(DP) :: v1cup, v1cdw, v2cup, v2cdw, v2cud     ! workspace
+    REAL(DP) :: sgn, arho                             ! workspace
+    REAL(DP) :: co2                                   ! workspace
+    REAL(DP) :: rh, zeta, grh2, grhoup, grhodw, grhoud
     REAL(DP), ALLOCATABLE :: rup_vec(:), rdw_vec(:)
     REAL(DP), ALLOCATABLE :: sx_vec(:)
     REAL(DP), ALLOCATABLE :: v1xup_vec(:), v1xdw_vec(:)
@@ -713,7 +701,7 @@ SUBROUTINE PAW_gcxc_potential(i, rho_lm,rho_core, v_lm, energy)
                arho = ABS(arho)
 
                ! I am using grad(rho)**2 here, so its eps has to be eps**2
-               IF ( (arho>eps) .and. (grad2(k,1)>eps2) ) THEN
+               IF ( (arho>epsr) .and. (grad2(k,1)>epsg) ) THEN
                    CALL gcxc(arho,grad2(k,1), sx,sc,v1x,v2x,v1c,v2c)
                    IF (present(energy)) &
                        e_rad(k)    = sgn *e2* (sx+sc) * g(i%t)%r2(k)
@@ -751,43 +739,66 @@ SUBROUTINE PAW_gcxc_potential(i, rho_lm,rho_core, v_lm, energy)
         DO ix = ix_s, ix_e
         !
         CALL PAW_lm2rad(i, ix, rhoout_lm, rho_rad, nspin_gga)
-        CALL PAW_gradient(i, ix, rhoout_lm, rho_rad, rho_core, &
-                          grad2, grad)
+        CALL PAW_gradient(i, ix, rhoout_lm, rho_rad, rho_core,grad2, grad)
         !
         DO k = 1,i%m
             !
             ! Prepare the necessary quantities
             ! rho_core is considered half spin up and half spin down:
-            co2 = rho_core(k)/2._dp
+            co2 = rho_core(k)/2
             ! than I build the real charge dividing by r**2
             rup_vec(k) = rho_rad(k,1)*g(i%t)%rm2(k) + co2
             rdw_vec(k) = rho_rad(k,2)*g(i%t)%rm2(k) + co2
         END DO
-        ! bang!
+        !
         CALL gcx_spin_vec (rup_vec, rdw_vec, grad2(:,1), grad2(:,2), &
                 sx_vec, v1xup_vec, v1xdw_vec, v2xup_vec, v2xdw_vec, i%m)
         DO k = 1,i%m
             rh = rup_vec(k) + rdw_vec(k) ! total charge
-            IF ( rh > eps ) THEN
-                zeta = (rup_vec(k) - rdw_vec(k) ) / rh ! polarization
-                !
-                grh2 =  (grad(k,1,1) + grad(k,1,2))**2 &
-                      + (grad(k,2,1) + grad(k,2,2))**2 &
-                      + (grad(k,3,1) + grad(k,3,2))**2
-                CALL gcc_spin (rh, zeta, grh2, sc, v1cup, v1cdw, v2c)
-            ELSE
+            NON_VANISHING :  &
+            IF ( rh > epsr ) THEN
+                IF(igcc_is_lyp())THEN
+                  grhoup =  grad(k,1,1)**2 + grad(k,2,1)**2 + grad(k,3,1)**2
+                  grhodw =  grad(k,1,2)**2 + grad(k,2,2)**2 + grad(k,3,2)**2
+                  grhoud =  grad(k,1,1)*grad(k,1,2)+ &
+                            grad(k,2,1)*grad(k,2,2)+ &
+                            grad(k,3,1)*grad(k,3,2)
+                  CALL gcc_spin_more( rup_vec(k), rdw_vec(k), grhoup, grhodw, grhoud, &
+                                      sc, v1cup, v1cdw, v2cup, v2cdw, v2cud )
+                
+                ELSE
+                  zeta = (rup_vec(k) - rdw_vec(k) ) / rh ! polarization
+                  !
+                  grh2 =  (grad(k,1,1) + grad(k,1,2))**2 &
+                        + (grad(k,2,1) + grad(k,2,2))**2 &
+                        + (grad(k,3,1) + grad(k,3,2))**2
+                  CALL gcc_spin (rh, zeta, grh2, sc, v1cup, v1cdw, v2c)
+                  v2cup = v2c
+                  v2cdw = v2c
+                  v2cud = v2c
+                ENDIF
+            ELSE NON_VANISHING 
                 sc    = 0._dp
                 v1cup = 0._dp
                 v1cdw = 0._dp
                 v2c   = 0._dp
-            ENDIF
+                v2cup = 0._dp
+                v2cdw = 0._dp
+                v2cud = 0._dp
+            ENDIF &
+            NON_VANISHING 
             IF (present(energy)) &
                e_rad(k)    = e2*(sx_vec(k)+sc)* g(i%t)%r2(k)
+
+           ! first term of the gradient correction : D(rho*Exc)/D(rho)
             gc_rad(k,ix,1)  = (v1xup_vec(k)+v1cup)!*g(i%t)%rm2(k)
             gc_rad(k,ix,2)  = (v1xdw_vec(k)+v1cdw)!*g(i%t)%rm2(k)
             !
-            h_rad(k,:,ix,1) =( (v2xup_vec(k)+v2c)*grad(k,:,1)+v2c*grad(k,:,2) )*g(i%t)%r2(k)
-            h_rad(k,:,ix,2) =( (v2xdw_vec(k)+v2c)*grad(k,:,2)+v2c*grad(k,:,1) )*g(i%t)%r2(k)
+            ! h contains D(rho*Exc)/D(|grad rho|) * (grad rho) / |grad rho|
+!             h_rad(k,:,ix,1) =( (v2xup_vec(k)+v2c)*grad(k,:,1)+v2c*grad(k,:,2) )*g(i%t)%r2(k)
+!             h_rad(k,:,ix,2) =( (v2xdw_vec(k)+v2c)*grad(k,:,2)+v2c*grad(k,:,1) )*g(i%t)%r2(k)
+            h_rad(k,:,ix,1) =( (v2xup_vec(k)+v2cup)*grad(k,:,1)+v2cud*grad(k,:,2) )*g(i%t)%r2(k)
+            h_rad(k,:,ix,2) =( (v2xdw_vec(k)+v2cdw)*grad(k,:,2)+v2cud*grad(k,:,1) )*g(i%t)%r2(k)
         ENDDO ! k
         ! integrate energy (if required)
         ! NOTE: this integration is duplicated for every spin, FIXME!
@@ -847,13 +858,13 @@ SUBROUTINE PAW_gcxc_potential(i, rho_lm,rho_core, v_lm, energy)
        h_rad(1:i%m,3,ix,1:nspin_gga) = h_rad(1:i%m,3,ix,1:nspin_gga)/&
                                        rad(i%t)%sin_th(ix)
     ENDDO
-    ! We need the gradient of h to calculate the last part of the exchange
+    ! We need the gradient of H to calculate the last part of the exchange
     ! and correlation potential. First we have to convert H to its Y_lm expansion
     CALL PAW_rad2lm3(i, h_rad, h_lm, i%l+rad(i%t)%ladd,nspin_gga)
     !
     ! Compute div(H)
     CALL PAW_divergence(i, h_lm, div_h, i%l+rad(i%t)%ladd, i%l)
-    !                         input max lm --^     ^-- output max lm
+    !                       input max lm --^  output max lm-^
 
     ! Finally sum it back into v_xc
     DO is = 1,nspin_gga
@@ -1098,7 +1109,9 @@ SUBROUTINE PAW_h_potential(i, rho_lm, v_lm, energy)
         DO k = 1, i%m
             aux(k) = v_lm(k,lm) * SUM(rho_lm(k,lm,1:nspin_lsda))
         ENDDO
+        ! FIXME:
         CALL simpson (i%m, aux, g(i%t)%rab, e)
+!         CALL simpson (upf(i%t)%kkbeta, aux, g(i%t)%rab, e)
         !
         ! Sum all the energies in PAW_ddot
         energy = energy + e
@@ -1365,7 +1378,6 @@ SUBROUTINE PAW_dpotential(dbecsum, becsum, int3, npe)
    REAL(DP)                :: integral_r           ! workspace
    REAL(DP)                :: integral_i           ! workspace
    REAL(DP)                :: sgn                ! +1 for AE -1 for PS
-   COMPLEX(DP)             :: sumd
    INTEGER  :: ipert
 
    CALL start_clock('PAW_dpot')
@@ -1418,8 +1430,7 @@ SUBROUTINE PAW_dpotential(dbecsum, becsum, int3, npe)
                rho_core => upf(i%t)%paw%ae_rho_atc
                sgn = +1._dp
             ELSE
-               CALL PAW_rho_lm(i, becsum, upf(i%t)%paw%ptfunc, &
-                                          rho_lm, upf(i%t)%qfuncl)
+               CALL PAW_rho_lm(i, becsum, upf(i%t)%paw%ptfunc, rho_lm, upf(i%t)%qfuncl)
                rho_core => upf(i%t)%rho_atc 
                sgn = -1._dp                 
             ENDIF
@@ -1430,18 +1441,14 @@ SUBROUTINE PAW_dpotential(dbecsum, becsum, int3, npe)
             DO ipert=1,npe
                IF (i_what == AE) THEN
                   becfake(:,ia,:)=DBLE(dbecsum(:,ia,:,ipert))
-                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc, &
-                                     drhor_lm(1,1,1,ipert))
+                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc, drhor_lm(1,1,1,ipert))
                   becfake(:,ia,:)=AIMAG(dbecsum(:,ia,:,ipert))
-                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc, &
-                                     drhoi_lm(1,1,1,ipert))
+                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%pfunc, drhoi_lm(1,1,1,ipert))
                ELSE
                   becfake(:,ia,:)=DBLE(dbecsum(:,ia,:,ipert))
-                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%ptfunc, &
-                                     drhor_lm(1,1,1,ipert), upf(i%t)%qfuncl)
+                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%ptfunc, drhor_lm(1,1,1,ipert), upf(i%t)%qfuncl)
                   becfake(:,ia,:)=AIMAG(dbecsum(:,ia,:,ipert))
-                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%ptfunc, &
-                                     drhoi_lm(1,1,1,ipert), upf(i%t)%qfuncl)
+                  CALL PAW_rho_lm(i, becfake, upf(i%t)%paw%ptfunc, drhoi_lm(1,1,1,ipert), upf(i%t)%qfuncl)
                END IF
             END DO
 
@@ -1937,10 +1944,9 @@ REAL(DP), INTENT(OUT) :: segni_rad(i%m, rad(i%t)%nx)
              ! output: keep track of the spin direction
 
 REAL(DP) :: rho_rad(i%m, nspin)    ! auxiliary: the charge+mag along a line
-REAL(DP) :: msmall_rad(i%m, nspin)    ! auxiliary: the charge+mag along a line
 REAL(DP) :: rhoout_rad(i%m, rad(i%t)%nx, nspin_gga) ! auxiliary: rho up and down along a line
 REAL(DP) :: mag             ! modulus of the magnetization
-REAL(DP) :: m(3), hatr(3)
+REAL(DP) :: m(3)
 
 INTEGER :: ix, k, ipol, kpol      ! counter on mesh points
 
@@ -2006,7 +2012,7 @@ REAL(DP), INTENT(IN) :: vout_lm(i%m, i%l**2, nspin_gga)
              ! input: the spin up and spin down charges
 REAL(DP), INTENT(IN) :: segni_rad(i%m, rad(i%t)%nx)
              ! input: keep track of the direction of the magnetization
-REAL(DP), INTENT(OUT) :: v_lm(i%m, i%l**2, nspin)
+REAL(DP), INTENT(INOUT) :: v_lm(i%m, i%l**2, nspin)
              ! output: the xc potential and magnetic field
 
 REAL(DP) :: vsave_lm(i%m, i%l**2, nspin) ! auxiliary: v_lm is updated
@@ -2016,14 +2022,9 @@ REAL(DP) :: vout_rad(i%m, nspin_gga)  ! auxiliary: the potential along a line
 
 REAL(DP) :: rho_rad(i%m, nspin)       ! auxiliary: the charge+mag along a line
 
-REAL(DP) :: msmall_rad(i%m, nspin)    ! auxiliary: the mag of small components
-                                      !            along a line
 REAL(DP) :: v_rad(i%m, rad(i%t)%nx, nspin) ! auxiliary: rho up and down along a line
 REAL(DP) :: g_rad(i%m, rad(i%t)%nx, nspin) ! auxiliary: rho up and down along a line
 REAL(DP) :: mag            ! modulus of the magnetization
-
-REAL(DP) :: hatr(3)           ! modulus of the magnetization
-
 integer :: ix, k, ipol, kpol     ! counter on mesh points
 
 IF (nspin /= 4) CALL errore('compute_pot_nonc','called in the wrong case',1)
@@ -2172,7 +2173,7 @@ REAL(DP), INTENT(IN) ::  drho_lm(i%m, i%l**2, nspin)
              ! input: the four components of the charge 
 REAL(DP), INTENT(IN) :: vout_lm(i%m, i%l**2, nspin_gga)
              ! output: the spin up and spin down charge
-REAL(DP), INTENT(OUT) :: v_lm(i%m, i%l**2, nspin)
+REAL(DP), INTENT(INOUT) :: v_lm(i%m, i%l**2, nspin)
              ! output: the spin up and spin down charge
 REAL(DP), INTENT(IN) :: segni_rad(i%m, rad(i%t)%nx)
              ! output: keep track of the spin direction

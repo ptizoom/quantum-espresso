@@ -136,9 +136,9 @@ SUBROUTINE local_dos (iflag, lsign, kpoint, kband, spin_component, &
      ENDDO
   ENDDO
 
-  IF (npool>1) THEN
+  IF ( iflag == 0 .AND. npool > 1 ) THEN
      CALL xk_pool( kpoint, nkstot, kpoint_pool,  which_pool )
-     IF (kpoint_pool<1 .or. kpoint_pool> nks) &
+     IF ( kpoint_pool < 1 .or. kpoint_pool > nks ) &
         CALL errore('local_dos','problems with xk_pool',1)
      i_am_the_pool=(my_pool_id==which_pool)
   ELSE
@@ -155,7 +155,7 @@ SUBROUTINE local_dos (iflag, lsign, kpoint, kband, spin_component, &
      IF (ik == kpoint_pool .and.i_am_the_pool.or. iflag /= 0) THEN
         IF (lsda) current_spin = isk (ik)
         CALL gk_sort (xk (1, ik), ngm, g, ecutwfc / tpiba2, npw, igk, g2kin)
-        CALL davcio (evc, nwordwfc, iunwfc, ik, - 1)
+        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, - 1)
         CALL init_us_2 (npw, igk, xk (1, ik), vkb)
 
         IF (gamma_only) THEN

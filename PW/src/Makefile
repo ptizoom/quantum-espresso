@@ -2,11 +2,15 @@
 
 include ../../make.sys
 
-# location of needed modules
-MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../Modules $(MOD_FLAG).
+# location of needed modules and included files (if any)
+MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../Modules
+IFLAGS=
 
 PWOBJS = \
 pwscf.o 
+
+MANYPWOBJS = \
+manypw.o 
 
 PWLIBS = \
 a2fmod.o \
@@ -25,6 +29,7 @@ allocate_nlpot.o \
 allocate_wfc.o \
 atomic_rho.o \
 atomic_wfc.o \
+atomic_wfc_mod.o \
 average_pp.o \
 acfdt_in_pw.o \
 newd.o \
@@ -114,13 +119,13 @@ iweights.o \
 start_k.o \
 kpoint_grid.o \
 lchk_tauxk.o \
+ldaU.o \
 make_pointlists.o \
 makov_payne.o \
 martyna_tuckerman.o \
 memory_report.o \
 mix_rho.o \
 move_ions.o \
-ms2.o \
 multable.o \
 n_plane_waves.o \
 new_ns.o \
@@ -133,11 +138,24 @@ openfil.o \
 orthoatwfc.o \
 output_tau.o \
 para.o \
+paw_exx.o \
 paw_init.o \
 paw_onecenter.o \
 paw_symmetry.o \
+plugin_print_energies.o \
+plugin_scf_energy.o \
+plugin_scf_potential.o \
+plugin_init_ions.o \
+plugin_init_cell.o \
+plugin_init_potential.o \
+plugin_initbase.o \
+plugin_clean.o \
+plugin_clock.o \
+plugin_summary.o \
 plugin_initialization.o \
-plugin_forces.o \
+plugin_ext_forces.o \
+plugin_int_forces.o \
+plugin_read_input.o \
 plus_u_full.o \
 potinit.o \
 print_clock_pw.o \
@@ -157,19 +175,17 @@ read_file.o \
 regterg.o \
 remove_atomic_rho.o \
 report_mag.o \
-restart_from_file.o \
 restart_in_electrons.o \
-restart_in_ions.o \
 rho2zeta.o \
 rotate_wfc.o \
 rotate_wfc_k.o \
 rotate_wfc_gamma.o \
 ruotaijk.o \
+run_pwscf.o \
 s_1psi.o \
 s_psi.o \
 save_in_cbands.o \
 save_in_electrons.o \
-save_in_ions.o \
 scale_h.o \
 scf_mod.o \
 set_kplusq.o \
@@ -207,6 +223,7 @@ transform_qq_so.o \
 trnvecc.o \
 tweights.o \
 update_pot.o \
+us_exx.o \
 usnldiag.o \
 v_of_rho.o \
 vcsmd.o \
@@ -214,6 +231,7 @@ vcsubs.o \
 vhpsi.o \
 vloc_of_g.o \
 vloc_psi.o \
+xdm_dispersion.o \
 xk_wk_collect.o \
 wfcinit.o \
 write_ns.o \
@@ -226,26 +244,33 @@ wannier_check.o \
 wannier_clean.o \
 wannier_occ.o \
 wannier_enrg.o \
+wyckoff.o       
 
 QEMODS=../../Modules/libqemod.a
 
-TLDEPS=bindir mods libs liblapack libblas libenviron
+TLDEPS=bindir mods libs liblapack libblas
 
 LIBOBJS	= ../../flib/ptools.a ../../flib/flib.a ../../clib/clib.a ../../iotk/src/libiotk.a
 
-all : tldeps pw.x generate_vdW_kernel_table.x
+all : tldeps pw.x manypw.x generate_vdW_kernel_table.x generate_rVV10_kernel_table.x
 
 pw.x : $(PWOBJS) libpw.a $(LIBOBJS) $(QEMODS)
 	$(LD) $(LDFLAGS) -o $@ \
 	   $(PWOBJS) libpw.a $(QEMODS) $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin; ln -fs ../PW/src/$@ . )
 
+manypw.x : $(MANYPWOBJS) libpw.a $(LIBOBJS) $(QEMODS)
+	$(LD) $(LDFLAGS) -o $@ \
+	 $(MANYPWOBJS) libpw.a $(QEMODS) $(LIBOBJS) $(LIBS)
+	- ( cd ../../bin; ln -fs ../PW/src/$@ . )
+
 libpw.a : $(PWLIBS) 
 	$(AR) $(ARFLAGS) $@ $?
 	$(RANLIB) $@
 
-tldeps:
-	test -n "$(TLDEPS)" && ( cd ../.. ; $(MAKE) $(MFLAGS) $(TLDEPS) || exit 1) || :
+tldeps :
+	if test -n "$(TLDEPS)" ; then \
+	( cd ../.. ; $(MAKE) $(TLDEPS) || exit 1 ) ; fi
 
 clean :
 	- /bin/rm -f *.x *.o *.a *~ *.F90 *.d *.mod *.i *.L
@@ -254,6 +279,12 @@ generate_vdW_kernel_table.x : libpw.a generate_vdW_kernel_table.o
 	$(LD) $(LDFLAGS) -o $@ \
 		generate_vdW_kernel_table.o $(QEMODS) libpw.a $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin; ln -fs ../PW/src/$@ . )
+
+generate_rVV10_kernel_table.x : libpw.a generate_rVV10_kernel_table.o
+	$(LD) $(LDFLAGS) -o $@ \
+		generate_rVV10_kernel_table.o $(QEMODS) libpw.a $(LIBOBJS) $(LIBS)
+	- ( cd ../../bin; ln -fs ../PW/src/$@ . )
+
 
 include make.depend
 

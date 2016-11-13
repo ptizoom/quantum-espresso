@@ -15,15 +15,16 @@ SUBROUTINE init_run()
   !
   USE kinds,                    ONLY : DP
   USE control_flags,            ONLY : nbeg, nomore, lwf, iverbosity, iprint, &
-                                       ndr, ndw, tfor, tprnfor, tpre, force_pairing
+                                       ndr, ndw, tfor, tprnfor, tpre, ts_vdw, &
+                                       force_pairing
   USE cp_electronic_mass,       ONLY : emass, emass_cutoff
-  USE ions_base,                ONLY : na, nax, nat, nsp, iforce, amass, ityp, cdms
+  USE ions_base,                ONLY : na, nax, nat, nsp, iforce, amass, cdms
   USE ions_positions,           ONLY : tau0, taum, taup, taus, tausm, tausp, &
                                        vels, velsm, velsp, fion, fionm
-  USE gvecw,                    ONLY : ngw, ngw_g, ggp
+  USE gvecw,                    ONLY : ngw, ngw_g, ggp, g2kin_init
   USE smallbox_gvec,            ONLY : ngb
   USE gvecs,                    ONLY : ngms
-  USE gvect,                    ONLY : ngm, gstart
+  USE gvect,                    ONLY : ngm, gstart, gg
   USE fft_base,                 ONLY : dfftp, dffts
   USE electrons_base,           ONLY : nspin, nbsp, nbspx, nupdwn, f
   USE uspp,                     ONLY : nkb, vkb, deeq, becsum,nkbus
@@ -49,7 +50,7 @@ SUBROUTINE init_run()
   USE electrons_nose,           ONLY : xnhe0, xnhem, vnhe
   USE electrons_base,           ONLY : nbspx_bgrp
   USE cell_nose,                ONLY : xnhh0, xnhhm, vnhh
-  USE funct,                    ONLY : dft_is_meta
+  USE funct,                    ONLY : dft_is_meta, dft_is_hybrid
   USE metagga,                  ONLY : crosstaus, dkedtaus, gradwfc
   !
   USE efcalc,                   ONLY : clear_nbeg
@@ -63,20 +64,24 @@ SUBROUTINE init_run()
   USE cg_module,                ONLY : allocate_cg
   USE wannier_module,           ONLY : allocate_wannier  
   USE io_files,                 ONLY : tmp_dir, prefix
-  USE io_global,                ONLY : ionode, stdout, io_global_start
+  USE io_global,                ONLY : ionode, stdout
   USE printout_base,            ONLY : printout_base_init
   USE wave_types,               ONLY : wave_descriptor_info
   USE xml_io_base,              ONLY : restart_dir, create_directory, change_directory
   USE orthogonalize_base,       ONLY : mesure_diag_perf, mesure_mmul_perf
   USE ions_base,                ONLY : ions_reference_positions, cdmi
-  USE mp_global,                ONLY : nimage, my_image_id, nbgrp, me_image, intra_image_comm, root_image
+  USE mp_bands,                 ONLY : nbgrp
   USE mp,                       ONLY : mp_barrier
   USE wrappers
   USE ldaU_cp
-  USE control_flags,            ONLY : lwfpbe0nscf  ! Lingzhu Kong
-  USE wavefunctions_module,     ONLY : cv0          ! Lingzhu Kong
-  USE wannier_base,             ONLY : vnbsp        ! Lingzhu Kong
-  USE cp_restart,               ONLY : cp_read_wfc_Kong  ! Lingzhu Kong
+  USE control_flags,            ONLY : lwfpbe0nscf         ! exx_wf related 
+  USE wavefunctions_module,     ONLY : cv0                 ! exx_wf related
+  USE wannier_base,             ONLY : vnbsp               ! exx_wf related
+  USE cp_restart,               ONLY : cp_read_wfc_Kong    ! exx_wf related
+  USE input_parameters,         ONLY : ref_cell
+  USE cell_base,                ONLY : ref_tpiba2, init_tpiba2
+  USE tsvdw_module,             ONLY : tsvdw_initialize
+  USE exx_module,               ONLY : exx_initialize
   !
   IMPLICIT NONE
   !
@@ -90,19 +95,10 @@ SUBROUTINE init_run()
   !
   ! ... initialize directories
   !
-  IF( nimage > 1 ) THEN
-     !
-     ! ... When bgrps are used, open a directory for each one
-     !
-     WRITE( dirname, FMT = '( I5.5 )' ) my_image_id
-     tmp_dir = TRIM( tmp_dir ) // '/' // TRIM( dirname )
-     IF( nbeg < 0 ) THEN
-        CALL create_directory( tmp_dir )
-     END IF
-     CALL io_global_start( me_image, root_image )
-     !
-  END IF
-
+  IF( nbeg < 0 ) THEN
+     CALL create_directory( tmp_dir )
+  END IF 
+  !
   CALL plugin_initialization()
 
   IF( nbgrp > 1 .AND. force_pairing ) &
@@ -149,6 +145,22 @@ SUBROUTINE init_run()
                          dfftp%nr2x, dfftp%npl, dfftp%nnr, dffts%nnr, nat, nax, nsp,   &
                          nspin, nbsp, nbspx, nupdwn, nkb, gstart, nudx, &
                          tpre, nbspx_bgrp )
+  ! 
+  !=======================================================================
+  !     Initialization of the TS-vdW code (RAD)
+  !=======================================================================
+  !
+  IF (ts_vdw) CALL tsvdw_initialize()
+  !
+  !=======================================================================
+  !     Initialization of the exact exchange code (exx_module)
+  !=======================================================================
+  !exx_wf related
+  IF ( dft_is_hybrid() .AND. lwf ) THEN
+    !
+    CALL exx_initialize()
+    !
+  END IF
   !
   !  initialize wave functions descriptors and allocate wf
   !
@@ -258,7 +270,22 @@ SUBROUTINE init_run()
   !
   ! ... Calculate: ema0bg = ecutmass /  MAX( 1.0d0, (2pi/alat)^2 * |G|^2 )
   !
-  CALL emass_precond( ema0bg, ggp, ngw, tpiba2, emass_cutoff )
+  IF ( ref_cell ) THEN
+    WRITE( stdout,'(/,3X,"Reference cell parameters are used in electron mass preconditioning")' )
+    WRITE( stdout,'(3X,"ref_tpiba2=",F14.8)' ) ref_tpiba2
+    CALL g2kin_init( gg, ref_tpiba2 )
+    CALL emass_precond( ema0bg, ggp, ngw, ref_tpiba2, emass_cutoff ) 
+    WRITE( stdout,'(3X,"current_tpiba2=",F14.8)' ) tpiba2
+    CALL g2kin_init( gg, tpiba2 )
+  ELSE
+    WRITE( stdout,'(/,3X,"Cell parameters from input file are used in electron mass preconditioning")' )
+    WRITE( stdout,'(3X,"init_tpiba2=",F14.8)' ) init_tpiba2
+    CALL g2kin_init( gg, init_tpiba2 )
+    CALL emass_precond( ema0bg, ggp, ngw, init_tpiba2, emass_cutoff ) 
+    !WRITE( stdout,'(3X,"current_tpiba2=",F14.8)' ) tpiba2 !BS : DEBUG
+    CALL g2kin_init( gg, tpiba2 )
+    !CALL emass_precond( ema0bg, ggp, ngw, tpiba2, emass_cutoff ) 
+  END IF
   !
   CALL print_legend( )
   !
@@ -287,12 +314,15 @@ SUBROUTINE init_run()
      ENDIF
      !======================================================================
      i = 1  
+     CALL start_clock( 'init_readfile' )
      CALL readfile( i, h, hold, nfi, c0_bgrp, cm_bgrp, taus,   &
                     tausm, vels, velsm, acc, lambda, lambdam, xnhe0, xnhem, &
                     vnhe, xnhp0, xnhpm, vnhp,nhpcl,nhpdim,ekincm, xnhh0, xnhhm,&
                     vnhh, velh, fion, tps, z0t, f )
      !
      CALL from_restart( )
+     !
+     CALL stop_clock( 'init_readfile' )
      !
   END IF
   !
@@ -320,7 +350,7 @@ SUBROUTINE init_run()
   !
   IF ( nbeg <= 0 .OR. lwf ) THEN
      !
-     CALL ions_reference_positions( tau0 )
+     CALL ions_reference_positions( tau0 ) ! BS: screws up msd calculation for lwf ...
      !
   END IF
   !

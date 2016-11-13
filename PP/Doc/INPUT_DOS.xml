@@ -29,11 +29,14 @@ prefix of input file produced by pw.x
          </info>
       </var>
       <var name="outdir" type="CHARACTER" >
-         <default> &apos;./&apos;
-         </default>
          <info>
-directory containing the input file
+directory containing the input data,
+i.e. the same as in pw.x
          </info>
+         <default>
+value of the ESPRESSO_TMPDIR environment variable if set;
+current directory (&apos;./&apos;) otherwise
+         </default>
       </var>
       <var name="ngauss" type="INTEGER" >
          <default> 0

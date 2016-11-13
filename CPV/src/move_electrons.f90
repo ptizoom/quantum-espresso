@@ -8,7 +8,7 @@
 !
 !----------------------------------------------------------------------------
 SUBROUTINE move_electrons_x( nfi, tfirst, tlast, b1, b2, b3, fion, c0_bgrp, &
-            cm_bgrp, phi_bgrp, enthal, enb, enbi, fccc, ccc, dt2bye, stress )
+            cm_bgrp, phi_bgrp, enthal, enb, enbi, fccc, ccc, dt2bye, stress, l_cprestart )
   !----------------------------------------------------------------------------
   !
   ! ... this routine updates the electronic degrees of freedom
@@ -42,8 +42,9 @@ SUBROUTINE move_electrons_x( nfi, tfirst, tlast, b1, b2, b3, fion, c0_bgrp, &
   USE cp_interfaces,        ONLY : rhoofr, compute_stress, vofrho, nlfl_bgrp, prefor, nlfq_bgrp
   USE electrons_module,     ONLY : distribute_c, collect_c, distribute_b
   USE gvect,                ONLY : eigts1, eigts2, eigts3 
-  USE control_flags,        ONLY : lwfpbe0, lwfpbe0nscf  ! Lingzhu Kong
+  USE control_flags,        ONLY : lwfpbe0nscf  ! exx_wf related
   USE wavefunctions_module, ONLY : cv0 ! Lingzhu Kong
+  USE funct,                ONLY : dft_is_hybrid, exx_is_active
   !
   IMPLICIT NONE
   !
@@ -59,6 +60,7 @@ SUBROUTINE move_electrons_x( nfi, tfirst, tlast, b1, b2, b3, fion, c0_bgrp, &
   REAL(DP)                :: ei_unp
   REAL(DP)                :: stress(3,3)
   REAL(DP)                :: dum
+  LOGICAL, INTENT(in)     :: l_cprestart
   !
   INTEGER :: i, j, is, n2
   !
@@ -68,7 +70,7 @@ SUBROUTINE move_electrons_x( nfi, tfirst, tlast, b1, b2, b3, fion, c0_bgrp, &
      CALL runcg_uspp( nfi, tfirst, tlast, eigr, bec_bgrp, irb, eigrb, &
                       rhor, rhog, rhos, rhoc, eigts1, eigts2, eigts3, sfac, &
                       fion, ema0bg, becdr_bgrp, lambdap, lambda, SIZE(lambda,1), vpot, c0_bgrp, &
-                      cm_bgrp, phi_bgrp, dbec  )
+                      cm_bgrp, phi_bgrp, dbec, l_cprestart  )
      !
      CALL compute_stress( stress, detot, h, omega )
      !
@@ -81,6 +83,26 @@ SUBROUTINE move_electrons_x( nfi, tfirst, tlast, b1, b2, b3, fion, c0_bgrp, &
      CALL rhoofr( nfi, c0_bgrp, irb, eigrb, bec_bgrp, dbec, becsum, rhor, &
                   drhor, rhog, drhog, rhos, enl, denl, ekin, dekin6 )
      !
+!=================================================================
+!exx_wf related
+     IF ( dft_is_hybrid().AND.exx_is_active() ) THEN
+        !
+        IF ( lwfpbe0nscf ) THEN
+           !
+           CALL start_clock('exact_exchange')
+           CALL exx_es(nfi, c0_bgrp, cv0)
+           CALL stop_clock('exact_exchange')
+           !
+        ELSE
+           !
+           CALL start_clock('exact_exchange')
+           CALL exx_gs(nfi, c0_bgrp)
+           CALL stop_clock('exact_exchange')
+           !
+        END IF
+        !
+     END IF
+!=================================================================
      ! ... put core charge (if present) in rhoc(r)
      !
      IF ( nlcc_any ) CALL set_cc( irb, eigrb, rhoc )

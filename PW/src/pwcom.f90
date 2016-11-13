@@ -7,22 +7,6 @@
 !
 !--------------------------------------------------------------------------
 !
-MODULE basis
-  !
-  ! ... The variables needed to describe the atoms in the unit cell
-  !
-  SAVE
-  !
-  INTEGER :: &
-       natomwfc            ! number of starting wavefunctions
-  CHARACTER(len=30) ::    &!
-       starting_wfc,      &! 'random' or 'atomic' or 'atomic+randm' or 'file'
-       starting_pot,      &! 'atomic' or 'file'
-       startingconfig      ! 'input' or 'file'
-  !
-END MODULE basis
-!
-!
 MODULE klist
   !
   ! ... The variables for the k-points
@@ -120,6 +104,8 @@ MODULE rap_point_group
                                       !  Raman, or infrared+raman modes.
    CHARACTER(len=11) :: gname         ! the name of the group
    CHARACTER(len=5) :: name_class(12) ! the name of the class
+   CHARACTER(len=55) :: elem_name(8,12)=' ' ! the name of each symmetry in 
+                                         !  each class
    !
 END MODULE rap_point_group
 
@@ -141,6 +127,8 @@ MODULE rap_point_group_so
    CHARACTER(len=15) :: name_rap_so(12)  ! the name of the representation
    CHARACTER(len=5) :: name_class_so(24), &  ! the name of the class
                        name_class_so1(24)  ! the name of the class
+   CHARACTER(len=55) :: elem_name_so(12,24)=' ' ! the name of each symmetry in 
+                                               !  each class
    !
 END MODULE rap_point_group_so
 !
@@ -231,6 +219,7 @@ MODULE ener
        etxcc,          &! the nlcc exchange and correlation
        ewld,           &! the ewald energy
        elondon,        &! the semi-empirical dispersion energy
+       exdm,           &! the XDM dispersion energy
        demet,          &! variational correction ("-TS") for metals
        epaw,           &! sum of one-center paw contributions
        ef, ef_up, ef_dw ! the fermi energy (up and dw if two_fermi_energies=.T.)
@@ -265,7 +254,7 @@ MODULE relax
   SAVE
   !
   REAL(DP) :: &
-       epse,                    &! threshold on total energy
+       epse = 0.0_dp,           &! threshold on total energy
        epsf,                    &! threshold on forces
        epsp,                    &! threshold on pressure
        starting_scf_threshold    ! self-explanatory
@@ -322,49 +311,6 @@ MODULE us
        tab_d2y(:,:,:)            ! for cubic splines
   !
 END MODULE us
-!
-!
-MODULE ldaU
-  !
-  ! ... The quantities needed in lda+U calculations
-  !
-  USE kinds,      ONLY : DP
-  USE parameters, ONLY : lqmax, ntypx
-  !
-  SAVE
-  !
-  INTEGER, PARAMETER :: nspinx=2
-  COMPLEX(DP), ALLOCATABLE :: &
-       swfcatom(:,:),         &! orthogonalized atomic wfcs
-       d_spin_ldau(:,:,:)      ! the rotations in spin space for all the symmetries
-  REAL(DP) :: &
-       eth,                  &! the Hubbard contribution to the energy
-       Hubbard_U(ntypx),     &! the Hubbard U
-       Hubbard_J0(ntypx),    &! the Hubbard J, in lda_plus_u_kind=0
-       Hubbard_J(3,ntypx),   &! extra Hubbard parameters:  
-                              !     p: J(1) = J
-                              !     d: J(1) = J, J(2) =  B 
-                              !     f: J(1) = J, J(2) = E2, J(3) = E3 
-       Hubbard_alpha(ntypx), &! the Hubbard alpha (used to calculate U)
-       Hubbard_beta(ntypx),  &! the Hubbard beta (used to calculate J0)
-       starting_ns(lqmax,nspinx,ntypx) !
-  INTEGER :: &
-       niter_with_fixed_ns,  &! no. of iterations with fixed ns
-       lda_plus_u_kind,      &! 1/0 --> full/simplified(old) LDA+U calculation  
-       Hubbard_l(ntypx),     &! the angular momentum of Hubbard states
-       Hubbard_lmax = 0       ! maximum angular momentum of Hubbard states
-  LOGICAL :: &
-       lda_plus_u,           &! .TRUE. if lda+u calculation is performed
-       conv_ns                ! .TRUE. if ns are converged
-  CHARACTER(len=30) :: &      ! 'atomic', 'ortho-atomic', 'file'
-       U_projection           ! specifies how input coordinates are given
-  INTEGER, ALLOCATABLE :: &
-       oatwfc(:)              ! offset of atomic wfcs used for projections
-  REAL(DP), ALLOCATABLE :: &
-       q_ae(:,:,:),          &! coefficients for projecting onto beta functions
-       q_ps(:,:,:)            ! (matrix elements on AE and PS atomic wfcs)
-  !
-END MODULE ldaU
 !
 !
 MODULE extfield
@@ -437,7 +383,6 @@ MODULE pwcom
   !
   USE constants, ONLY : e2, rytoev, pi, tpi, fpi
   USE cell_base, ONLY : celldm, at, bg, alat, omega, tpiba, tpiba2, ibrav
-  USE basis
   USE gvect
   USE gvecs
   USE klist

@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: pp.x / PWscf / Quantum Espresso
+Program: pp.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
@@ -25,16 +25,16 @@ NAMELIST &PLOT
    containing the variables for step (2)
 
 The two steps can be performed independently. In order to perform
-only step (2), leave namelist &inputpp blank. In order to perform
-only step (1), do not specify namelist &plot
+only step (2), leave namelist &INPUTPP blank. In order to perform
+only step (1), do not specify namelist &PLOT
 
 Intermediate results from step 1 can be saved to disk (see
-variable "filplot" in &inputpp) and later read in step 2.
+variable "filplot" in &INPUTPP) and later read in step 2.
 Since the file with intermediate results is formatted, it
 can be safely transferred to a different machine. This
 also allows plotting of a linear combination (for instance,
 charge differences) by saving two intermediate files and
-combining them (see variables "weight" and "filepp" in &plot)
+combining them (see variables "weight" and "filepp" in &PLOT)
 
 All output quantities are in ATOMIC (RYDBERG) UNITS unless
 otherwise explicitly specified.
@@ -47,7 +47,7 @@ NAMELIST: &INPUTPP
    +--------------------------------------------------------------------
    Variable:       prefix
    
-   Type:           CHARATER
+   Type:           CHARACTER
    Description:    prefix of files saved by program pw.x
    +--------------------------------------------------------------------
    
@@ -55,8 +55,7 @@ NAMELIST: &INPUTPP
    Variable:       outdir
    
    Type:           CHARACTER
-   Description:    directory containing the input data,
-                   i.e. the same as in pw.x
+   Description:    directory containing the input data, i.e. the same as in pw.x
    Default:        value of the ESPRESSO_TMPDIR environment variable if set;
                    current directory ('./') otherwise
    +--------------------------------------------------------------------
@@ -104,8 +103,8 @@ NAMELIST: &INPUTPP
                       9  = charge density minus superposition of atomic densities
                    
                       10 = integrated local density of states (ILDOS)
-                           from emin to emax (emin, emax in eV)
-                           if emax is not specified, emax=E_fermi
+                           from "emin" to "emax" (emin, emax in eV)
+                           if "emax" is not specified, emax=E_fermi
                    
                       11 = the V_bare + V_H potential
                    
@@ -236,8 +235,8 @@ NAMELIST: &INPUTPP
       Variable:       emax
       
       Type:           REAL
-      Description:    upper energy boundary (in eV), i.e. compute
-                      ILDOS from emin to emax
+      Description:    upper energy boundary (in eV),
+                      i.e. compute ILDOS from "emin" to "emax"
       +--------------------------------------------------------------------
       
       +--------------------------------------------------------------------
@@ -366,8 +365,13 @@ NAMELIST: &PLOT
    Variable:       interpolation
    
    Type:           CHARACTER
-   Default:        "fourier"
-   Description:    type of interpolation: "fourier" or "bspline" (EXPERIMENTAL!)
+   Default:        'fourier'
+   Description:   
+                   Type of interpolation:
+                        'fourier'
+    
+                   'bspline' :
+                        (EXPERIMENTAL)
    +--------------------------------------------------------------------
    
    ________________________________________________________________________
@@ -380,6 +384,7 @@ NAMELIST: &PLOT
       
       Type:           REAL
       Description:    3D vector which determines the plotting line
+                      (in alat units)
       +--------------------------------------------------------------------
       
       +--------------------------------------------------------------------
@@ -387,9 +392,8 @@ NAMELIST: &PLOT
       
       Type:           REAL
       Description:    3D vector, origin of the line
+                      (in alat units)
       +--------------------------------------------------------------------
-      
-      !!! x0 and e1 are in alat units !!!
       
       +--------------------------------------------------------------------
       Variable:       nx
@@ -409,7 +413,9 @@ NAMELIST: &PLOT
       
       Type:           REAL
       Description:    3D vectors which determine the plotting plane
-                      (must be orthogonal)
+                      (in alat units)
+                      
+                      BEWARE: @b e1 and @b e2 must be orthogonal
       +--------------------------------------------------------------------
       
       +--------------------------------------------------------------------
@@ -417,9 +423,8 @@ NAMELIST: &PLOT
       
       Type:           REAL
       Description:    3D vector, origin of the plane
+                      (in alat units)
       +--------------------------------------------------------------------
-      
-      !!! x0, e1, e2 are in alat units !!!
       
       +--------------------------------------------------------------------
       Variables:      nx, ny
@@ -513,3 +518,4 @@ NAMELIST: &PLOT
 ===END OF NAMELIST======================================================
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:36 CEST 2016

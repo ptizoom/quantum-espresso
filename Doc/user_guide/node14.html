@@ -220,7 +220,7 @@ For Cray XE machines:
 <PRE>
 $ module swap PrgEnv-cray PrgEnv-pgi
 $ ./configure --enable-openmp --enable-parallel --with-scalapack
-$ vim make.sys
+$ vim make.inc
 </PRE>
 then manually add <TT>-D__IOTK_WORKAROUND1</TT> at the end of <TT>DFLAGS</TT> line.
 
@@ -248,18 +248,7 @@ Older Cray machines: T3D, T3E, X1, are no longer supported.
 </H3>
 
 <P>
-v.4.3.1 of the CP code, Wannier-function dynamics, crashes with
-``segmentation violation'' on some AIX v.6 machines.
-Workaround: compile it with <TT>mpxlf95</TT> instead of
-<TT>mpxlf90</TT>. (Info by Roberto Scipioni, June 2011)
-
-<P>
-On IBM machines with ESSL libraries installed, there is a
-potential conflict between a few LAPACK routines that are also part of ESSL,
-but with a different calling sequence. The appearance of run-time errors like <EM>    ON ENTRY TO ZHPEV  PARAMETER NUMBER  1 HAD AN ILLEGAL VALUE</EM>
-is a signal that you are calling the bad routine. If you have defined
-<TT>-D__ESSL</TT> you should load ESSL before LAPACK: see
-variable LAPACK_LIBS in make.sys.
+As of v.6.0 IBM machines with AIX are no longer supported.
 
 <P>
 
@@ -412,7 +401,7 @@ can be freely downloaded from the AMD site.
 It is recognized by <TT>configure</TT> but little tested. It sort of works
 but it fails to pass several tests (info by Paolo Giannozzi, March 2010).
 "I have configured for Pathscale, then switched to the Open64 compiler by
-editing make.sys. "make pw" succeeded and pw.x did process my file, but with
+editing make.inc. "make pw" succeeded and pw.x did process my file, but with
 "make all" I get an internal compiler error [in CPV/wf.f90]" (info by Cezary
 Sliwa, April 2011).
 
@@ -425,10 +414,8 @@ Sliwa, April 2011).
 <P>
 The Intel compiler, ifort, is available for free for personal
 usage (<TT>http://software.intel.com/</TT>). It produces fast executables,
-at least on Intel CPUs, but not all versions work as expected.
-ifort versions &lt; 9.1 are not recommended, due to the presence of subtle
-and insidious bugs. In case of trouble, update your version with
-the most recent patches,
+at least on Intel CPUs, but not all versions work as expected (see below).
+In case of trouble, update your version with the most recent patches,
 available via Intel Premier support (registration free of charge for Linux):
 <TT>http://software.intel.com/en-us/articles/intel-software-developer-support</TT>.
 Since each major release of ifort
@@ -450,12 +437,30 @@ can be safely ignored. Warnings on "bad preprocessing option" when compiling
 iotk and complains about ``recommanded formats'' may also be ignored.
 
 <P>
+The following compiler releases are known to give segmentation faults
+in at least some cases of compilation of Q<SMALL>UANTUM </SMALL>ESPRESSO v.6.0:
+<BLOCKQUOTE>
+12.0.0.084 Build 20101006
+<BR>
+12.0.1.107 Build 20101116
+<BR>
+12.0.2.137 Build 20110112
+<BR>
+12.0.4.191 Build 20110427
+<BR>
+12.0.5.220 Build 20110719
+<BR>
+16.0.1.150 Build 20151021
+
+</BLOCKQUOTE>
+(Filippo Spiga, Aug. 2016)
+
+<P>
 <B>ifort v.12</B>: release 12.0.0 miscompiles iotk, leading to
 mysterious errors when reading data files. Workaround: increase
 the parameter BLOCKSIZE to e.g. 131072*1024 when opening files in
 <TT>iotk/src/iotk_files.f90</TT> (info by Lorenzo Paulatto,
-Nov. 2010). Release 12.0.2 seems to work and to produce faster executables
-than previous versions on 64-bit CPUs (info by P. Giannozzi, March 2011).
+Nov. 2010). 
 
 <P>
 <B>ifort v.11</B>: Segmentation faults were reported for the combination
@@ -485,6 +490,12 @@ For parallel (MPI) execution on multiprocessor (SMP) machines, set the
 environment variable OMP_NUM_THREADS to 1 unless you know what you
 are doing. See Sec.<A HREF="node15.html#Sec:para">3</A> for more info on this
 and on the difference between MPI and OpenMP parallelization.
+
+<P>
+If you get a mysterious "too many communicators" error and a 
+subsequent crash: there is a bug in Intel MPI and MKL 2016 update 3.
+See this thread and the links quoted therein:
+<code>http://www.mail-archive.com/pw_forum@pwscf.org/msg29684.html</code>.
 
 <P>
 
@@ -705,7 +716,7 @@ you in the process.
 <!--End of Navigation Panel-->
 <ADDRESS>
 Filippo Spiga
-2016-04-24
+2016-10-04
 </ADDRESS>
 </BODY>
 </HTML>

@@ -6,18 +6,19 @@
    <toc>
    </toc>
    <intro>
-Purpose of dos.x:
+<b>Purpose of dos.x:</b>
     calculates the Density of States (DOS)
     (separated into up and down components for DSDA)
 
 
-Structure of the input data:
+<b>Structure of the input data:</b>
 ============================
 
-   &amp;DOS
+   <b>&amp;DOS</b>
      ...
-   /
-IMPORTANT: since v.5 namelist name is &amp;dos and no longer &amp;inputpp
+   <b>/</b>
+
+IMPORTANT: since v.5 namelist name is &amp;DOS and no longer &amp;INPUTPP
    </intro>
    <namelist name="DOS" >
       <var name="prefix" type="CHARACTER" >
@@ -30,11 +31,10 @@ prefix of input file produced by pw.x
       </var>
       <var name="outdir" type="CHARACTER" >
          <info>
-directory containing the input data,
-i.e. the same as in pw.x
+directory containing the input data, i.e. the same as in pw.x
          </info>
          <default>
-value of the ESPRESSO_TMPDIR environment variable if set;
+value of the <tt>ESPRESSO_TMPDIR</tt> environment variable if set;
 current directory (&apos;./&apos;) otherwise
          </default>
       </var>
@@ -57,7 +57,8 @@ Type of gaussian broadening:
       </var>
       <var name="degauss" type="REAL" >
          <info>
-gaussian broadening, Ry (not eV!)          see below
+gaussian broadening, Ry (not eV!)
+(see below)
          </info>
       </var>
       <vargroup type="REAL" >
@@ -79,7 +80,7 @@ energy grid step (eV)
          </info>
       </var>
       <var name="fildos" type="CHARACTER" >
-         <default> &quot;prefix&quot;.dos
+         <default> &apos;<ref>prefix</ref>.dos&apos;
          </default>
          <info>
 output file containing DOS(E)
@@ -89,7 +90,7 @@ output file containing DOS(E)
    <section title="Notes" >
       <subsection title="Output" >
          <text>
-The total DOS (states/eV plotted vs E in eV) is written to file &quot;fildos&quot;
+The total DOS (states/eV plotted vs <i>E</i> in eV) is written to file <ref>fildos</ref>
          </text>
       </subsection>
       <subsection title="Important !" >
@@ -104,16 +105,16 @@ The tetrahedron method is used if
 
 Gaussian broadening is used in all other cases:
 
-    - if degauss is set to some value in namelist &amp;dos, that value
-      (and the optional value for ngauss) is used
+    - if <ref>degauss</ref> is set to some value in namelist &amp;DOS, that value
+      (and the optional value for <ref>ngauss</ref>) is used
 
-    - if degauss is NOT set to any value in namelist &amp;dos, the
-      value of degauss and of ngauss are read from the input data
+    - if <ref>degauss</ref> is NOT set to any value in namelist &amp;DOS, the
+      value of <ref>degauss</ref> and of <ref>ngauss</ref> are read from the input data
       file (they will be the same used in the pw.x calculations)
 
-    - if degauss is NOT set to any value in namelist &amp;dos, AND
-      there is no value of degauss and of ngauss in the input data
-      file, degauss=DeltaE (in Ry) and ngauss=0 will be used
+    - if <ref>degauss</ref> is NOT set to any value in namelist &amp;DOS, AND
+      there is no value of <ref>degauss</ref> and of <ref>ngauss</ref> in the input data
+      file, <ref>degauss</ref>=<ref>DeltaE</ref> (in Ry) and <ref>ngauss</ref>=0 will be used
          </text>
       </subsection>
    </section>

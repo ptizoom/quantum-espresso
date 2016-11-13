@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: cp.x / CP / Quantum Espresso
+Program: cp.x / CP / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
@@ -144,9 +144,8 @@ NAMELIST: &CONTROL
    Variable:       nstep
    
    Type:           INTEGER
-   Description:    number of ionic + electronic steps
-   Default:        1  if calculation = 'scf', 'nscf', 'bands';
-                   50 for the other cases
+   Description:    number of Car-Parrinello steps performed in this run
+   Default:        50
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -391,7 +390,7 @@ NAMELIST: &SYSTEM
                          and tx, ty, tz as for case ibrav=5
                          Note: if you prefer x,y,z as axis in the cubic limit,
                                set  u = tz + 2*sqrt(2)*ty,  v = tz - sqrt(2)*ty
-                               See also the note in flib/latgen.f90
+                               See also the note in Modules/latgen.f90
                    
                      6          Tetragonal P (st)               celldm(3)=c/a
                          v1 = a(1,0,0),  v2 = a(0,1,0),  v3 = a(0,0,c/a)
@@ -1972,7 +1971,7 @@ CARD: ATOMIC_SPECIES
 
 
 ========================================================================
-CARD: ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal   }
+CARD: ATOMIC_POSITIONS { alat | bohr | angstrom | crystal }
 
    ________________________________________________________________________
    * IF calculation == 'bands' OR calculation == 'nscf' : 
@@ -1987,7 +1986,7 @@ CARD: ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal   }
       // Syntax:                             //
       /////////////////////////////////////////
       
-         ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal   }
+         ATOMIC_POSITIONS { alat | bohr | angstrom | crystal }
             X(1)    x(1)    y(1)    z(1)    {  if_pos(1)(1)    if_pos(2)(1)    if_pos(3)(1)    }  
             X(2)    x(2)    y(2)    z(2)    {  if_pos(1)(2)    if_pos(2)(2)    if_pos(3)(2)    }  
             . . . 
@@ -2002,7 +2001,7 @@ CARD: ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal   }
    DESCRIPTION OF ITEMS:
    
       +--------------------------------------------------------------------
-      Card's flags:   {  alat | bohr | angstrom | crystal   }
+      Card's flags:   { alat | bohr | angstrom | crystal }
       
       Default:        (DEPRECATED) bohr
       Description:    alat    : atomic positions are in cartesian coordinates,
@@ -2054,7 +2053,7 @@ CARD: ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal   }
 
 
 ========================================================================
-CARD: ATOMIC_VELOCITIES {   a.u   }
+CARD: ATOMIC_VELOCITIES { a.u }
 
    OPTIONAL CARD, READS VELOCITIES (IN ATOMIC UNITS) FROM STANDARD INPUT
    
@@ -2065,7 +2064,7 @@ CARD: ATOMIC_VELOCITIES {   a.u   }
    // Syntax:                             //
    /////////////////////////////////////////
    
-      ATOMIC_VELOCITIES {   a.u   }
+      ATOMIC_VELOCITIES { a.u }
          V(1)    vx(1)    vy(1)    vz(1)    
          V(2)    vx(2)    vy(2)    vz(2)    
          . . . 
@@ -2076,7 +2075,7 @@ CARD: ATOMIC_VELOCITIES {   a.u   }
    DESCRIPTION OF ITEMS:
    
       +--------------------------------------------------------------------
-      Card's flags:   {   a.u   }
+      Card's flags:   { a.u }
       
       +--------------------------------------------------------------------
 
@@ -2099,7 +2098,7 @@ CARD: ATOMIC_VELOCITIES {   a.u   }
 
 
 ========================================================================
-CARD: CELL_PARAMETERS {  bohr | angstrom | alat   }
+CARD: CELL_PARAMETERS { bohr | angstrom | alat }
 
    OPTIONAL CARD, NEEDED ONLY IF IBRAV = 0 IS SPECIFIED, IGNORED OTHERWISE !
    
@@ -2107,7 +2106,7 @@ CARD: CELL_PARAMETERS {  bohr | angstrom | alat   }
    // Syntax:                             //
    /////////////////////////////////////////
    
-      CELL_PARAMETERS {  bohr | angstrom | alat   }
+      CELL_PARAMETERS { bohr | angstrom | alat }
          v1(1)  v1(2)  v1(3)  
          v2(1)  v2(2)  v2(3)  
          v3(1)  v3(2)  v3(3)  
@@ -2117,7 +2116,7 @@ CARD: CELL_PARAMETERS {  bohr | angstrom | alat   }
    DESCRIPTION OF ITEMS:
    
       +--------------------------------------------------------------------
-      Card's flags:   {  bohr | angstrom | alat   }
+      Card's flags:   { bohr | angstrom | alat }
       
       Description:    'bohr'/'angstrom': lattice vectors in bohr radii / angstrom.
                       'alat' / nothing specified: lattice vectors in units or the
@@ -2142,7 +2141,7 @@ CARD: CELL_PARAMETERS {  bohr | angstrom | alat   }
 
 
 ========================================================================
-CARD: REF_CELL_PARAMETERS {  bohr | angstrom   }
+CARD: REF_CELL_PARAMETERS { bohr | angstrom }
 
          OPTIONAL CARD, NEEDED ONLY IF ONE WANTS TO DO VARIABLE CELL CALCULATIONS ACCURATELY.
    THE REFERENCE CELL GENERATES ADDITIONAL BUFFER PLANEWAVES.
@@ -2151,7 +2150,7 @@ CARD: REF_CELL_PARAMETERS {  bohr | angstrom   }
    // Syntax:                             //
    /////////////////////////////////////////
    
-      REF_CELL_PARAMETERS {  bohr | angstrom   }
+      REF_CELL_PARAMETERS { bohr | angstrom }
          v1(1)  v1(2)  v1(3)  
          v2(1)  v2(2)  v2(3)  
          v3(1)  v3(2)  v3(3)  
@@ -2161,7 +2160,7 @@ CARD: REF_CELL_PARAMETERS {  bohr | angstrom   }
    DESCRIPTION OF ITEMS:
    
       +--------------------------------------------------------------------
-      Card's flags:   {  bohr | angstrom   }
+      Card's flags:   { bohr | angstrom }
       
       Description:    bohr / angstrom: reference cell parameters in bohr radii / angstrom.
                       
@@ -2470,3 +2469,4 @@ CARD: AUTOPILOT
 ===END OF CARD==========================================================
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:06 CEST 2016

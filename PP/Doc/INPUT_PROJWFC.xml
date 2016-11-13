@@ -6,19 +6,19 @@
    <toc>
    </toc>
    <intro>
-Purpose of projwfc.x:
+<b>Purpose of projwfc.x:</b>
     projects wavefunctions onto orthogonalized atomic wavefunctions,
     calculates Lowdin charges, spilling parameter, projected DOS
     (separated into up and down components for lSDA)
     alternatively, computes the local DOS(E), integrated in volumes
     given in input
 
-Structure of the input data:
+<b>Structure of the input data:</b>
 ============================
 
-   &amp;PROJWFC
+   <b>&amp;PROJWFC</b>
      ...
-   /
+   <b>/</b>
    </intro>
    <namelist name="PROJWFC" >
       <var name="prefix" type="CHARACTER" >
@@ -31,8 +31,7 @@ Prefix of input file produced by pw.x
       </var>
       <var name="outdir" type="CHARACTER" >
          <info>
-directory containing the input data,
-i.e. the same as in pw.x
+directory containing the input data, i.e. the same as in pw.x
          </info>
          <default>
 value of the ESPRESSO_TMPDIR environment variable if set;
@@ -74,26 +73,26 @@ Type of gaussian broadening:
          <default> .true.
          </default>
          <info>
-if true the projections are symmetrized
-if false partial density of state cannot be computed
+if .true. the projections are symmetrized
+if .false. partial density of state cannot be computed
          </info>
       </var>
       <var name="pawproj" type="LOGICAL" >
          <default> .false.
          </default>
          <info>
-if true, use PAW projectors and all-electron PAW basis
+if .true. use PAW projectors and all-electron PAW basis
 functions to calculate weight factors for the partial
-densities of states. Following Bloechl, PRB 50, 17953 (1994),
+densities of states. Following Bloechl, <a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.50.17953">PRB 50, 17953 (1994)</a>,
 Eq. (4 &amp; 6), the weight factors thus approximate the real
 charge within the augmentation sphere of each atom.
-Only for PAW, not implemented in the noncolinear case
+Only for PAW, not implemented in the noncolinear case.
          </info>
       </var>
       <var name="filpdos" type="CHARACTER" >
          <info> prefix for output files containing PDOS(E)
          </info>
-         <default> (value of prefix variable)
+         <default> (value of <ref>prefix</ref> variable)
          </default>
       </var>
       <var name="filproj" type="CHARACTER" >
@@ -135,9 +134,9 @@ if .true. compute the local DOS integrated in volumes
 volumes are defined as boxes with edges parallel
 to the unit cell, containing the points of the
 (charge density) FFT grid included within
-irmin and irmax, in the three dimensions:
-from irmin(j,n) to irmax(j,n) for j=1,2,3
-(n=1,n_proj_boxes)
+<ref>irmin</ref> and <ref>irmax</ref>, in the three dimensions:
+from <ref>irmin</ref>(j,n) to <ref>irmax</ref>(j,n) for j=1,2,3
+(n=1,<ref>n_proj_boxes</ref>)
          </info>
       </var>
       <var name="n_proj_boxes" type="INTEGER" >
@@ -147,23 +146,23 @@ from irmin(j,n) to irmax(j,n) for j=1,2,3
 number of boxes where the local DOS is computed
          </info>
       </var>
-      <var name="irmin" type="INTEGER" >
+      <var name="irmin(3,n_proj_boxes)" type="INTEGER" >
          <default> 1 for each box
          </default>
          <info>
 first point of the given box
 
-BEWARE: irmin is a 2D array of the form: irmin(3,n_proj_boxes)
+BEWARE: irmin is a 2D array of the form: irmin(3,<ref>n_proj_boxes</ref>)
          </info>
       </var>
-      <var name="irmax" type="INTEGER" >
+      <var name="irmax(3,n_proj_boxes)" type="INTEGER" >
          <default> 0 for each box
          </default>
          <info>
 last point of the given box;
 ( 0 stands for the last point in the FFT grid )
 
-BEWARE: irmax is a 2D array of the form: irmax(3,n_proj_boxes)
+BEWARE: irmax is a 2D array of the form: irmax(3,<ref>n_proj_boxes</ref>)
          </info>
       </var>
       <var name="plotboxes" type="LOGICAL" >
@@ -180,8 +179,8 @@ inside the box volume and 0 outside
    <section title="Notes" >
       <subsection title="Format of output files" >
          <text>
-Projections are written to standard output,
-and also to file filproj if given as input.
+Projections are written to standard output, and also to file
+<ref>filproj</ref> if given as input.
 
 The total DOS and the sum of projected DOS are written to file
 &quot;filpdos&quot;.pdos_tot.
@@ -239,7 +238,7 @@ Order of m-components for each l in the output:
     1, cos(phi), sin(phi), cos(2*phi), sin(2*phi), .., cos(l*phi), sin(l*phi)
 
 where phi is the polar angle:x=r cos(theta)cos(phi), y=r cos(theta)sin(phi)
-This is determined in file flib/ylmr2.f90 that calculates spherical harmonics.
+This is determined in file Modules/ylmr2.f90 that calculates spherical harmonics.
 
 for l=1:
   1 pz     (m=0)
@@ -256,17 +255,17 @@ for l=2:
       </subsection>
       <subsection title="Defining boxes for the Local DOS(E)" >
          <text>
-Boxes are specified using the variables irmin and irmax:
+Boxes are specified using the variables <ref>irmin</ref> and <ref>irmax</ref>:
 
 FFT grid points are included from irmin(j,n) to irmax(j,n)
-for j=1,2,3 and n=1,...,n_proj_boxes
+for j=1,2,3 and n=1,...,<ref>n_proj_boxes</ref>
 
-irmin and irmax range from 1 to nr1 or nr2 or nr3
+<ref>irmin</ref> and <ref>irmax</ref> range from 1 to nr1 or nr2 or nr3
 
 Values larger than nr1/2/3 or smaller than 1 are folded
 to the unit cell.
 
-If irmax&lt;irmin FFT grid points are included from 1 to irmax
+If <ref>irmax</ref>&lt;<ref>irmin</ref> FFT grid points are included from 1 to irmax
 and from irmin to nr1/2/3.
          </text>
       </subsection>
@@ -276,16 +275,16 @@ and from irmin to nr1/2/3.
 
 * Gaussian broadening is used in all cases:
 
-    - if degauss is set to some value in namelist &amp;projwfc, that value
+    - if <ref>degauss</ref> is set to some value in namelist &amp;PROJWFC, that value
       (and the optional value for ngauss) is used
 
-    - if degauss is NOT set to any value in namelist &amp;projwfc, the
-      value of degauss and of ngauss are read from the input data
+    - if <ref>degauss</ref> is NOT set to any value in namelist &amp;PROJWFC, the
+      value of <ref>degauss</ref> and of <ref>ngauss</ref> are read from the input data
       file (they will be the same used in the pw.x calculations)
 
-    - if degauss is NOT set to any value in namelist &amp;projwfc, AND
-      there is no value of degauss and of ngauss in the input data
-      file, degauss=DeltaE (in Ry) and ngauss=0 will be used
+    - if <ref>degauss</ref> is NOT set to any value in namelist &amp;PROJWFC, AND
+      there is no value of <ref>degauss</ref> and of <ref>ngauss</ref> in the input data
+      file, <ref>degauss</ref>=<ref>DeltaE</ref> (in Ry) and <ref>ngauss</ref>=0 will be used
 
 
 Obsolete variables, ignored:

@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: molecularpdos.x / PWscf / Quantum Espresso
+Program: molecularpdos.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
@@ -223,3 +223,4 @@ NAMELIST: &INPUTMOPDOS
       
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:38 CEST 2016

@@ -36,7 +36,6 @@ MODULE input
      USE io_global,               ONLY : stdout
      USE io_files,                ONLY : psfile_     => psfile , &
                                          pseudo_dir_ => pseudo_dir, &
-                                         outdir_     => outdir, &
                                          prefix_     => prefix, &
                                          tmp_dir
      USE ions_base,               ONLY : nsp_ => nsp, nat_ => nat
@@ -53,7 +52,6 @@ MODULE input
      WRITE( stdout, '(/,3X,"Job Title: ",A )' ) TRIM( title_ )
      !
      prefix_  = TRIM( prefix  )
-     outdir_  = trimcheck( outdir )
      tmp_dir  = trimcheck( outdir )
      !
      ! ... Set internal variables for the number of species and number of atoms
@@ -976,6 +974,8 @@ MODULE input
      ! ... initialize kernel table for nonlocal functionals
      !
      IF ( dft_is_nonlocc( ) ) THEN
+        IF( tpre .or. thdyn ) CALL errore( ' module setup ', &
+          ' Stress is not properly implemented with vdw-DF ', 1 )
         vdw_table_name_ = vdw_table_name
         inlc = get_inlc()
         call initialize_kernel_table(inlc)

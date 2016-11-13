@@ -111,7 +111,7 @@ Additional instructions for special machines:
 
 <P>
 <TABLE CELLPADDING=3>
-<TR><TD ALIGN="LEFT"><TT>make.sys</TT></TD>
+<TR><TD ALIGN="LEFT"><TT>make.inc</TT></TD>
 <TD ALIGN="LEFT">compilation rules and flags (used by <TT>Makefile</TT>)</TD>
 </TR>
 <TR><TD ALIGN="LEFT"><TT>install/configure.msg</TT></TD>
@@ -135,6 +135,10 @@ NOTA BENE: unlike previous versions, <TT>configure</TT> no longer runs the
 <TT>makedeps.sh</TT> shell script that updates dependencies. If you modify the
 sources, run <TT>./install/makedeps.sh</TT> or type <TT>make depend</TT>
 to update files <TT>make.depend</TT> in the various subdirectories.
+<BR>
+NOTA BENE 2: ``make.inc'' used to be called ``make.sys'' until v.6.0. The
+change of name is due to frequent probelms with mailers assuming that
+whatever ends in ``sys'' is a suspect virus.
 
 <P>
 You should always be able to compile the Q<SMALL>UANTUM </SMALL>ESPRESSO suite
@@ -313,16 +317,16 @@ see the Developer Manual.
 2.3.1 Manual configuration
 </H3>
 If <TT>configure</TT> stops before the end, and you don't find a way to fix
-it, you have to write working <TT>make.sys</TT>, <TT>include/fft_defs.h</TT>
+it, you have to write working <TT>make.inc</TT>, <TT>include/fft_defs.h</TT>
 and <TT>include/c_defs.h</TT> files.
 For the latter two files, follow the explanations in
 <TT>include/defs.h.README</TT>.
 
 <P>
 If <TT>configure</TT> has run till the end, you should need only to
-edit <TT>make.sys</TT>. A few sample <TT>make.sys</TT> files
+edit <TT>make.inc</TT>. A few sample <TT>make.inc</TT> files
 are provided in <TT>install/Make.</TT><EM>system</EM>. The template used
-by <TT>configure</TT> is also found there as <TT>install/make.sys.in</TT>
+by <TT>configure</TT> is also found there as <TT>install/make.inc.in</TT>
 and contains explanations of the meaning
 of the various variables. Note that you may need
 to select appropriate preprocessing flags
@@ -365,7 +369,7 @@ routines are affected by the changed settings and how to force their recompilati
 <!--End of Navigation Panel-->
 <ADDRESS>
 Filippo Spiga
-2016-04-24
+2016-10-04
 </ADDRESS>
 </BODY>
 </HTML>

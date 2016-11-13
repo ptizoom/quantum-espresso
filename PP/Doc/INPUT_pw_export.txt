@@ -3,9 +3,13 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: pw_export.x / PWscf / Quantum Espresso
+Program: pw_export.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
+
+Purpose of pw_export.x:
+   Writes PWSCF data for postprocessing purposes in XML format using IOTK lib.
+   Wave-functions are collected and written using IO_BASE module.
 
 Structure of the input data:
 ============================
@@ -48,8 +52,8 @@ NAMELIST: &INPUTPP
    Variable:       psfile(i), i=1,ntyp
    
    Type:           STRING
-   Default:        ""
-   Description:    files containing i-th pseudopotential, where i=1, N_type.
+   Default:        (empty string)
+   Description:    files containing i-th pseudopotential, where i=1, ntyp.
                    PP numbering must follow the ordering defined in the input of pw.x
    +--------------------------------------------------------------------
    
@@ -73,12 +77,12 @@ NAMELIST: &INPUTPP
    Variable:       pp_file
    
    Type:           STRING
-   Default:        "prefix.export/"
+   Default:        ""prefix".export/"
    Description:    Output file.
                    
-                   If it is omitted, a directory "prefix.export/" is created
+                   If it is omitted, a directory ""prefix".export/" is created
                    in outdir and some output files are put there. Anyway all the data
-                   are accessible through the "prefix.export/index.xml" file which
+                   are accessible through the ""prefix".export/index.xml" file which
                    contains implicit pointers to all the other files in the
                    export directory. If reading is done by the IOTK library
                    all data appear to be in index.xml even if physically it is not.
@@ -96,3 +100,4 @@ NAMELIST: &INPUTPP
 ===END OF NAMELIST======================================================
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:37 CEST 2016

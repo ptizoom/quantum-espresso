@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: importexport_binary.x / PWscf / Quantum Espresso
+Program: importexport_binary.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
@@ -41,8 +41,7 @@ NAMELIST: &INPUTPP
    Variable:       outdir
    
    Type:           CHARACTER
-   Description:    directory containing the input data,
-                   i.e. the same as in pw.x
+   Description:    directory containing the input data, i.e. the same as in pw.x
    Default:        value of the ESPRESSO_TMPDIR environment variable if set;
                    current directory ('./') otherwise
    +--------------------------------------------------------------------
@@ -51,13 +50,16 @@ NAMELIST: &INPUTPP
    Variable:       direction
    
    Type:           CHARACTER
-   Description:    selects the direction:
-                   
-                     'export': for converting the charge density from the
-                               native binary format to text XML format
-                   
-                     'import': for converting a previously exported folder
-                               from text XML format to binary format
+   Description:   
+                   Selects the direction:
+    
+                   'export' :
+                        for converting the charge density from the
+                        native binary format to text XML format
+    
+                   'import' :
+                        for converting a previously exported folder
+                        from text XML format to binary format
    Default:        'export'
    +--------------------------------------------------------------------
    
@@ -69,7 +71,7 @@ NAMELIST: &INPUTPP
                    generated; after the 'import' phase, it can be then used as
                    the outdir to restart for instance a pw.x NSCF calculation
    Default:        './import' if the direction is 'import',
-                   './export' if the direction is 'export'
+                    './export' if the direction is 'export'
    +--------------------------------------------------------------------
    
 ===END OF NAMELIST======================================================
@@ -83,7 +85,7 @@ NAMELIST: &INPUTPP
    
       The utility will also expect to find, and copy, the
       outdir/data-file.xml and the *.UPF pseudopotential files in the
-      prefix.save subdirectory, and will copy them from the outdir
+      "prefix".save subdirectory, and will copy them from the outdir
       to the newoutdir. It will then convert the charge density and
       spin polarization files in the correct format. Other files,
       in particular wavefunctions and the band structure (files
@@ -99,3 +101,4 @@ NAMELIST: &INPUTPP
       
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:38 CEST 2016

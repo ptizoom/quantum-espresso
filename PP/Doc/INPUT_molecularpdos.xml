@@ -6,7 +6,7 @@
    <toc>
    </toc>
    <intro>
-Purpose of molecularpdos.x:
+<b>Purpose of molecularpdos.x:</b>
     Takes the projections onto orthogonalized atomic wavefunctions
     as computed by projwfc.x (see outdir/prefix.save/atomic_proj.xml)
     to build an LCAO-like representation of the eigenvalues of a system
@@ -18,15 +18,15 @@ Purpose of molecularpdos.x:
 Reference:
     An explanation of the keywords and the implementation
     is provided in Scientific Reports | 6:24603 (2016)
-    DOI: 10.1038/srep24603 (Supp. Info).
+    <a href="http://dx.doi.org/10.1038/srep24603">DOI: 10.1038/srep24603</a> (Supp. Info).
 
 
-Structure of the input data:
+<b>Structure of the input data:</b>
 ============================
 
-   &amp;INPUTMOPDOS
+   <b>&amp;INPUTMOPDOS</b>
      ...
-   /
+   <b>/</b>
    </intro>
    <namelist name="INPUTMOPDOS" >
       <vargroup type="CHARACTER" >

@@ -3,7 +3,7 @@
 
 
 $key = q/SubSec:badpara/;
-$external_labels{$key} = "$URL/" . q|node17.html|; 
+$external_labels{$key} = "$URL/" . q|node18.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/pw2casino_info/;
@@ -19,10 +19,6 @@ $noresave{$key} = "$nosave";
 
 $key = q/pw2casino_info/;
 $external_latex_labels{$key} = q|3.5|; 
-$noresave{$key} = "$nosave";
-
-$key = q/_oldnewlabel/;
-$external_latex_labels{$key} = q|<|; 
 $noresave{$key} = "$nosave";
 
 $key = q/SubSec:badpara/;

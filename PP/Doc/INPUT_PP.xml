@@ -6,7 +6,7 @@
    <toc>
    </toc>
    <intro>
-Purpose of pp.x: data analysis and plotting.
+<b>Purpose of pp.x:</b> data analysis and plotting.
 
 The code performs two steps:
 (1) reads the output file produced by pw.x, extract and calculate
@@ -17,40 +17,39 @@ The code performs two steps:
 The input data of this program is read from standard input
 or from file and has the following format:
 
-NAMELIST &amp;INPUTPP
+NAMELIST <b>&amp;INPUTPP</b>
    containing the variables for step (1), followed by
 
-NAMELIST &amp;PLOT
+NAMELIST <b>&amp;PLOT</b>
    containing the variables for step (2)
 
 The two steps can be performed independently. In order to perform
-only step (2), leave namelist &amp;inputpp blank. In order to perform
-only step (1), do not specify namelist &amp;plot
+only step (2), leave namelist &amp;INPUTPP blank. In order to perform
+only step (1), do not specify namelist &amp;PLOT
 
 Intermediate results from step 1 can be saved to disk (see
-variable &quot;filplot&quot; in &amp;inputpp) and later read in step 2.
+variable <ref>filplot</ref> in &amp;INPUTPP) and later read in step 2.
 Since the file with intermediate results is formatted, it
 can be safely transferred to a different machine. This
 also allows plotting of a linear combination (for instance,
 charge differences) by saving two intermediate files and
-combining them (see variables &quot;weight&quot; and &quot;filepp&quot; in &amp;plot)
+combining them (see variables <ref>weight</ref> and <ref>filepp</ref> in &amp;PLOT)
 
 All output quantities are in ATOMIC (RYDBERG) UNITS unless
 otherwise explicitly specified.
    </intro>
    <namelist name="INPUTPP" >
-      <var name="prefix" type="CHARATER" >
+      <var name="prefix" type="CHARACTER" >
          <info>
 prefix of files saved by program pw.x
          </info>
       </var>
       <var name="outdir" type="CHARACTER" >
          <info>
-directory containing the input data,
-i.e. the same as in pw.x
+directory containing the input data, i.e. the same as in pw.x
          </info>
          <default>
-value of the ESPRESSO_TMPDIR environment variable if set;
+value of the <tt>ESPRESSO_TMPDIR</tt> environment variable if set;
 current directory (&apos;./&apos;) otherwise
          </default>
       </var>
@@ -77,7 +76,7 @@ selects what to save in filplot:
    4  = local density of electronic entropy
 
    5  = STM images
-        Tersoff and Hamann, PRB 31, 805 (1985)
+        Tersoff and Hamann, <a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.31.805">PRB 31, 805 (1985)</a>
 
    6  = spin polarization (rho(up)-rho(down))
 
@@ -93,8 +92,8 @@ selects what to save in filplot:
    9  = charge density minus superposition of atomic densities
 
    10 = integrated local density of states (ILDOS)
-        from emin to emax (emin, emax in eV)
-        if emax is not specified, emax=E_fermi
+        from <ref>emin</ref> to <ref>emax</ref> (emin, emax in eV)
+        if <ref>emax</ref> is not specified, emax=E_fermi
 
    11 = the V_bare + V_H potential
 
@@ -209,8 +208,8 @@ lower energy boundary (in eV)
             </var>
             <var name="emax" type="REAL" >
                <info>
-upper energy boundary (in eV), i.e. compute
-ILDOS from emin to emax
+upper energy boundary (in eV),
+i.e. compute ILDOS from <ref>emin</ref> to <ref>emax</ref>
                </info>
             </var>
             <var name="spin_component" type="INTEGER" >
@@ -269,7 +268,7 @@ the number of data files
             </default>
             <info>
 nfile = 1 : file containing the quantity to be plotted
-nfile &gt; 1 : see &quot;weight&quot;
+nfile &gt; 1 : see <ref>weight</ref>
             </info>
          </dimension>
          <dimension name="weight" start="1" end="nfile" type="REAL" >
@@ -282,7 +281,7 @@ weight(1)*rho(1) + weight(2)*rho(2) + weight(3)*rho(3)+...
             </info>
          </dimension>
          <message>
-BEWARE: atomic coordinates are read from the first file;
+<b>BEWARE:</b> atomic coordinates are read from the first file;
         if their number is different for different files,
         the first file must have the largest number of atoms
          </message>
@@ -319,11 +318,17 @@ name of the file to which the plot is written
          </info>
       </var>
       <var name="interpolation" type="CHARACTER" >
-         <default> &quot;fourier&quot;
+         <default> &apos;fourier&apos;
          </default>
-         <info>
-type of interpolation: &quot;fourier&quot; or &quot;bspline&quot; (EXPERIMENTAL!)
-         </info>
+         <options>
+            <info>
+Type of interpolation:
+            </info>
+            <opt val="'fourier'" >
+            </opt>
+            <opt val="'bspline'" > (EXPERIMENTAL)
+            </opt>
+         </options>
       </var>
       <choose>
          <when test="iflag = 0 or 1" >
@@ -332,16 +337,15 @@ type of interpolation: &quot;fourier&quot; or &quot;bspline&quot; (EXPERIMENTAL!
             <dimension name="e1" start="1" end="3" type="REAL" >
                <info>
 3D vector which determines the plotting line
+(in alat units)
                </info>
             </dimension>
             <dimension name="x0" start="1" end="3" type="REAL" >
                <info>
 3D vector, origin of the line
+(in alat units)
                </info>
             </dimension>
-            <message>
-!!! x0 and e1 are in alat units !!!
-            </message>
             <var name="nx" type="INTEGER" >
                <info>
 number of points in the line:
@@ -359,17 +363,17 @@ rho(i) = rho( x0 + e1 * (i-1)/(nx-1) ), i=1, nx
                </dimension>
                <info>
 3D vectors which determine the plotting plane
-(must be orthogonal)
+(in alat units)
+
+BEWARE: <b>e1</b> and <b>e2</b> must be orthogonal
                </info>
             </dimensiongroup>
             <dimension name="x0" start="1" end="3" type="REAL" >
                <info>
 3D vector, origin of the plane
+(in alat units)
                </info>
             </dimension>
-            <message>
-!!! x0, e1, e2 are in alat units !!!
-            </message>
             <vargroup type="INTEGER" >
                <var name="nx" >
                </var>

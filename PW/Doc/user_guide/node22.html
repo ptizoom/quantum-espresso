@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>About this document ...</TITLE>
-<META NAME="description" CONTENT="About this document ...">
+<TITLE>5.1 Compilation problems with PLUMED</TITLE>
+<META NAME="description" CONTENT="5.1 Compilation problems with PLUMED">
 <META NAME="keywords" CONTENT="user_guide">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,59 +18,105 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="user_guide.css">
 
-<LINK REL="previous" HREF="node20.html">
-<LINK REL="up" HREF="user_guide.html">
+<LINK REL="previous" HREF="node21.html">
+<LINK REL="up" HREF="node21.html">
+<LINK REL="next" HREF="node23.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next_g.png"> 
-<A NAME="tex2html438"
-  HREF="user_guide.html">
+<A NAME="tex2html453"
+  HREF="node23.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html449"
+  HREF="node21.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html434"
+<A NAME="tex2html445"
   HREF="node21.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html440"
+<A NAME="tex2html451"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Up:</B> <A NAME="tex2html439"
-  HREF="user_guide.html">User's Guide for the</A>
-<B> Previous:</B> <A NAME="tex2html435"
-  HREF="node21.html">5.1 Compilation problems with</A>
- &nbsp; <B>  <A NAME="tex2html441"
+<B> Next:</B> <A NAME="tex2html454"
+  HREF="node23.html">About this document ...</A>
+<B> Up:</B> <A NAME="tex2html450"
+  HREF="node21.html">5 Troubleshooting</A>
+<B> Previous:</B> <A NAME="tex2html446"
+  HREF="node21.html">5 Troubleshooting</A>
+ &nbsp; <B>  <A NAME="tex2html452"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
-<H1><A NAME="SECTION00070000000000000000">
-About this document ...</A>
-</H1>
- <STRONG>
-   
-<BR>  <FONT SIZE="+4"><TT>PWscf</TT> User's Guide (v.5.3) 
-</FONT></STRONG><P>
-This document was generated using the
-<A NAME="http://www.latex2html.org/"><STRONG>LaTeX</STRONG>2<tt>HTML</tt></A> translator Version 2008 (1.71)
+<UL>
+<LI><UL>
+<LI><A NAME="tex2html455"
+  HREF="node22.html#SECTION00061010000000000000">5.1.0.1 xlc compiler</A>
+<LI><A NAME="tex2html456"
+  HREF="node22.html#SECTION00061020000000000000">5.1.0.2 Calling C from fortran</A>
+</UL></UL>
+<!--End of Table of Child-Links-->
+<HR>
+
+<H2><A NAME="SECTION00061000000000000000">
+5.1 Compilation problems with <TT>PLUMED</TT></A>
+</H2>
+
 <P>
-Copyright &#169; 1993, 1994, 1995, 1996,
-Nikos Drakos, 
-Computer Based Learning Unit, University of Leeds.
-<BR>
-Copyright &#169; 1997, 1998, 1999,
-<A NAME="http://www.maths.mq.edu.au/~ross/">Ross Moore</A>, 
-Mathematics Department, Macquarie University, Sydney.
+
+<H4><A NAME="SECTION00061010000000000000">
+5.1.0.1 xlc compiler</A>
+</H4>
+If you get an error message like:
+<PRE>
+Operation between types "char**" and "int" is not allowed.
+</PRE>
+change in file <TT>clib/metadyn.h</TT>
+<PRE>
+#define snew(ptr,nelem) (ptr)= (nelem==0 ? NULL : (typeof(ptr)) calloc(nelem, sizeof(*(ptr))))
+#define srenew(ptr,nelem) (ptr)= (typeof(ptr)) realloc(ptr,(nelem)*sizeof(*(ptr)))
+</PRE>
+with
+<PRE>
+#define snew(ptr,nelem) (ptr)= (nelem==0 ? NULL : (void*) calloc(nelem, sizeof(*(ptr))))
+#define srenew(ptr,nelem) (ptr)= (void*) realloc(ptr,(nelem)*sizeof(*(ptr)))
+</PRE>
+
 <P>
-The command line arguments were: <BR>
- <STRONG>latex2html</STRONG> <TT>-t 'User's Guide for the PWscf package' -html_version 3.2,math -toc_depth 5 -split 5 -toc_stars -show_section_numbers -local_icons -image_type png user_guide.tex</TT>
+
+<H4><A NAME="SECTION00061020000000000000">
+5.1.0.2 Calling C from fortran</A>
+</H4>
+PLUMED assumes that fortran compilers add a single <TT>_</TT> at the end of C routines. You
+may get an error message as :
+<PRE>
+ERROR: Undefined symbol: .init_metadyn
+ERROR: Undefined symbol: .meta_force_calculation
+</PRE>
+eliminate the <TT>_</TT> from the definition of init_metadyn and meta_force_calculation, i. e.
+change at line 529
+<PRE>
+void meta_force_calculation_(real *cell, int *istep, real *xxx, real *yyy, real *zzz,
+</PRE>
+with
+<PRE>
+void meta_force_calculation(real *cell, int *istep, real *xxx, real *yyy, real *zzz,
+</PRE>,
+and at line 961
+<PRE>
+  void init_metadyn_(int *atoms, real *ddt, real *mass, 
+  void init_metadyn_(int *atoms, real *ddt, real *mass,
+</PRE>
+
 <P>
-The translation was initiated by Filippo Spiga on 2016-04-24
 <BR><HR>
 <ADDRESS>
 Filippo Spiga
-2016-04-24
+2016-10-04
 </ADDRESS>
 </BODY>
 </HTML>

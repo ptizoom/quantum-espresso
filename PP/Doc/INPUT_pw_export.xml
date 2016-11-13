@@ -6,12 +6,16 @@
    <toc>
    </toc>
    <intro>
-Structure of the input data:
+<b>Purpose of pw_export.x:</b>
+   Writes PWSCF data for postprocessing purposes in XML format using IOTK lib.
+   Wave-functions are collected and written using IO_BASE module.
+
+<b>Structure of the input data:</b>
 ============================
 
-   &amp;INPUTPP
+   <b>&amp;INPUTPP</b>
      ...
-   /
+   <b>/</b>
    </intro>
    <namelist name="INPUTPP" >
       <var name="prefix" type="STRING" >
@@ -37,10 +41,10 @@ directory containing pseudopotential (PP) files
          </info>
       </var>
       <dimension name="psfile" start="1" end="ntyp" type="STRING" >
-         <default> &quot;&quot;
+         <default> (empty string)
          </default>
          <info>
-files containing i-th pseudopotential, where i=1, N_type.
+files containing i-th pseudopotential, where i=1, ntyp.
 PP numbering must follow the ordering defined in the input of pw.x
          </info>
       </dimension>
@@ -59,14 +63,14 @@ if .TRUE. output files are textual, otherwise they are partly binary.
          </info>
       </var>
       <var name="pp_file" type="STRING" >
-         <default> &quot;prefix.export/&quot;
+         <default> &quot;<ref>prefix</ref>.export/&quot;
          </default>
          <info>
 Output file.
 
-If it is omitted, a directory &quot;prefix.export/&quot; is created
+If it is omitted, a directory &quot;<ref>prefix</ref>.export/&quot; is created
 in outdir and some output files are put there. Anyway all the data
-are accessible through the &quot;prefix.export/index.xml&quot; file which
+are accessible through the &quot;<ref>prefix</ref>.export/index.xml&quot; file which
 contains implicit pointers to all the other files in the
 export directory. If reading is done by the IOTK library
 all data appear to be in index.xml even if physically it is not.

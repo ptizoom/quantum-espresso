@@ -1,9 +1,9 @@
 # Makefile for Modules
 
-include ../make.sys
+include ../make.inc
 
 # location of needed modules
-MODFLAGS= $(MOD_FLAG)../iotk/src $(MOD_FLAG)../ELPA/src $(MOD_FLAG)../FFTXlib $(MOD_FLAG)../LAXlib $(MOD_FLAG).
+MODFLAGS= $(MOD_FLAG)../iotk/src $(MOD_FLAG)../FFTXlib $(MOD_FLAG)../LAXlib $(IFLAGS) $(MOD_FLAG).
 
 # list of modules
 
@@ -31,9 +31,9 @@ fcp_variables.o \
 fd_gradient.o \
 fft_base.o \
 fft_custom.o \
+fsockets.o \
 funct.o \
 generate_function.o \
-griddim.o \
 gth.o \
 gvecw.o \
 input_parameters.o \
@@ -67,7 +67,6 @@ plugin_variables.o \
 pseudo_types.o \
 pw_dot.o \
 qexml.o \
-qexml_xsd.o \
 qmmm.o \
 radial_grids.o \
 random_numbers.o \
@@ -87,6 +86,7 @@ recvec_subs.o \
 run_info.o \
 space_group.o \
 set_signal.o \
+setqf.o \
 splinelib.o \
 timestep.o\
 tsvdw.o\
@@ -105,6 +105,14 @@ xc_vdW_DF.o \
 xc_rVV10.o \
 xml_input.o \
 xml_io_base.o \
+io_base.o \
+qes_module.o  \
+qes_types.o \
+qes_libs.o  \
+qexsd.o   \
+qexsd_input.o \
+qexsd_reader_module.o \
+hdf5_qe.o\
 xsf.o \
 wypos.o \
 zdotc_wrapper.o  \
@@ -137,6 +145,7 @@ rgen.o \
 recips.o \
 remove_tot_torque.o \
 set_hubbard_l.o \
+set_hubbard_n.o \
 simpsn.o \
 sort.o \
 sph_bes.o \
@@ -184,7 +193,7 @@ tldeps :
 
 
 clean :
-	- /bin/rm -f *.o *.a *.d *.i *~ *.F90 *.mod *.L version.f90
+	- /bin/rm -f *.o *.a *.d *.i *~ *_tmp.f90 *.mod *.L version.f90
 
 # .PHONY forces execution of a rule irrespective of the presence of an
 # updated file with the same name of the rule. In this way, the script 

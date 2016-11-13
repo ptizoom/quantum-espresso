@@ -137,8 +137,6 @@ if none is found, it will fall back to the internal  copy of FFTW.
 <TT>configure</TT> will add the appropriate preprocessing options:
 
 <UL>
-<LI><TT>-D__ESSL</TT> for ESSL on IBM AIX machines,
-</LI>
 <LI><TT>-D__LINUX_ESSL</TT> for ESSL on IBM Linux machines,
 </LI>
 <LI><TT>-DASL</TT> for NEC ASL library on NEC machines,
@@ -152,8 +150,8 @@ if none is found, it will fall back to the internal  copy of FFTW.
 <LI><TT>-D__FFTW</TT>) for FFTW (internal library),
 </LI>
 </UL>
-to <TT>DFLAGS</TT> in the <TT>make.sys</TT> file.
-If you edit <TT>make.sys</TT> manually, please note that one and
+to <TT>DFLAGS</TT> in the <TT>make.inc</TT> file.
+If you edit <TT>make.inc</TT> manually, please note that one and
 only one among the mentioned preprocessing option must be set.
 
 <P>
@@ -190,7 +188,7 @@ The <TT>configure</TT> script attempts to find optimized libraries, but may fail
 if they have been installed in non-standard places. You should examine
 the final value of <TT>BLAS_LIBS, LAPACK_LIBS, FFT_LIBS, MPI_LIBS</TT> (if needed),
 <TT>MASS_LIBS</TT> (IBM only), either in the output of <TT>configure</TT> or in the generated
-<TT>make.sys</TT>, to check whether it found all the libraries that you intend to use.
+<TT>make.inc</TT>, to check whether it found all the libraries that you intend to use.
 
 <P>
 If some library was not found, you can specify a list of directories to search
@@ -235,7 +233,7 @@ and won't do any extra search.
 <!--End of Navigation Panel-->
 <ADDRESS>
 Filippo Spiga
-2016-04-24
+2016-10-04
 </ADDRESS>
 </BODY>
 </HTML>

@@ -9,15 +9,16 @@
 \BOOKMARK [2][-]{subsection.3.3}{Electronic structure calculations}{section.3}% 9
 \BOOKMARK [2][-]{subsection.3.4}{Optimization and dynamics}{section.3}% 10
 \BOOKMARK [2][-]{subsection.3.5}{Direct interface with CASINO}{section.3}% 11
-\BOOKMARK [1][-]{section.4}{Performances}{}% 12
-\BOOKMARK [2][-]{subsection.4.1}{Execution time}{section.4}% 13
-\BOOKMARK [2][-]{subsection.4.2}{Memory requirements}{section.4}% 14
-\BOOKMARK [2][-]{subsection.4.3}{File space requirements}{section.4}% 15
-\BOOKMARK [2][-]{subsection.4.4}{Parallelization issues}{section.4}% 16
-\BOOKMARK [2][-]{subsection.4.5}{Understanding the time report}{section.4}% 17
-\BOOKMARK [3][-]{subsubsection.4.5.1}{Serial execution}{subsection.4.5}% 18
-\BOOKMARK [3][-]{subsubsection.4.5.2}{Parallel execution}{subsection.4.5}% 19
-\BOOKMARK [2][-]{subsection.4.6}{Restarting}{section.4}% 20
-\BOOKMARK [3][-]{subsubsection.4.6.1}{Signal trapping \(experimental!\)}{subsection.4.6}% 21
-\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 22
-\BOOKMARK [2][-]{subsection.5.1}{Compilation problems with PLUMED}{section.5}% 23
+\BOOKMARK [2][-]{subsection.3.6}{Socket interface with i-PI}{section.3}% 12
+\BOOKMARK [1][-]{section.4}{Performances}{}% 13
+\BOOKMARK [2][-]{subsection.4.1}{Execution time}{section.4}% 14
+\BOOKMARK [2][-]{subsection.4.2}{Memory requirements}{section.4}% 15
+\BOOKMARK [2][-]{subsection.4.3}{File space requirements}{section.4}% 16
+\BOOKMARK [2][-]{subsection.4.4}{Parallelization issues}{section.4}% 17
+\BOOKMARK [2][-]{subsection.4.5}{Understanding the time report}{section.4}% 18
+\BOOKMARK [3][-]{subsubsection.4.5.1}{Serial execution}{subsection.4.5}% 19
+\BOOKMARK [3][-]{subsubsection.4.5.2}{Parallel execution}{subsection.4.5}% 20
+\BOOKMARK [2][-]{subsection.4.6}{Restarting}{section.4}% 21
+\BOOKMARK [3][-]{subsubsection.4.6.1}{Signal trapping \(experimental!\)}{subsection.4.6}% 22
+\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 23
+\BOOKMARK [2][-]{subsection.5.1}{Compilation problems with PLUMED}{section.5}% 24

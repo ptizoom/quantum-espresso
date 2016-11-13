@@ -34,7 +34,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
    
 <BR>  <FONT SIZE="+4">Developer's Manual for 
 <BR>
-Q<SMALL>UANTUM </SMALL>ESPRESSO (v.5.4)
+Q<SMALL>UANTUM </SMALL>ESPRESSO (v.6.0)
 </FONT></H1>
 <DIV>
 
@@ -49,33 +49,33 @@ Contents</A>
 <!--Table of Contents-->
 
 <UL>
-<LI><A NAME="tex2html54"
-  HREF="developer_man.html#SECTION00020000000000000000">1 Introduction</A>
 <LI><A NAME="tex2html55"
-  HREF="developer_man.html#SECTION00030000000000000000">2 QUANTUM ESPRESSO as a distribution</A>
+  HREF="developer_man.html#SECTION00020000000000000000">1 Introduction</A>
 <LI><A NAME="tex2html56"
-  HREF="developer_man.html#SECTION00040000000000000000">3 How to become a developer</A>
+  HREF="developer_man.html#SECTION00030000000000000000">2 QUANTUM ESPRESSO as a distribution</A>
 <LI><A NAME="tex2html57"
-  HREF="developer_man.html#SECTION00050000000000000000">4 Stable releases and development cycle</A>
+  HREF="developer_man.html#SECTION00040000000000000000">3 How to become a developer</A>
 <LI><A NAME="tex2html58"
-  HREF="developer_man.html#SECTION00060000000000000000">5 Structure of the distribution</A>
+  HREF="developer_man.html#SECTION00050000000000000000">4 Stable releases and development cycle</A>
 <LI><A NAME="tex2html59"
-  HREF="developer_man.html#SECTION00070000000000000000">6 Algorithms</A>
+  HREF="developer_man.html#SECTION00060000000000000000">5 Structure of the distribution</A>
 <LI><A NAME="tex2html60"
-  HREF="developer_man.html#SECTION00080000000000000000">7 Format of arrays containing charge density, potential, etc.</A>
+  HREF="developer_man.html#SECTION00070000000000000000">6 Algorithms</A>
 <LI><A NAME="tex2html61"
-  HREF="developer_man.html#SECTION00090000000000000000">8 Parallelization (MPI)</A>
+  HREF="developer_man.html#SECTION00080000000000000000">7 Format of arrays containing charge density, potential, etc.</A>
 <LI><A NAME="tex2html62"
-  HREF="developer_man.html#SECTION000100000000000000000">9 File Formats</A>
+  HREF="developer_man.html#SECTION00090000000000000000">8 Parallelization (MPI)</A>
 <LI><A NAME="tex2html63"
-  HREF="developer_man.html#SECTION000110000000000000000">10 Modifying/adding/extending QUANTUM ESPRESSO</A>
+  HREF="developer_man.html#SECTION000100000000000000000">9 File Formats</A>
 <LI><A NAME="tex2html64"
-  HREF="developer_man.html#SECTION000120000000000000000">11 Using SVN</A>
+  HREF="developer_man.html#SECTION000110000000000000000">10 Modifying/adding/extending QUANTUM ESPRESSO</A>
 <LI><A NAME="tex2html65"
-  HREF="developer_man.html#SECTION000130000000000000000">12 Using git</A>
+  HREF="developer_man.html#SECTION000120000000000000000">11 Using SVN</A>
 <LI><A NAME="tex2html66"
-  HREF="developer_man.html#SECTION000140000000000000000">13 Bibliography</A>
+  HREF="developer_man.html#SECTION000130000000000000000">12 Using git</A>
 <LI><A NAME="tex2html67"
+  HREF="developer_man.html#SECTION000140000000000000000">13 Bibliography</A>
+<LI><A NAME="tex2html68"
   HREF="developer_man.html#SECTION000150000000000000000">About this document ...</A>
 </UL>
 <!--End of Table of Contents-->
@@ -712,7 +712,7 @@ libraries, installation utilities, general documentation.
 Common files and directories in the <TT>espresso/</TT> directory are:
 <PRE>
    install/                 configure
-   include/                 make.sys
+   include/                 make.inc
    archive/                 Makefile
    dev-tools/               License
    pseudo/                  README
@@ -727,7 +727,7 @@ obvious, the other files and directories are related to
 <UL>
 <LI><EM>Installation</EM> (i.e. compilation and linking):
 <BR><TT>install/</TT>, <TT>dev-tools/</TT>, <TT>archive/</TT>,
-<TT>configure</TT>, .sys
+<TT>configure</TT>, .inc
 </LI>
 <LI><EM>Testing</EM> (running tests and examples):
 <BR><TT>pseudo/</TT>, <TT>environment_variables</TT>
@@ -788,7 +788,7 @@ and linking
 <DD><TT>configure</TT>: wrapper for <TT>install/configure</TT> script
 </DD>
 <DT>-</DT>
-<DD>.sys: produced by <TT>configure</TT>, contains
+<DD>.inc: produced by <TT>configure</TT>, contains
 machine-specific compilation and linking options
 </DD>
 <DT>-</DT>
@@ -801,7 +801,7 @@ pre-processed.
 </DD>
 </DL>
 <TT>./configure</TT> <EM>options</EM> cleans executbales,
-runs <TT>install/configure</TT>, produces file .sys.
+runs <TT>install/configure</TT>, produces file .inc.
 See Sec.<A HREF="#SubSec:conf">5.1.2</A> for some details on how to change the
 behavior of <TT>configure</TT>.
 
@@ -822,10 +822,10 @@ the sources, running script <TT>install/makedeps.sh</TT> or using command
 <P>
 
 <H4><A NAME="SECTION00061010000000000000">
-5.1.0.1 make.sys</A>
+5.1.0.1 make.inc</A>
 </H4>
 This file is produced by <TT>configure</TT> using the template in
-<TT>install/make.sys.in</TT> and contains all system-specific
+<TT>install/make.inc.in</TT> and contains all system-specific
 information on
 
 <UL>
@@ -840,11 +840,11 @@ information on
 <LI>Miscellanous stuff
 </LI>
 </UL>
-The .sys file is included into all <TT>Makefile</TT>'s,
+The .inc file is included into all <TT>Makefile</TT>'s,
 using the corresponding syntax. The best documentation for the
-.sys file is the file itself. Note that if you want to
+.inc file is the file itself. Note that if you want to
 change something or to add more documentation into this file,
-you may need to modify the template file <TT>install/make.sys.in</TT>.
+you may need to modify the template file <TT>install/make.inc.in</TT>.
 
 <P>
 
@@ -855,7 +855,7 @@ The top-level <TT>Makefile</TT> contains the instructions to download,
 unpack, compile and link what is required. Sample contents
 (comments in italic):
 <PRE>
-include make.sys
+include make.inc
 </PRE>
 <EM>Contains machine- and Q<SMALL>UANTUM </SMALL>ESPRESSO-specific definitions</EM>
 <PRE>
@@ -888,7 +888,7 @@ libblas : touch-dummy
      cd install ; $(MAKE) -f extlibs_makefile $@
 </PRE>
 <EM>Target <TT>libblas</TT>: this is an external library, that may or may
-not be needed, depending upon what is written in <TT>make.sys</TT>. If
+not be needed, depending upon what is written in <TT>make.inc</TT>. If
 needed, go into directory <TT>install/</TT> where <TT>make libblas</TT> using
 <TT>extlibs_makefile</TT> as Makefile will check if BLAS are there, download
 from the network if not,
@@ -902,7 +902,7 @@ compile and build the library</EM>
 Second-level <TT>Makefile</TT> contains only targets related to a given
 subdirectory or package. Sample contents:
 <PRE>
-sinclude ../make.sys
+sinclude ../make.inc
 default : all
 all: pw pwtools
 pw:
@@ -929,7 +929,7 @@ The most important and most complex Makefile is the one in the
 source directory. It is also the one you need to modify if you
 add something.
 <PRE>
-include ../../make.sys
+include ../../make.inc
 </PRE>
 <EM>Contains machine- and Q<SMALL>UANTUM </SMALL>ESPRESSO-specific definitions</EM>
 <PRE>
@@ -937,7 +937,7 @@ MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../Modules $(MOD_FLAG).\
           $(MOD_FLAG)../../FFTXlib $(MOD_FLAG)../../LAXlib
 </PRE>
 <EM>Location of needed modules; </EM><TT>MOD_FLAG</TT><EM> is defined in
-<TT>make.sys</TT></EM>
+<TT>make.inc</TT></EM>
 <PRE>
 PWOBJS = \
 pwscf.o
@@ -980,7 +980,7 @@ pw.x : $(PWOBJS) libpw.a $(LIBOBJS) $(QEMODS)
 It also produces a link to the executable in <TT>espresso/bin/</TT>.
 Do not forget tabulators even if you do not see them!
 All variables (introduced by $) are either defined locally
-in <TT>Makefile</TT> or imported from <TT>make.sys</TT></EM>
+in <TT>Makefile</TT> or imported from <TT>make.inc</TT></EM>
 <PRE>
 libpw.a : $(PWLIBS)
         $(AR) $(ARFLAGS) $@ $?
@@ -1036,12 +1036,12 @@ or do not implement properly preprocessing. In this case the
 preprocessing is done using <TT>cpp</TT>.
 Normally, <TT>configure</TT> takes care of this, by selecting the
 appropriate rule <TT>@f90rule@</TT> below, in this section
-of file <TT>make.sys.in</TT>:
+of file <TT>make.inc.in</TT>:
 <PRE>
 .f90.o:
 	@f90rule@
 </PRE>
-and producing the appropriate file .sys.
+and producing the appropriate file .inc.
 
 <P>
 Preprocessing is useful to
@@ -1079,7 +1079,7 @@ The following capabilities of the C preprocessor are used:
 </LI>
 <LI>execute conditional expressions such as
 <PRE>
-  #ifdef __expression
+  #if defined (__expression)
     ...code A...
   #else
     ...code B...
@@ -1097,7 +1097,8 @@ In order to make  preprocessing options
 easy to see, preprocessing variables should start with
 two underscores, as <TT>__expression</TT> in the above
 example. Traditionally ''preprocessed'' variables are also written in
-uppercase.
+uppercase. Please use <code>#if defined (XXX)</code>, not
+<code>#if defined XXX</code> or <code>#ifdef XXX</code>.
 
 <P>
 
@@ -1137,7 +1138,7 @@ except that:
 You may refer to the GNU <TT>autoconf</TT> Manual for more info.
 
 <P>
-<TT>make.sys.in</TT> is the source file for .sys, that
+<TT>make.inc.in</TT> is the source file for .inc, that
 <TT>configure</TT> generates: you might want to edit that file as well.
 The generation procedure is as follows: if <TT>configure.ac</TT> contains the macro
 "AC_SUBST(name)", then every occurrence of "@name@" in the source
@@ -1166,10 +1167,10 @@ error messages.  Note that it is normal for some checks to fail.
 In order to support a previously unsupported architecture, first you
 have to figure out which compilers, compilation flags, libraries
 etc. should be used on that architecture.
-In other words, you have to write a .sys that works: you may use
+In other words, you have to write a .inc that works: you may use
 the manual configuration procedure for that (see the
 User Guide).  Then, you have to modify <TT>configure</TT> so that it can
-generate that .sys automatically.
+generate that .inc automatically.
 
 <P>
 To do that, you have to add the case for your architecture in several
@@ -1235,9 +1236,8 @@ be always fine, unless some special flag is required (e.g., -X64
 With sp4).
 
 <P>
-- you should define "try_dflags" if there is
-any
-"#ifdef" specific to your machine: for instance, on IBM machines,
+- you should define "try_dflags" if there is any preprocessing
+option specific to your machine: for instance, on IBM machines,
 "try_dflags=-D__AIX" . A list of such flags can be found in file
 <TT>include/defs.h.README</TT>.
 
@@ -1342,8 +1342,7 @@ others.  In that case, define them as "$(FFLAGS) -something_else".
 <P>
 - "try_fflags_noopt": flags for Fortran 77 with all optimizations
 turned off: this is usually "-O0".
-These flags must be used for compiling flib/dlamch.f (part of our
-version of Lapack): it won't work properly with optimization.
+These flags used to be needed to compile flib/dlamch.f; likely obsolete
 
 <P>
 - "try_ldflags": flags for the linking phase (not including the list
@@ -1354,8 +1353,8 @@ of libraries: this is decided later).
 (i.e., don't use shared libraries).
 
 <P>
-- "try_dflags": must be defined if there is in the code any #ifdef
-specific to your compiler (for instance, -D__INTEL for Intel
+- "try_dflags": must be defined if there is in the code any preprocessing
+option specific to your compiler (for instance, -D__INTEL for Intel
 compilers).  Define it as "$try_dflags -D..." so that pre-existing
 flags, if any, are preserved.
 
@@ -1520,14 +1519,130 @@ See file <TT>include/defs.h.README</TT> for more info.
 6 Algorithms</A>
 </H1>
 
+<P>
+
 <H2><A NAME="SECTION00071000000000000000">
-6.1 Gamma tricks</A>
+6.1 <I>G</I> vectors and plane waves</A>
+</H2>
+
+<P>
+``<I>G</I> vectors are generated in the <TT>ggen</TT> subroutine in
+<TT>Modules/recvec_subs.f90</TT>. You may also have a look at routine
+<TT>PW/src/n_plane_waves.f90</TT> to understand how things work.
+In general, <I>G</I> vectors are determined by the condition
+
+<P></P>
+<DIV ALIGN="CENTER">
+<!-- MATH
+ \begin{equation}
+{ \hbar^2 G^2 \over 2m_e} \le E^\rho_c = 4 E^w_c
+\end{equation}
+ -->
+<TABLE WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE"><TD ALIGN="CENTER" NOWRAP>
+<IMG
+ WIDTH="49" HEIGHT="69" ALIGN="MIDDLE" BORDER="0"
+ SRC="img2.png"
+ ALT="$\displaystyle {\hbar^2 G^2 \over 2m_e}$"><IMG
+ WIDTH="19" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img3.png"
+ ALT="$\displaystyle \le$"><I>E</I><SUP><IMG
+ WIDTH="12" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img4.png"
+ ALT="$\scriptstyle \rho$"></SUP><SUB>c</SUB> = 4<I>E</I><SUP>w</SUP><SUB>c</SUB>
+</TD>
+<TD WIDTH=10 ALIGN="RIGHT">
+(1)</TD></TR>
+</TABLE>
+</DIV>
+(without the k point; the code always uses Rydberg atomic units unless
+otherwise specified). This is a sphere in reciprocal space centered
+around (0,0,0).
+
+<P>
+Concerning each orbital corresponding to a specific k point, you
+use the condition
+
+<P></P>
+<DIV ALIGN="CENTER">
+<!-- MATH
+ \begin{equation}
+{ \hbar^2 ({\bf k}+{\bf G})^2 \over 2m_e} \le E^w_c
+\end{equation}
+ -->
+<TABLE WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE"><TD ALIGN="CENTER" NOWRAP>
+<IMG
+ WIDTH="100" HEIGHT="69" ALIGN="MIDDLE" BORDER="0"
+ SRC="img5.png"
+ ALT="$\displaystyle {\hbar^2 ({\bf k}+{\bf G})^2 \over 2m_e}$"><IMG
+ WIDTH="19" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img3.png"
+ ALT="$\displaystyle \le$"><I>E</I><SUP>w</SUP><SUB>c</SUB>
+</TD>
+<TD WIDTH=10 ALIGN="RIGHT">
+(2)</TD></TR>
+</TABLE>
+</DIV>
+In this case the <I>G</I> vectors are a subset of the vectors used for the
+density and form a sphere in reciprocal space shifted from the origin.
+Depending on k you can have a different set of <I>G</I> vectors included
+in the sphere and also their number could differ.
+
+<P>
+In order to manage the <I>G</I> vectors for each <I>k</I>-point, you can use the arrays
+ngk (number of <I>G</I> vectors for each <I>k</I>-point) and igk_k (index of <I>G</I>
+corresponding to a given index of <I>k</I> + <I>G</I>; basically an index that allows
+you to identify the <I>G</I> vectors corresponding to a given <I>k</I> and order them).
+
+<P>
+For example the kinetic energy corresponding to a given <I>k</I>-point <TT>ik</TT>
+is
+<PRE>
+ g2kin(1:ngk(ik)) = ( ( xk(1,ik) + g(1,igk_k(1:ngk(ik),ik)) )**2 + &amp;
+                      ( xk(2,ik) + g(2,igk_k(1:ngk(ik),ik)) )**2 + &amp;
+                      ( xk(3,ik) + g(3,igk_k(1:ngk(ik),ik)) )**2 ) * tpiba2
+</PRE>
+where <TT>tpiba2</TT> <!-- MATH
+ $= (2\pi/a)^2$
+ -->
+= (2<IMG
+ WIDTH="16" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
+ SRC="img6.png"
+ ALT="$ \pi$">/<I>a</I>)<SUP>2</SUP>.
+
+<P>
+There is only one FFT for the wavefunctions so the grid does not depend
+upon the k-points; however, for a given wavefunction, only the components
+corresponding to a <I>G</I> vector that satisfy
+<!-- MATH
+ ${ \hbar^2 ({\bf k}+{\bf G})^2 / 2m_e} \le E^w_c$
+ -->
+<IMG
+ WIDTH="23" HEIGHT="43" ALIGN="MIDDLE" BORDER="0"
+ SRC="img7.png"
+ ALT="$ \hbar^{2}_{}$">(<IMG
+ WIDTH="16" HEIGHT="20" ALIGN="BOTTOM" BORDER="0"
+ SRC="img8.png"
+ ALT="$ \bf k$">+<IMG
+ WIDTH="22" HEIGHT="20" ALIGN="BOTTOM" BORDER="0"
+ SRC="img9.png"
+ ALT="$ \bf G$">)<SUP>2</SUP>/2<I>m</I><SUB>e</SUB><IMG
+ WIDTH="19" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img10.png"
+ ALT="$ \le$"><I>E</I><SUP>w</SUP><SUB>c</SUB>
+are different from 0'' (adapted from an answer by Dario Rocca).
+
+<P>
+
+<H2><A NAME="SECTION00072000000000000000">
+6.2 Gamma tricks</A>
 </H2>
 
 <P>
 In calculations using only the <IMG
  WIDTH="16" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
- SRC="img2.png"
+ SRC="img11.png"
  ALT="$ \Gamma$"> point (k=0),
 the Kohn-Sham orbitals can be chosen to be real functions in
 real space, so that
@@ -1536,33 +1651,33 @@ real space, so that
  -->
 <IMG
  WIDTH="17" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img3.png"
+ SRC="img12.png"
  ALT="$ \psi$">(<I>G</I>) = <IMG
  WIDTH="25" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img4.png"
+ SRC="img13.png"
  ALT="$ \psi^{*}_{}$">(- <I>G</I>).
 This allows us to store only half of the Fourier components.
 Moreover, two real FFTs can be performed as a single complex FFT.
 The auxiliary complex function <IMG
  WIDTH="18" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
- SRC="img5.png"
+ SRC="img14.png"
  ALT="$ \Phi$"> is introduced:
 <!-- MATH
  $\Phi(r) = \psi_j(r)+ i \psi_{j+1}(r)$
  -->
 <IMG
  WIDTH="18" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
- SRC="img5.png"
+ SRC="img14.png"
  ALT="$ \Phi$">(<I>r</I>) = <IMG
  WIDTH="24" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img6.png"
+ SRC="img15.png"
  ALT="$ \psi_{j}^{}$">(<I>r</I>) + <I>i</I><IMG
  WIDTH="41" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img7.png"
+ SRC="img16.png"
  ALT="$ \psi_{{j+1}}^{}$">(<I>r</I>)
 whose Fourier transform <IMG
  WIDTH="18" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
- SRC="img5.png"
+ SRC="img14.png"
  ALT="$ \Phi$">(<I>G</I>) yields
 
 <P>
@@ -1572,16 +1687,16 @@ whose Fourier transform <IMG
  -->
 <IMG
  WIDTH="24" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img6.png"
+ SRC="img15.png"
  ALT="$ \psi_{j}^{}$">(<I>G</I>) = <IMG
  WIDTH="98" HEIGHT="47" ALIGN="MIDDLE" BORDER="0"
- SRC="img8.png"
+ SRC="img17.png"
  ALT="$ {\Phi(G) + \Phi^*(-G)\over 2}$">,<IMG
  WIDTH="41" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img7.png"
+ SRC="img16.png"
  ALT="$ \psi_{{j+1}}^{}$">(<I>G</I>) = <IMG
  WIDTH="98" HEIGHT="47" ALIGN="MIDDLE" BORDER="0"
- SRC="img9.png"
+ SRC="img18.png"
  ALT="$ {\Phi(G) - \Phi^*(-G)\over 2i}$">.
 
 <P>
@@ -1602,8 +1717,8 @@ must be assigned to the same processor.
 
 <P>
 
-<H2><A NAME="SECTION00072000000000000000">
-6.2 Restart</A>
+<H2><A NAME="SECTION00073000000000000000">
+6.3 Restart</A>
 </H2>
 
 <P>
@@ -1715,40 +1830,40 @@ r_{ijk}=\frac{i-1}{nr1} \tau_1  +  \frac{j-1}{nr2} \tau_2 +
 <DIV ALIGN="CENTER">
 <I>r</I><SUB>ijk</SUB> = <IMG
  WIDTH="48" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
- SRC="img11.png"
+ SRC="img19.png"
  ALT="$\displaystyle {\frac{{i-1}}{{nr1}}}$"><IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img12.png"
+ SRC="img20.png"
  ALT="$\displaystyle \tau_{1}^{}$"> + <IMG
  WIDTH="50" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
- SRC="img13.png"
+ SRC="img21.png"
  ALT="$\displaystyle {\frac{{j-1}}{{nr2}}}$"><IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img14.png"
+ SRC="img22.png"
  ALT="$\displaystyle \tau_{2}^{}$"> + <IMG
  WIDTH="52" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
- SRC="img15.png"
+ SRC="img23.png"
  ALT="$\displaystyle {\frac{{k-1}}{{nr3}}}$"><IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img16.png"
+ SRC="img24.png"
  ALT="$\displaystyle \tau_{3}^{}$">
 </DIV><P></P>
 where the <IMG
  WIDTH="18" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img17.png"
+ SRC="img25.png"
  ALT="$ \tau_{i}^{}$"> are the basis vectors of the Bravais lattice.
 The latter are stored row-wise in the <TT>at</TT> array:
 <IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img18.png"
+ SRC="img26.png"
  ALT="$ \tau_{1}^{}$"> = <TT>at(:, 1)</TT>,
 <IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img19.png"
+ SRC="img27.png"
  ALT="$ \tau_{2}^{}$"> = <TT>at(:, 2)</TT>,
 <IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img20.png"
+ SRC="img28.png"
  ALT="$ \tau_{3}^{}$"> = <TT>at(:, 3)</TT>.
 
 <P>
@@ -1819,7 +1934,7 @@ MUCH better code, both for serial and parallel speed:
 <P>
 
 <H3><A NAME="SECTION00091100000000000000">
-8.1.1 Usage of #ifdef __MPI</A>
+8.1.1 Preprocessing for parallel usage</A>
 </H3>
 
 <P>
@@ -1831,17 +1946,17 @@ the following rules <EM>must</EM> be followed:
 <UL>
 <LI>Direct calls to MPI library routines must be replaced by
 calls to wrapper routines like those in module <TT>mp.f90</TT>.
-If this is not possible or not convenient, use #ifdef __MPI
+If this is not possible or not convenient, use <code>\#if defined (__MPI)}</code>
 to prevent compilation and usage in the serial case. Note that
 some compilers do not like empty files or modules containing nothing!
 </LI>
 <LI>Wrapper routines do not need to be conditionally called:
-there are #ifdef's inside them. Keep the difference between serial
-and parallel code to a minimum: more #ifdef __MPI may be needed
+preprocessing is done inside them. Keep the difference between serial
+and parallel code to a minimum: <code>\#if defined (__MPI)}</code> are needed
 only when the flux of parallel and serial execution differ.
 </LI>
-<LI>Unneeded #ifdef __MPI may be removed if already present;
-#ifdef __PARA is obsolete and must not be used in new developments.
+<LI>Unneeded preprocessing may be removed if already present;
+preprocessing option <code>__PARA</code> is obsolete and must not be used.
 </LI>
 </UL>
 
@@ -1888,7 +2003,7 @@ k-point pools. Note that:
  -->
 <IMG
  WIDTH="523" HEIGHT="28" ALIGN="BOTTOM" BORDER="0"
- SRC="img21.png"
+ SRC="img29.png"
  ALT="\framebox{$\sum_{\bf k}\equiv$\ sum over local {\bf k}-points +
 {\tt mp\_sum} on {\tt inter \_pool\_comm}}">
 </BLOCKQUOTE>
@@ -1909,7 +2024,7 @@ for hybrid functionals in PW. When a sum over all bands is needed:
  -->
 <IMG
  WIDTH="489" HEIGHT="28" ALIGN="BOTTOM" BORDER="0"
- SRC="img22.png"
+ SRC="img30.png"
  ALT="\framebox{$\sum_i\equiv$\ sum over local bands + {\tt mp\_sum} on
 {\tt inter\_bgrp\_comm}}">
 </BLOCKQUOTE>
@@ -1922,13 +2037,13 @@ Plane waves (<!-- MATH
  -->
 <IMG
  WIDTH="16" HEIGHT="20" ALIGN="BOTTOM" BORDER="0"
- SRC="img23.png"
+ SRC="img8.png"
  ALT="$ \bf k$"> + <IMG
  WIDTH="22" HEIGHT="20" ALIGN="BOTTOM" BORDER="0"
- SRC="img24.png"
+ SRC="img9.png"
  ALT="$ \bf G$"> or <IMG
  WIDTH="22" HEIGHT="20" ALIGN="BOTTOM" BORDER="0"
- SRC="img24.png"
+ SRC="img9.png"
  ALT="$ \bf G$"> vectors up to the specified
 kinetic energy cutoff) are distributed across processors of the
 <TT>intra_bgrp_comm</TT> communicators. Sums over all plane waves
@@ -1937,16 +2052,16 @@ or <B>G</B>-vectors (as e.g. in scalar products <!-- MATH
  -->
 <IMG
  WIDTH="12" HEIGHT="39" ALIGN="MIDDLE" BORDER="0"
- SRC="img25.png"
+ SRC="img31.png"
  ALT="$ \langle$"><IMG
  WIDTH="21" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img26.png"
+ SRC="img32.png"
  ALT="$ \phi_{i}^{}$">|<IMG
  WIDTH="23" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img27.png"
+ SRC="img33.png"
  ALT="$ \phi_{j}^{}$"><IMG
  WIDTH="12" HEIGHT="39" ALIGN="MIDDLE" BORDER="0"
- SRC="img28.png"
+ SRC="img34.png"
  ALT="$ \rangle$">)
 should be performed as follows:
 <BLOCKQUOTE>
@@ -1955,7 +2070,7 @@ should be performed as follows:
  -->
 <IMG
  WIDTH="298" HEIGHT="28" ALIGN="BOTTOM" BORDER="0"
- SRC="img29.png"
+ SRC="img35.png"
  ALT="\framebox{$\sum_{\bf G} \equiv$\ {\tt mp\_sum} on {\tt intra\_bgrp\_comm}}">
 </BLOCKQUOTE>
 The same holds for real-space FFT's grid.
@@ -2602,7 +2717,9 @@ should however follow at least the following loose ones:
 
 <UL>
 <LI>Preprocessing options should be capitalized and start with
-two underscores. Examples: __AIX, __LINUX, ...
+two underscores. Examples: __MPI, __LINUX, ... Use 
+preprocessing syntax <code>#if defined (XXX)</code>, not <code>#if defined XXX</code>
+or <code>#ifdef XXX</code>
 </LI>
 <LI>Fortran commands should be capitalized:
 CALL something( )
@@ -2976,10 +3093,63 @@ Git is a very populare versioning control system for collaborative development
 nowadays. The web is full of tutorials and guide about how to use it, covering 
 simple novice concepts to master the most sophisticated functionalities. The 
 following links contain an introduction to <TT>git</TT>:
-<BR>
+<PRE>
 https://git-scm.com/book/en/v2/Getting-Started-Git-Basics
-<BR>
 https://git-scm.com/course/svn.html
+</PRE>
+Very quick guide to <TT>git</TT> commands for the impatient:
+
+<UL>
+<LI><TT>clone</TT>: Initial download, makes a local copy of a (typically
+  remote repository)
+</LI>
+<LI><TT>fetch</TT>:
+  looks at the remote repository, signals if new files or conflicts are present
+  in case the local copy is updated
+</LI>
+<LI><TT>pull</TT>:
+  downloads updates from the remote repository, applies them to the local one.
+  If there are conflicts that cannot be easily solved, conflicts are flagged
+  and one has to proceed with a manual merge
+</LI>
+<LI><TT>add</TT>: adds files or directories to the "stage area", a pool
+  of files to be commited
+</LI>
+<LI><TT>commit</TT> commits files in the "stage area". Unlike
+  <TT>svn commit</TT>, files are committed only in the local repository
+</LI>
+<LI><TT>push</TT> publishes the new commits of the local repository
+  to one or more remote repositories
+</LI>
+<LI><TT>merge</TT> merges two branches (typically the local one and
+  the remote one). A merge may be easy or complex, depending upon the type of
+  conflicts. See:
+  <TT>https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line/</TT>
+</LI>
+</UL>
+In order to align the local repository to the svn mirror (equivalent to
+<TT>svn update</TT>), it is a good idea to use <TT>fetch</TT> before
+<TT>pull</TT>. Then:
+<BLOCKQUOTE>
+<TT>git add</TT>
+  <TT>git commit</TT>
+  <TT>git merge</TT>
+
+</BLOCKQUOTE>
+In order to save incomplete work and avoid local conflicts, one can use
+<TT>stash</TT>:
+<BLOCKQUOTE>
+<TT>git stash save</TT>     (save and remove modified files)
+<BR>  <TT>git pull</TT>           (update files)
+<BR>  <TT>git stash apply</TT>    (overwrite with locally modified files)
+
+</BLOCKQUOTE>
+The stash can be cleared using <TT>git clear</TT>. A few useful commands:
+<BLOCKQUOTE>
+<TT>git status</TT>
+<BR>  <TT>git diff</TT>
+
+</BLOCKQUOTE>
 
 <P>
 
@@ -3023,7 +3193,7 @@ About this document ...</A>
    
 <BR>  <FONT SIZE="+4">Developer's Manual for 
 <BR>
-Q<SMALL>UANTUM </SMALL>ESPRESSO (v.5.4)
+Q<SMALL>UANTUM </SMALL>ESPRESSO (v.6.0)
 </FONT></STRONG><P>
 This document was generated using the
 <A NAME="http://www.latex2html.org/"><STRONG>LaTeX</STRONG>2<tt>HTML</tt></A> translator Version 2008 (1.71)
@@ -3039,7 +3209,7 @@ Mathematics Department, Macquarie University, Sydney.
 The command line arguments were: <BR>
  <STRONG>latex2html</STRONG> <TT>-t 'Developer's Manual for Quantum-ESPRESSO' -html_version 3.2,math -toc_depth 3 -split 3 -toc_stars -show_section_numbers -local_icons -image_type png developer_man.tex</TT>
 <P>
-The translation was initiated by Filippo Spiga on 2016-04-24
+The translation was initiated by Filippo Spiga on 2016-10-04
 <BR><HR>
 <!--Table of Child-Links-->
 <A NAME="CHILD_LINKS"></A>
@@ -3091,7 +3261,7 @@ The translation was initiated by Filippo Spiga on 2016-04-24
   HREF="developer_man.html#SECTION00061000000000000000">5.1 Installation Mechanism</A>
 <UL>
 <LI><A NAME="tex2html18"
-  HREF="developer_man.html#SECTION00061010000000000000">5.1.0.1 make.sys</A>
+  HREF="developer_man.html#SECTION00061010000000000000">5.1.0.1 make.inc</A>
 <LI><A NAME="tex2html19"
   HREF="developer_man.html#SECTION00061020000000000000">5.1.0.2 Makefile</A>
 <LI><A NAME="tex2html20"
@@ -3113,76 +3283,78 @@ The translation was initiated by Filippo Spiga on 2016-04-24
   HREF="developer_man.html#SECTION00070000000000000000">6 Algorithms</A>
 <UL>
 <LI><A NAME="tex2html27"
-  HREF="developer_man.html#SECTION00071000000000000000">6.1 Gamma tricks</A>
+  HREF="developer_man.html#SECTION00071000000000000000">6.1 <I>G</I> vectors and plane waves</A>
 <LI><A NAME="tex2html28"
-  HREF="developer_man.html#SECTION00072000000000000000">6.2 Restart</A>
+  HREF="developer_man.html#SECTION00072000000000000000">6.2 Gamma tricks</A>
+<LI><A NAME="tex2html29"
+  HREF="developer_man.html#SECTION00073000000000000000">6.3 Restart</A>
 </UL>
 <BR>
-<LI><A NAME="tex2html29"
-  HREF="developer_man.html#SECTION00080000000000000000">7 Format of arrays containing charge density, potential, etc.</A>
 <LI><A NAME="tex2html30"
+  HREF="developer_man.html#SECTION00080000000000000000">7 Format of arrays containing charge density, potential, etc.</A>
+<LI><A NAME="tex2html31"
   HREF="developer_man.html#SECTION00090000000000000000">8 Parallelization (MPI)</A>
 <UL>
-<LI><A NAME="tex2html31"
+<LI><A NAME="tex2html32"
   HREF="developer_man.html#SECTION00091000000000000000">8.1 General rules</A>
 <UL>
-<LI><A NAME="tex2html32"
-  HREF="developer_man.html#SECTION00091100000000000000">8.1.1 Usage of #ifdef __MPI</A>
-</UL>
 <LI><A NAME="tex2html33"
-  HREF="developer_man.html#SECTION00092000000000000000">8.2 Parallelization levels and communicators</A>
+  HREF="developer_man.html#SECTION00091100000000000000">8.1.1 Preprocessing for parallel usage</A>
+</UL>
 <LI><A NAME="tex2html34"
-  HREF="developer_man.html#SECTION00093000000000000000">8.3 Tricks and pitfalls</A>
+  HREF="developer_man.html#SECTION00092000000000000000">8.2 Parallelization levels and communicators</A>
 <LI><A NAME="tex2html35"
+  HREF="developer_man.html#SECTION00093000000000000000">8.3 Tricks and pitfalls</A>
+<LI><A NAME="tex2html36"
   HREF="developer_man.html#SECTION00094000000000000000">8.4 Data distribution</A>
 </UL>
 <BR>
-<LI><A NAME="tex2html36"
+<LI><A NAME="tex2html37"
   HREF="developer_man.html#SECTION000100000000000000000">9 File Formats</A>
 <UL>
-<LI><A NAME="tex2html37"
+<LI><A NAME="tex2html38"
   HREF="developer_man.html#SECTION000101000000000000000">9.1 Data file(s)</A>
 <UL>
-<LI><A NAME="tex2html38"
-  HREF="developer_man.html#SECTION000101100000000000000">9.1.1 Rationale</A>
 <LI><A NAME="tex2html39"
-  HREF="developer_man.html#SECTION000101200000000000000">9.1.2 General structure</A>
+  HREF="developer_man.html#SECTION000101100000000000000">9.1.1 Rationale</A>
 <LI><A NAME="tex2html40"
-  HREF="developer_man.html#SECTION000101300000000000000">9.1.3 Structure of file "data-file.xml"</A>
+  HREF="developer_man.html#SECTION000101200000000000000">9.1.2 General structure</A>
 <LI><A NAME="tex2html41"
+  HREF="developer_man.html#SECTION000101300000000000000">9.1.3 Structure of file "data-file.xml"</A>
+<LI><A NAME="tex2html42"
   HREF="developer_man.html#SECTION000101400000000000000">9.1.4 Sample</A>
 </UL>
-<LI><A NAME="tex2html42"
+<LI><A NAME="tex2html43"
   HREF="developer_man.html#SECTION000102000000000000000">9.2 Restart files</A>
 </UL>
 <BR>
-<LI><A NAME="tex2html43"
+<LI><A NAME="tex2html44"
   HREF="developer_man.html#SECTION000110000000000000000">10 Modifying/adding/extending Q<SMALL>UANTUM </SMALL>ESPRESSO</A>
 <UL>
-<LI><A NAME="tex2html44"
-  HREF="developer_man.html#SECTION000111000000000000000">10.1 Programming style (or lack of it)</A>
 <LI><A NAME="tex2html45"
+  HREF="developer_man.html#SECTION000111000000000000000">10.1 Programming style (or lack of it)</A>
+<LI><A NAME="tex2html46"
   HREF="developer_man.html#SECTION000112000000000000000">10.2 Adding or modifying input variables</A>
 </UL>
 <BR>
-<LI><A NAME="tex2html46"
+<LI><A NAME="tex2html47"
   HREF="developer_man.html#SECTION000120000000000000000">11 Using SVN</A>
 <UL>
-<LI><A NAME="tex2html47"
-  HREF="developer_man.html#SECTION000121000000000000000">11.1 SVN operations</A>
 <LI><A NAME="tex2html48"
-  HREF="developer_man.html#SECTION000122000000000000000">11.2 Removing conflicts</A>
+  HREF="developer_man.html#SECTION000121000000000000000">11.1 SVN operations</A>
 <LI><A NAME="tex2html49"
-  HREF="developer_man.html#SECTION000123000000000000000">11.3 Merging branch and trunk</A>
+  HREF="developer_man.html#SECTION000122000000000000000">11.2 Removing conflicts</A>
 <LI><A NAME="tex2html50"
+  HREF="developer_man.html#SECTION000123000000000000000">11.3 Merging branch and trunk</A>
+<LI><A NAME="tex2html51"
   HREF="developer_man.html#SECTION000124000000000000000">11.4 Including a repository into the trunk</A>
 </UL>
 <BR>
-<LI><A NAME="tex2html51"
-  HREF="developer_man.html#SECTION000130000000000000000">12 Using git</A>
 <LI><A NAME="tex2html52"
-  HREF="developer_man.html#SECTION000140000000000000000">13 Bibliography</A>
+  HREF="developer_man.html#SECTION000130000000000000000">12 Using git</A>
 <LI><A NAME="tex2html53"
+  HREF="developer_man.html#SECTION000140000000000000000">13 Bibliography</A>
+<LI><A NAME="tex2html54"
   HREF="developer_man.html#SECTION000150000000000000000">About this document ...</A>
 </UL>
 <!--End of Table of Child-Links-->
@@ -3195,7 +3367,7 @@ The translation was initiated by Filippo Spiga on 2016-04-24
 <!--End of Navigation Panel-->
 <ADDRESS>
 Filippo Spiga
-2016-04-24
+2016-10-04
 </ADDRESS>
 </BODY>
 </HTML>

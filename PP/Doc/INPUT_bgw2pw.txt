@@ -3,23 +3,24 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: bgw2pw.x / PWscf / Quantum Espresso
+Program: bgw2pw.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
-Converts BerkeleyGW WFN and RHO files to the format of pw.x.
-This can be useful, for example, if you generate the plane waves
-on top of the valence bands and want to diagonalize them in pw.x.
-Look at the documentation for SAPO code in BerkeleyGW for more information.
+Purpose of bgw2pw.x:
+   Converts BerkeleyGW WFN and RHO files to the format of pw.x.
+   This can be useful, for example, if you generate the plane waves
+   on top of the valence bands and want to diagonalize them in pw.x.
+   Look at the documentation for SAPO code in BerkeleyGW for more information.
 
-bgw2pw.x reads common parameters from file prefix.save/data-file.xml and
-writes files prefix.save/charge-density.dat (charge density in R-space),
-prefix.save/gvectors.dat (G-vectors for charge density and potential),
-prefix.save/K$n/eigenval.xml (eigenvalues and occupations for nth k-point),
-prefix.save/K$n/evc.dat (wavefunctions in G-space for nth k-point), and
-prefix.save/K$n/gkvectors.dat (G-vectors for nth k-point).
+bgw2pw.x reads common parameters from file "prefix".save/data-file.xml and
+writes files "prefix".save/charge-density.dat (charge density in R-space),
+"prefix".save/gvectors.dat (G-vectors for charge density and potential),
+"prefix".save/K$n/eigenval.xml (eigenvalues and occupations for nth k-point),
+"prefix".save/K$n/evc.dat (wavefunctions in G-space for nth k-point), and
+"prefix".save/K$n/gkvectors.dat (G-vectors for nth k-point).
 
-bgw2pw.x doesn't modify file prefix.save/data-file.xml so make changes to this
+bgw2pw.x doesn't modify file "prefix".save/data-file.xml so make changes to this
 file manually (for example, you will need to change the number of bands if you
 are using bgw2pw.x in conjunction with SAPO code in BerkeleyGW).
 
@@ -75,7 +76,7 @@ NAMELIST: &INPUT_BGW2PW
    
    Type:           STRING
    Default:        'WFN'
-   Description:    name of BerkeleyGW WFN input file. Not used if wfng_flag = .FALSE.
+   Description:    name of BerkeleyGW WFN input file. Not used if "wfng_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -83,7 +84,7 @@ NAMELIST: &INPUT_BGW2PW
    
    Type:           INTEGER
    Default:        0
-   Description:    number of bands to write (0 = all). Not used if wfng_flag = .FALSE.
+   Description:    number of bands to write (0 = all). Not used if "wfng_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -99,9 +100,10 @@ NAMELIST: &INPUT_BGW2PW
    
    Type:           STRING
    Default:        'RHO'
-   Description:    name of BerkeleyGW RHO input file. Not used if rhog_flag = .FALSE.
+   Description:    name of BerkeleyGW RHO input file. Not used if "rhog_flag" = .FALSE.
    +--------------------------------------------------------------------
    
 ===END OF NAMELIST======================================================
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:37 CEST 2016

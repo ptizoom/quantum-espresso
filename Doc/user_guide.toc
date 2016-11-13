@@ -13,7 +13,7 @@
 \contentsline {paragraph}{FFT}{11}{section*.3}
 \contentsline {paragraph}{MPI libraries}{11}{section*.4}
 \contentsline {paragraph}{Other libraries}{11}{section*.5}
-\contentsline {paragraph}{If optimized libraries are not found}{12}{section*.6}
+\contentsline {paragraph}{If optimized libraries are not found}{11}{section*.6}
 \contentsline {subsection}{\numberline {2.5}Compilation}{12}{subsection.2.5}
 \contentsline {subsection}{\numberline {2.6}Running tests and examples}{13}{subsection.2.6}
 \contentsline {subsection}{\numberline {2.7}Installation tricks and problems}{14}{subsection.2.7}
@@ -22,10 +22,10 @@
 \contentsline {subsubsection}{\numberline {2.7.3}Cray machines}{16}{subsubsection.2.7.3}
 \contentsline {subsubsection}{\numberline {2.7.4}IBM AIX}{16}{subsubsection.2.7.4}
 \contentsline {subsubsection}{\numberline {2.7.5}IBM BlueGene}{16}{subsubsection.2.7.5}
-\contentsline {subsubsection}{\numberline {2.7.6}Linux PC}{17}{subsubsection.2.7.6}
+\contentsline {subsubsection}{\numberline {2.7.6}Linux PC}{16}{subsubsection.2.7.6}
 \contentsline {paragraph}{Linux PCs with gfortran}{17}{section*.7}
-\contentsline {paragraph}{Linux PCs with g95}{18}{section*.8}
-\contentsline {paragraph}{Linux PCs with Pathscale compiler}{18}{section*.9}
+\contentsline {paragraph}{Linux PCs with g95}{17}{section*.8}
+\contentsline {paragraph}{Linux PCs with Pathscale compiler}{17}{section*.9}
 \contentsline {paragraph}{Linux PCs with Sun Studio compiler}{18}{section*.10}
 \contentsline {paragraph}{Linux PCs with AMD Open64 suite}{18}{section*.11}
 \contentsline {paragraph}{Linux PCs with Intel compiler (ifort)}{18}{section*.12}

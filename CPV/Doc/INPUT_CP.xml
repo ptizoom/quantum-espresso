@@ -134,11 +134,10 @@ information needed to restart the run.
       </var>
       <var name="nstep" type="INTEGER" >
          <info>
-number of ionic + electronic steps
+number of Car-Parrinello steps performed in this run
          </info>
          <default>
-1  if calculation = &apos;scf&apos;, &apos;nscf&apos;, &apos;bands&apos;;
-50 for the other cases
+50
          </default>
       </var>
       <var name="iprint" type="INTEGER" >
@@ -231,7 +230,7 @@ Units for input and output restart file.
          <info>
 .true. to compute the volume and/or the surface of an isolated
 system for finite pressure/finite surface tension calculations
-(PRL 94, 145501 (2005); JCP 124, 074103 (2006)).
+(<a href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.94.145501">PRL 94, 145501 (2005)</a>; JCP 124, 074103 (2006)).
          </info>
       </var>
       <var name="max_seconds" type="REAL" >
@@ -361,7 +360,7 @@ ibrav      structure                   celldm(2)-celldm(6)
       and tx, ty, tz as for case ibrav=5
       Note: if you prefer x,y,z as axis in the cubic limit,
             set  u = tz + 2*sqrt(2)*ty,  v = tz - sqrt(2)*ty
-            See also the note in flib/latgen.f90
+            See also the note in Modules/latgen.f90
 
   6          Tetragonal P (st)               celldm(3)=c/a
       v1 = a(1,0,0),  v2 = a(0,1,0),  v3 = a(0,0,c/a)
@@ -670,10 +669,10 @@ input_dft=&apos;PBE0&apos;, the default value is 0.25.
          <info>
 lda_plus_u = .TRUE. enables calculation with LDA+U
                   (&quot;rotationally invariant&quot;). See also Hubbard_U.
-                  Anisimov, Zaanen, and Andersen, PRB 44, 943 (1991);
-                  Anisimov et al., PRB 48, 16929 (1993);
-                  Liechtenstein, Anisimov, and Zaanen, PRB 52, R5467 (1994);
-                  Cococcioni and de Gironcoli, PRB 71, 035105 (2005).
+                  Anisimov, Zaanen, and Andersen, <a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.44.943">PRB 44, 943 (1991)</a>;
+                  Anisimov et al., <a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.48.16929">PRB 48, 16929 (1993)</a>;
+                  Liechtenstein, Anisimov, and Zaanen, <a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.52.R5467">PRB 52, R5467 (1994)</a>;
+                  Cococcioni and de Gironcoli, <a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.71.035105">PRB 71, 035105 (2005)</a>.
          </info>
       </var>
       <dimension name="Hubbard_U" start="1" end="ntyp" type="REAL" >
@@ -1457,7 +1456,7 @@ Surface tension (in a.u.; typical values 1.d-4 - 1.d-3)
 threshold parameter which defines the electronic charge density
 isosurface to compute the &apos;quantum&apos; volume of the system
 (typical values: 1.d-4 - 1.d-3)
-(corresponds to alpha in PRL 94 145501 (2005))
+(corresponds to alpha in <a href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.94.145501">PRL 94 145501 (2005)</a>)
          </info>
       </var>
       <var name="dthr" type="REAL" >
@@ -1467,7 +1466,7 @@ isosurface to compute the &apos;quantum&apos; volume of the system
 thikness of the external skin of the electronic charge density
 used to compute the &apos;quantum&apos; surface
 (typical values: 1.d-4 - 1.d-3; 50% to 100% of rho_thr)
-(corresponds to Delta in PRL 94 145501 (2005))
+(corresponds to Delta in <a href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.94.145501">PRL 94 145501 (2005)</a>)
          </info>
       </var>
    </namelist>

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.6.20)  24 APR 2016 23:21
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.6.20)  4 OCT 2016 14:26
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -242,7 +242,7 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-<../../Doc/quantum_espresso.pdf, id=96, 532.99126pt x 181.67876pt>
+<../../Doc/quantum_espresso.pdf, id=100, 532.99126pt x 181.67876pt>
 File: ../../Doc/quantum_espresso.pdf Graphic file (type pdf)
 
 <use ../../Doc/quantum_espresso.pdf>
@@ -279,139 +279,145 @@ File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 73.
  [2]
-Overfull \hbox (0.12177pt too wide) in paragraph at lines 139--143
+Overfull \hbox (0.86484pt too wide) in paragraph at lines 129--132
+[]\OT1/cmr/m/n/12 Robert DiS-ta-sio (Cor-nell)), Biswa-jit Santra (Prince-ton),
+ Hsin-Yu Ko (Prince-ton), Thomas
+ []
+
+
+Overfull \hbox (0.12177pt too wide) in paragraph at lines 146--150
 []\OT1/cmr/m/n/12 Minoru Otani (AIST), Yoshio Miura (To-hoku U.), Nicephore Bon
 et (MIT), Nicola Marzari
  []
 
 [3]
-Overfull \hbox (6.66776pt too wide) in paragraph at lines 205--213
+Overfull \hbox (6.66776pt too wide) in paragraph at lines 214--222
 \OT1/cmr/m/n/12 er-ful crys-talline and molec-u-lar struc-ture vi-su-al-iza-tio
 n pro-gram. BE-WARE: the \OT1/cmtt/m/n/12 pwi2xsf.sh
  []
 
 [4] [5]
 LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <17.28> not available
-(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 229.
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 238.
 
-Overfull \hbox (17.24237pt too wide) in paragraph at lines 231--236
+Overfull \hbox (17.24237pt too wide) in paragraph at lines 240--245
 \OT1/cmr/m/n/12 by An-ton Kokalj, in-cluded in the \OT1/cmr/m/sc/12 Quan-tum ES
 PRESSO \OT1/cmr/m/n/12 dis-tri-bu-tion. See \OT1/cmtt/m/n/12 PWgui-x.y.z/INSTAL
 L
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 293--298
+Underfull \hbox (badness 10000) in paragraph at lines 302--307
 
  []
 
 [6]
-Overfull \hbox (11.05257pt too wide) in paragraph at lines 317--327
+Overfull \hbox (11.05257pt too wide) in paragraph at lines 326--336
 \OT1/cmtt/m/n/12 prefix='pwscf'\OT1/cmr/m/n/12 ). \OT1/cmtt/m/n/12 outdir \OT1/
 cmr/m/n/12 can be spec-i-fied as well in en-vi-ron-ment vari-able ESPRESSO[]TMP
 DIR.
  []
 
 [7]
-Overfull \hbox (12.58179pt too wide) in paragraph at lines 435--438
+Overfull \hbox (12.58179pt too wide) in paragraph at lines 446--449
  []\OT1/cmr/bx/n/12 Dispersion in-ter-ac-tion with non-local func-tional (vdW-D
 F)[] \OT1/cmr/m/n/12 See ex-am-ple \OT1/cmtt/m/n/12 vdwDF[]example
  []
 
 [8]
-Overfull \hbox (12.57196pt too wide) in paragraph at lines 457--462
+Overfull \hbox (12.57196pt too wide) in paragraph at lines 468--473
 \OT1/cmr/m/n/12 137205 (2005)] for in-su-la-tors. The cal-cu-la-tion is per-for
 med by set-ting in-put vari-able \OT1/cmtt/m/n/12 lorbm=.true.
  []
 
 
-Overfull \hbox (4.4081pt too wide) in paragraph at lines 493--508
+Overfull \hbox (4.4081pt too wide) in paragraph at lines 504--519
  []\OT1/cmr/bx/n/12 Variable-cell op-ti-miza-tion[] \OT1/cmr/m/n/12 Since v.4.2
  the newer BFGS al-go-rithm cov-ers the case of variable-
  []
 
 [9] [10] [11] [12] [13] [14]
-Overfull \hbox (21.37143pt too wide) in paragraph at lines 813--821
+Overfull \hbox (21.37143pt too wide) in paragraph at lines 871--879
 \OT1/cmr/m/n/12 on the avail-able com-mu-ni-ca-tion hard-ware. For PC clus-ters
 , Open-MPI (\OT1/cmtt/m/n/12 http://www.openmpi.org/\OT1/cmr/m/n/12 )
  []
 
 [15] [16] [17]
-Overfull \hbox (28.98045pt too wide) in paragraph at lines 1000--1001
+Overfull \hbox (28.98045pt too wide) in paragraph at lines 1058--1059
 \OT1/cmr/m/n/12 In or-der to com-pile signal-trapping add [] to []
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 1018--1022
+[18]
+Underfull \hbox (badness 10000) in paragraph at lines 1076--1080
 
  []
 
-[18] [19] [20]
-Overfull \hbox (55.83171pt too wide) in paragraph at lines 1155--1159
+[19] [20]
+Overfull \hbox (55.83171pt too wide) in paragraph at lines 1213--1217
 []\OT1/cmr/m/n/12 Reduce the work space for David-son di-ag-o-nal-iza-tion to t
 he min-i-mum by set-ting \OT1/cmtt/m/n/12 diago[]david[]ndim=2\OT1/cmr/m/n/12 ;
 
  []
 
 [21] [22] [23] [24] [25]
-Overfull \hbox (29.32014pt too wide) in paragraph at lines 1468--1470
+Overfull \hbox (29.32014pt too wide) in paragraph at lines 1526--1528
 []\OT1/cmr/m/n/12 use a symmetry-conserving al-go-rithm: the Wentz-cov-itch al-
 go-rithm (\OT1/cmtt/m/n/12 cell dynamics='damp-w'\OT1/cmr/m/n/12 )
  []
 
 
-Overfull \hbox (96.75345pt too wide) in paragraph at lines 1483--1483
+Overfull \hbox (96.75345pt too wide) in paragraph at lines 1541--1541
 []\OT1/cmtt/m/n/12 #define snew(ptr,nelem) (ptr)= (nelem==0 ? NULL : (typeof(pt
 r)) calloc(nelem, sizeof(*(ptr))))[] 
  []
 
 
-Overfull \hbox (22.65341pt too wide) in paragraph at lines 1483--1483
+Overfull \hbox (22.65341pt too wide) in paragraph at lines 1541--1541
 []\OT1/cmtt/m/n/12 #define srenew(ptr,nelem) (ptr)= (typeof(ptr)) realloc(ptr,(
 nelem)*sizeof(*(ptr)))[] 
  []
 
 
-Overfull \hbox (59.70343pt too wide) in paragraph at lines 1488--1488
+Overfull \hbox (59.70343pt too wide) in paragraph at lines 1546--1546
 []\OT1/cmtt/m/n/12 #define snew(ptr,nelem) (ptr)= (nelem==0 ? NULL : (void*) ca
 lloc(nelem, sizeof(*(ptr))))[] 
  []
 
-
-Overfull \hbox (41.17842pt too wide) in paragraph at lines 1501--1501
+[26]
+Overfull \hbox (41.17842pt too wide) in paragraph at lines 1559--1559
 []\OT1/cmtt/m/n/12 void meta_force_calculation_(real *cell, int *istep, real *x
 xx, real *yyy, real *zzz,[] 
  []
 
 
-Overfull \hbox (35.00342pt too wide) in paragraph at lines 1505--1505
+Overfull \hbox (35.00342pt too wide) in paragraph at lines 1563--1563
 []\OT1/cmtt/m/n/12 void meta_force_calculation(real *cell, int *istep, real *xx
 x, real *yyy, real *zzz,[] 
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1512.
-[26]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1512.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1570.
+[27]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1570.
  (./user_guide.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1512.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1512.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1570.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1570.
 
 Package rerunfilecheck Info: File `user_guide.out' has not changed.
-(rerunfilecheck)             Checksum: 180DBABAB30DB351DDC4A00AE19085F0;1519.
+(rerunfilecheck)             Checksum: AD5DCCB0BDDE2B8CC6FE47289044A238;1595.
 
 
 LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1512.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1570.
  ) 
 Here is how much of TeX's memory you used:
- 5503 strings out of 495028
- 80555 string characters out of 6181497
- 159917 words of memory out of 5000000
- 8586 multiletter control sequences out of 15000+600000
+ 5508 strings out of 495028
+ 80614 string characters out of 6181497
+ 158917 words of memory out of 5000000
+ 8587 multiletter control sequences out of 15000+600000
  10790 words of font info for 39 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 36i,6n,28p,362b,396s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 36i,6n,28p,362b,437s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbxti10.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/share/t
@@ -425,10 +431,10 @@ onts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
 m/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti1
 2.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
 
-Output written on user_guide.pdf (26 pages, 290517 bytes).
+Output written on user_guide.pdf (27 pages, 293404 bytes).
 PDF statistics:
- 374 PDF objects out of 1000 (max. 8388607)
- 326 compressed objects within 4 object streams
- 105 named destinations out of 1000 (max. 500000)
- 190 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 389 PDF objects out of 1000 (max. 8388607)
+ 340 compressed objects within 4 object streams
+ 109 named destinations out of 1000 (max. 500000)
+ 198 words of extra memory for PDF output out of 10000 (max. 10000000)
 

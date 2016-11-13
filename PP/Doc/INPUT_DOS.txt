@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: dos.x / PWscf / Quantum Espresso
+Program: dos.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
@@ -18,7 +18,8 @@ Structure of the input data:
    &DOS
      ...
    /
-IMPORTANT: since v.5 namelist name is &dos and no longer &inputpp
+
+IMPORTANT: since v.5 namelist name is &DOS and no longer &INPUTPP
 
 
 
@@ -38,8 +39,7 @@ NAMELIST: &DOS
    Variable:       outdir
    
    Type:           CHARACTER
-   Description:    directory containing the input data,
-                   i.e. the same as in pw.x
+   Description:    directory containing the input data, i.e. the same as in pw.x
    Default:        value of the ESPRESSO_TMPDIR environment variable if set;
                    current directory ('./') otherwise
    +--------------------------------------------------------------------
@@ -65,7 +65,8 @@ NAMELIST: &DOS
    Variable:       degauss
    
    Type:           REAL
-   Description:    gaussian broadening, Ry (not eV!)          see below
+   Description:    gaussian broadening, Ry (not eV!)
+                   (see below)
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -89,7 +90,7 @@ NAMELIST: &DOS
    Variable:       fildos
    
    Type:           CHARACTER
-   Default:        "prefix".dos
+   Default:        '"prefix".dos'
    Description:    output file containing DOS(E)
    +--------------------------------------------------------------------
    
@@ -118,16 +119,17 @@ NAMELIST: &DOS
       
       Gaussian broadening is used in all other cases:
       
-          - if degauss is set to some value in namelist &dos, that value
-            (and the optional value for ngauss) is used
+          - if "degauss" is set to some value in namelist &DOS, that value
+            (and the optional value for "ngauss") is used
       
-          - if degauss is NOT set to any value in namelist &dos, the
-            value of degauss and of ngauss are read from the input data
+          - if "degauss" is NOT set to any value in namelist &DOS, the
+            value of "degauss" and of "ngauss" are read from the input data
             file (they will be the same used in the pw.x calculations)
       
-          - if degauss is NOT set to any value in namelist &dos, AND
-            there is no value of degauss and of ngauss in the input data
-            file, degauss=DeltaE (in Ry) and ngauss=0 will be used
+          - if "degauss" is NOT set to any value in namelist &DOS, AND
+            there is no value of "degauss" and of "ngauss" in the input data
+            file, "degauss"="DeltaE" (in Ry) and "ngauss"=0 will be used
       
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:36 CEST 2016

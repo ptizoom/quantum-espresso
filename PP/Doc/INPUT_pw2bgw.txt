@@ -3,11 +3,12 @@
 ------------------------------------------------------------------------
 INPUT FILE DESCRIPTION
 
-Program: pw2bgw.x / PWscf / Quantum Espresso
+Program: pw2bgw.x / PWscf / Quantum Espresso (version: 6.0)
 ------------------------------------------------------------------------
 
 
-Converts the output files produced by pw.x to the input files for BerkeleyGW.
+Purpose of pw2bgw.x:
+   Converts the output files produced by pw.x to the input files for BerkeleyGW.
 
 You cannot use USPP, PAW, or spinors in a pw.x run for BerkeleyGW.
 
@@ -71,7 +72,11 @@ NAMELIST: &INPUT_PW2BGW
    
    Type:           STRING
    Default:        'cubic'
-   Description:    'cubic' | 'hexagonal'
+   Description:   
+                   Options are:
+                        'cubic'
+                        'hexagonal'
+    
                    type of crystal system, 'cubic' for space groups 1 ... 142 and 195 ... 230
                    and 'hexagonal' for space groups 143 ... 194. Only used if ibrav = 0 in a
                    pw.x run. Written to BerkeleyGW WFN, RHO, VXC and VKB files but no longer
@@ -93,7 +98,7 @@ NAMELIST: &INPUT_PW2BGW
    
    Type:           STRING
    Default:        'WFN'
-   Description:    name of BerkeleyGW WFN output file. Not used if wfng_flag = .FALSE.
+   Description:    name of BerkeleyGW WFN output file. Not used if "wfng_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -114,7 +119,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           INTEGER
    Default:        0
    Description:    number of k-points along b_1 reciprocal lattice vector.
-                   Not used if wfng_kgrid = .FALSE.
+                   Not used if "wfng_kgrid" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -123,7 +128,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           INTEGER
    Default:        0
    Description:    number of k-points along b_2 reciprocal lattice vector.
-                   Not used if wfng_kgrid = .FALSE.
+                   Not used if "wfng_kgrid" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -132,7 +137,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           INTEGER
    Default:        0
    Description:    number of k-points along b_3 reciprocal lattice vector.
-                   Not used if wfng_kgrid = .FALSE.
+                   Not used if "wfng_kgrid" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -141,7 +146,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           REAL
    Default:        0.0
    Description:    k-grid offset (0.0 unshifted, 0.5 shifted by half a grid step)
-                   along b_1 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
+                   along b_1 reciprocal lattice vector. Not used if "wfng_kgrid" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -150,7 +155,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           REAL
    Default:        0.0
    Description:    k-grid offset (0.0 unshifted, 0.5 shifted by half a grid step)
-                   along b_2 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
+                   along b_2 reciprocal lattice vector. Not used if "wfng_kgrid" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -159,7 +164,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           REAL
    Default:        0.0
    Description:    k-grid offset (0.0 unshifted, 0.5 shifted by half a grid step)
-                   along b_3 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
+                   along b_3 reciprocal lattice vector. Not used if "wfng_kgrid" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -176,7 +181,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           INTEGER
    Default:        0
    Description:    index of the lowest occupied band (normally = 1).
-                   Not used if wfng_occupation = .FALSE.
+                   Not used if "wfng_occupation" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -185,7 +190,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           INTEGER
    Default:        0
    Description:    index of the highest occupied band (normally = number of occupied bands).
-                   Not used if wfng_occupation = .FALSE.
+                   Not used if "wfng_occupation" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -203,7 +208,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           STRING
    Default:        'RHO'
    Description:    name of BerkeleyGW RHO output file. Only used for the GPP model in sigma
-                   code in BerkeleyGW. Not used if rhog_flag = .FALSE.
+                   code in BerkeleyGW. Not used if "rhog_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -215,7 +220,7 @@ NAMELIST: &INPUT_PW2BGW
                    needed if one wants to exclude semicore states from charge density used
                    for the GPP model in sigma code in BerkeleyGW. Make sure to include the
                    same k-points as in scf calculation. Self-consistent charge density is
-                   used if rhog_nvmin = 0 and rhog_nvmax = 0. Not used if rhog_flag = .FALSE.
+                   used if rhog_nvmin = 0 and rhog_nvmax = 0. Not used if "rhog_flag" = .FALSE.
                    BEWARE: this feature is highly experimental and may not work at all in
                    parallel, with pools, with spins, etc.
    +--------------------------------------------------------------------
@@ -236,7 +241,7 @@ NAMELIST: &INPUT_PW2BGW
    Default:        .FALSE.
    Description:    write local part of exchange-correlation potential in G-space to
                    BerkeleyGW VXC file. Only used in sigma code in BerkeleyGW, it is
-                   recommended to use vxc_flag instead
+                   recommended to use "vxc_flag" instead
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -245,7 +250,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           STRING
    Default:        'VXC'
    Description:    name of BerkeleyGW VXC output file. Only used in sigma code in BerkeleyGW,
-                   it is recommended to use vxc_flag instead. Not used if vxcg_flag = .FALSE.
+                   it is recommended to use "vxc_flag" instead. Not used if "vxcg_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -262,7 +267,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           STRING
    Default:        'vxc0.dat'
    Description:    name of output text file for Vxc(G = 0). Only for testing, not required for
-                   BerkeleyGW. Not used if vxc0_flag = .FALSE.
+                   BerkeleyGW. Not used if "vxc0_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -280,7 +285,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           STRING
    Default:        'vxc.dat'
    Description:    name of output text file for Vxc matrix elements. Only used in sigma code
-                   in BerkeleyGW. Not used if vxc_flag = .FALSE.
+                   in BerkeleyGW. Not used if "vxc_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -291,7 +296,7 @@ NAMELIST: &INPUT_PW2BGW
    Description:    'g' | 'r'
                    'g' to compute matrix elements of exchange-correlation potential in G-space.
                    'r' to compute matrix elements of the local part of exchange-correlation
-                   potential in R-space. It is recommended to use 'g'. Not used if vxc_flag = .FALSE.
+                   potential in R-space. It is recommended to use 'g'. Not used if "vxc_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -299,7 +304,7 @@ NAMELIST: &INPUT_PW2BGW
    
    Type:           INTEGER
    Default:        0
-   Description:    minimum band index for diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+   Description:    minimum band index for diagonal Vxc matrix elements. Not used if "vxc_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -307,7 +312,7 @@ NAMELIST: &INPUT_PW2BGW
    
    Type:           INTEGER
    Default:        0
-   Description:    maximum band index for diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+   Description:    maximum band index for diagonal Vxc matrix elements. Not used if "vxc_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -315,7 +320,7 @@ NAMELIST: &INPUT_PW2BGW
    
    Type:           INTEGER
    Default:        0
-   Description:    minimum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+   Description:    minimum band index for off-diagonal Vxc matrix elements. Not used if "vxc_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -323,7 +328,7 @@ NAMELIST: &INPUT_PW2BGW
    
    Type:           INTEGER
    Default:        0
-   Description:    maximum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+   Description:    maximum band index for off-diagonal Vxc matrix elements. Not used if "vxc_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -333,7 +338,8 @@ NAMELIST: &INPUT_PW2BGW
    Default:        .TRUE.
    Description:    set to .TRUE. to zero out NLCC or to .FALSE. to keep NLCC when computing
                    exchange-correlation potential. This flag has no effect for pseudopotentials
-                   without NLCC. BEWARE: setting vxc_zero_rho_core to .FALSE. will produce
+                   without NLCC.
+                   BEWARE: setting "vxc_zero_rho_core" to .FALSE. will produce
                    incorrect results. This functionality is only included for testing purposes
                    and is not meant to be used in a production environment
    +--------------------------------------------------------------------
@@ -353,7 +359,7 @@ NAMELIST: &INPUT_PW2BGW
    Type:           STRING
    Default:        'VSC'
    Description:    name of BerkeleyGW VSC output file. Only used in SAPO code in BerkeleyGW.
-                   Not used if vscg_flag = .FALSE.
+                   Not used if "vscg_flag" = .FALSE.
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -371,9 +377,10 @@ NAMELIST: &INPUT_PW2BGW
    Type:           STRING
    Default:        'VKB'
    Description:    name of BerkeleyGW VKB output file. Only used in SAPO code in BerkeleyGW.
-                   Not used if vkbg_flag = .FALSE.
+                   Not used if "vkbg_flag" = .FALSE.
    +--------------------------------------------------------------------
    
 ===END OF NAMELIST======================================================
 
 
+This file has been created by helpdoc utility on Tue Oct 04 14:26:37 CEST 2016

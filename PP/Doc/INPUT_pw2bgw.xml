@@ -6,7 +6,8 @@
    <toc>
    </toc>
    <intro>
-Converts the output files produced by pw.x to the input files for BerkeleyGW.
+<b>Purpose of pw2bgw.x:</b>
+   Converts the output files produced by pw.x to the input files for BerkeleyGW.
 
 You cannot use USPP, PAW, or spinors in a pw.x run for BerkeleyGW.
 
@@ -26,12 +27,12 @@ Examples showing how to run BerkeleyGW on top of Quantum ESPRESSO including
 the input files for pw.x and pw2bgw.x are distributed together with the
 BerkeleyGW package.
 
-Structure of the input data:
+<b>Structure of the input data:</b>
 ============================
 
-   &amp;INPUT_PW2BGW
+   <b>&amp;INPUT_PW2BGW</b>
      ...
-   /
+   <b>/</b>
    </intro>
    <namelist name="INPUT_PW2BGW" >
       <var name="prefix" type="STRING" >
@@ -53,23 +54,31 @@ the scratch directory where the massive data-files are written
          </default>
          <info>
 1 | 2
-1 for real flavor of BerkeleyGW (for systems with inversion symmetry and
-time-reversal symmetry) or 2 for complex flavor of BerkeleyGW (for systems
+<b>1</b> for real flavor of BerkeleyGW (for systems with inversion symmetry and
+time-reversal symmetry) or <b>2</b> for complex flavor of BerkeleyGW (for systems
 without inversion symmetry and time-reversal symmetry)
          </info>
       </var>
       <var name="symm_type" type="STRING" >
          <default> &apos;cubic&apos;
          </default>
-         <info>
-&apos;cubic&apos; | &apos;hexagonal&apos;
-type of crystal system, &apos;cubic&apos; for space groups 1 ... 142 and 195 ... 230
-and &apos;hexagonal&apos; for space groups 143 ... 194. Only used if ibrav = 0 in a
+         <options>
+            <info>
+Options are:
+            </info>
+            <opt val="'cubic'" >
+            </opt>
+            <opt val="'hexagonal'" >
+            </opt>
+            <info>
+type of crystal system, <b>&apos;cubic&apos;</b> for space groups 1 ... 142 and 195 ... 230
+and <b>&apos;hexagonal&apos;</b> for space groups 143 ... 194. Only used if ibrav = 0 in a
 pw.x run. Written to BerkeleyGW WFN, RHO, VXC and VKB files but no longer
 used (except in SAPO code in BerkeleyGW). You can use the default value for
 all systems. Don&apos;t set to different values in different files for the same
 system or you will get errors in BerkeleyGW.
-         </info>
+            </info>
+         </options>
       </var>
       <var name="wfng_flag" type="LOGICAL" >
          <default> .FALSE.
@@ -82,7 +91,7 @@ write wavefunctions in G-space to BerkeleyGW WFN file
          <default> &apos;WFN&apos;
          </default>
          <info>
-name of BerkeleyGW WFN output file. Not used if wfng_flag = .FALSE.
+name of BerkeleyGW WFN output file. Not used if <ref>wfng_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_kgrid" type="LOGICAL" >
@@ -101,7 +110,7 @@ k-grid dimensions, we patch these parameters into BerkeleyGW WFN file
          </default>
          <info>
 number of k-points along b_1 reciprocal lattice vector.
-Not used if wfng_kgrid = .FALSE.
+Not used if <ref>wfng_kgrid</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_nk2" type="INTEGER" >
@@ -109,7 +118,7 @@ Not used if wfng_kgrid = .FALSE.
          </default>
          <info>
 number of k-points along b_2 reciprocal lattice vector.
-Not used if wfng_kgrid = .FALSE.
+Not used if <ref>wfng_kgrid</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_nk3" type="INTEGER" >
@@ -117,7 +126,7 @@ Not used if wfng_kgrid = .FALSE.
          </default>
          <info>
 number of k-points along b_3 reciprocal lattice vector.
-Not used if wfng_kgrid = .FALSE.
+Not used if <ref>wfng_kgrid</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_dk1" type="REAL" >
@@ -125,7 +134,7 @@ Not used if wfng_kgrid = .FALSE.
          </default>
          <info>
 k-grid offset (0.0 unshifted, 0.5 shifted by half a grid step)
-along b_1 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
+along b_1 reciprocal lattice vector. Not used if <ref>wfng_kgrid</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_dk2" type="REAL" >
@@ -133,7 +142,7 @@ along b_1 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
          </default>
          <info>
 k-grid offset (0.0 unshifted, 0.5 shifted by half a grid step)
-along b_2 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
+along b_2 reciprocal lattice vector. Not used if <ref>wfng_kgrid</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_dk3" type="REAL" >
@@ -141,7 +150,7 @@ along b_2 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
          </default>
          <info>
 k-grid offset (0.0 unshifted, 0.5 shifted by half a grid step)
-along b_3 reciprocal lattice vector. Not used if wfng_kgrid = .FALSE.
+along b_3 reciprocal lattice vector. Not used if <ref>wfng_kgrid</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_occupation" type="LOGICAL" >
@@ -156,7 +165,7 @@ overwrite occupations in BerkeleyGW WFN file
          </default>
          <info>
 index of the lowest occupied band (normally = 1).
-Not used if wfng_occupation = .FALSE.
+Not used if <ref>wfng_occupation</ref> = .FALSE.
          </info>
       </var>
       <var name="wfng_nvmax" type="INTEGER" >
@@ -164,7 +173,7 @@ Not used if wfng_occupation = .FALSE.
          </default>
          <info>
 index of the highest occupied band (normally = number of occupied bands).
-Not used if wfng_occupation = .FALSE.
+Not used if <ref>wfng_occupation</ref> = .FALSE.
          </info>
       </var>
       <var name="rhog_flag" type="LOGICAL" >
@@ -180,7 +189,7 @@ Only used for the GPP model in sigma code in BerkeleyGW
          </default>
          <info>
 name of BerkeleyGW RHO output file. Only used for the GPP model in sigma
-code in BerkeleyGW. Not used if rhog_flag = .FALSE.
+code in BerkeleyGW. Not used if <ref>rhog_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="rhog_nvmin" type="INTEGER" >
@@ -191,8 +200,8 @@ index of the lowest band used for calculation of charge density. This is
 needed if one wants to exclude semicore states from charge density used
 for the GPP model in sigma code in BerkeleyGW. Make sure to include the
 same k-points as in scf calculation. Self-consistent charge density is
-used if rhog_nvmin = 0 and rhog_nvmax = 0. Not used if rhog_flag = .FALSE.
-BEWARE: this feature is highly experimental and may not work at all in
+used if rhog_nvmin = 0 and rhog_nvmax = 0. Not used if <ref>rhog_flag</ref> = .FALSE.
+<b>BEWARE:</b> this feature is highly experimental and may not work at all in
 parallel, with pools, with spins, etc.
          </info>
       </var>
@@ -210,7 +219,7 @@ description of rhog_nvmin for more details
          <info>
 write local part of exchange-correlation potential in G-space to
 BerkeleyGW VXC file. Only used in sigma code in BerkeleyGW, it is
-recommended to use vxc_flag instead
+recommended to use <ref>vxc_flag</ref> instead
          </info>
       </var>
       <var name="vxcg_file" type="STRING" >
@@ -218,7 +227,7 @@ recommended to use vxc_flag instead
          </default>
          <info>
 name of BerkeleyGW VXC output file. Only used in sigma code in BerkeleyGW,
-it is recommended to use vxc_flag instead. Not used if vxcg_flag = .FALSE.
+it is recommended to use <ref>vxc_flag</ref> instead. Not used if <ref>vxcg_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc0_flag" type="LOGICAL" >
@@ -233,7 +242,7 @@ write Vxc(G = 0) to text file. Only for testing, not required for BerkeleyGW
          </default>
          <info>
 name of output text file for Vxc(G = 0). Only for testing, not required for
-BerkeleyGW. Not used if vxc0_flag = .FALSE.
+BerkeleyGW. Not used if <ref>vxc0_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_flag" type="LOGICAL" >
@@ -249,7 +258,7 @@ Only used in sigma code in BerkeleyGW
          </default>
          <info>
 name of output text file for Vxc matrix elements. Only used in sigma code
-in BerkeleyGW. Not used if vxc_flag = .FALSE.
+in BerkeleyGW. Not used if <ref>vxc_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_integral" type="STRING" >
@@ -259,35 +268,35 @@ in BerkeleyGW. Not used if vxc_flag = .FALSE.
 &apos;g&apos; | &apos;r&apos;
 &apos;g&apos; to compute matrix elements of exchange-correlation potential in G-space.
 &apos;r&apos; to compute matrix elements of the local part of exchange-correlation
-potential in R-space. It is recommended to use &apos;g&apos;. Not used if vxc_flag = .FALSE.
+potential in R-space. It is recommended to use &apos;g&apos;. Not used if <ref>vxc_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_diag_nmin" type="INTEGER" >
          <default> 0
          </default>
          <info>
-minimum band index for diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+minimum band index for diagonal Vxc matrix elements. Not used if <ref>vxc_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_diag_nmax" type="INTEGER" >
          <default> 0
          </default>
          <info>
-maximum band index for diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+maximum band index for diagonal Vxc matrix elements. Not used if <ref>vxc_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_offdiag_nmin" type="INTEGER" >
          <default> 0
          </default>
          <info>
-minimum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+minimum band index for off-diagonal Vxc matrix elements. Not used if <ref>vxc_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_offdiag_nmax" type="INTEGER" >
          <default> 0
          </default>
          <info>
-maximum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = .FALSE.
+maximum band index for off-diagonal Vxc matrix elements. Not used if <ref>vxc_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vxc_zero_rho_core" type="LOGICAL" >
@@ -296,7 +305,8 @@ maximum band index for off-diagonal Vxc matrix elements. Not used if vxc_flag = 
          <info>
 set to .TRUE. to zero out NLCC or to .FALSE. to keep NLCC when computing
 exchange-correlation potential. This flag has no effect for pseudopotentials
-without NLCC. BEWARE: setting vxc_zero_rho_core to .FALSE. will produce
+without NLCC.
+<b>BEWARE:</b> setting <ref>vxc_zero_rho_core</ref> to .FALSE. will produce
 incorrect results. This functionality is only included for testing purposes
 and is not meant to be used in a production environment
          </info>
@@ -314,7 +324,7 @@ BerkeleyGW VSC file. Only used in SAPO code in BerkeleyGW
          </default>
          <info>
 name of BerkeleyGW VSC output file. Only used in SAPO code in BerkeleyGW.
-Not used if vscg_flag = .FALSE.
+Not used if <ref>vscg_flag</ref> = .FALSE.
          </info>
       </var>
       <var name="vkbg_flag" type="LOGICAL" >
@@ -330,7 +340,7 @@ Only used in SAPO code in BerkeleyGW
          </default>
          <info>
 name of BerkeleyGW VKB output file. Only used in SAPO code in BerkeleyGW.
-Not used if vkbg_flag = .FALSE.
+Not used if <ref>vkbg_flag</ref> = .FALSE.
          </info>
       </var>
    </namelist>

@@ -63,8 +63,18 @@ to all file names, whose default value is: <TT>prefix='pwscf'</TT>). <TT>outdir<
 as well in environment variable ESPRESSO_TMPDIR. The <TT>iotk</TT>
 toolkit is used to write the file in a XML format, whose definition can
 be found in the Developer Manual. In order to use the data directory
-on a different machine, you need to convert the binary files to formatted
-and back, using the <TT>bin/iotk</TT> script.
+on a different machine, you should convert the binary files to formatted,
+transfer them, convert them back to unformatted as in the following 
+example:
+<PRE>
+  $bindir/iotk convert -t outdir/prefix.save/charge-density.dat myfile.txt
+  [ transfer file to the other machine ]
+  $bindir/iotk convert -b myfile.txt outdir/prefix.save/charge-density.dat
+</PRE>
+If you need wavefunctions as well, you must to set the <TT>pw.x</TT> option 
+<TT>wf_collect</TT> to <TT>.true.</TT>. In such case, wavefunction files 
+are found in directories <TT>outdir/prefix.save/K*</TT>, one per k-point.
+You should do the conversion for all of them.
 
 <P>
 The execution stops if you create a file <TT>prefix.EXIT</TT> either
@@ -76,10 +86,33 @@ whereas  just killing the process may leave data and output files in
 an unusable state.
 
 <P>
-<BR><HR>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html229"
+  HREF="node10.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html225"
+  HREF="node7.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html219"
+  HREF="node8.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html227"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html230"
+  HREF="node10.html">3.3 Electronic structure calculations</A>
+<B> Up:</B> <A NAME="tex2html226"
+  HREF="node7.html">3 Using PWscf</A>
+<B> Previous:</B> <A NAME="tex2html220"
+  HREF="node8.html">3.1 Input data</A>
+ &nbsp; <B>  <A NAME="tex2html228"
+  HREF="node1.html">Contents</A></B> 
+<!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

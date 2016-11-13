@@ -3,7 +3,7 @@
 include	../../make.sys
 
 # location of needed modules and included files (if any)
-MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../Modules $(MOD_FLAG).
+MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../FFTXlib $(MOD_FLAG)../../LAXlib $(MOD_FLAG)../../Modules $(MOD_FLAG).
 IFLAGS=
 
 FOBJS = \
@@ -44,7 +44,6 @@ fromscra.o \
 gradrho.o \
 gram.o \
 gtable.o \
-gvecw.o\
 init.o \
 init_run.o \
 inner_loop_cold.o \
@@ -67,8 +66,21 @@ nlcc.o \
 ortho_base.o \
 ortho.o \
 phasefactor.o \
-plugin_initialization.o \
+plugin_add_potential.o \
+plugin_clean.o \
+plugin_clock.o \
+plugin_energy.o \
 plugin_ext_forces.o \
+plugin_get_potential.o \
+plugin_init_base.o \
+plugin_init_cell.o \
+plugin_initialization.o \
+plugin_init_ions.o \
+plugin_int_forces.o \
+plugin_print_energies.o \
+plugin_print_info.o \
+plugin_read_input.o \
+plugin_utilities.o \
 potentials.o \
 pres_ai_mod.o \
 print_out.o \
@@ -105,21 +117,23 @@ LOBJS = \
 entropy.o 
 
 QEMODS=../../Modules/libqemod.a
+QEFFT=../../FFTXlib/libqefft.a
+QELA=../../LAXlib/libqela.a
 
-TLDEPS= bindir mods libs libiotk
+TLDEPS= bindir fftlib mods libs libiotk
 
-LIBOBJS= ../../flib/ptools.a ../../flib/flib.a ../../clib/clib.a ../../iotk/src/libiotk.a
+LIBOBJS= ../../clib/clib.a ../../iotk/src/libiotk.a
 
 all : tldeps libcp.a manycp.x cp.x cppp.x wfdd.x
 
-manycp.x : manycp.o libcp.a $(QEMODS) $(LIBOBJS)
+manycp.x : manycp.o libcp.a $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS)
 	$(LD) $(LDFLAGS) -o manycp.x manycp.o \
-		libcp.a $(QEMODS) $(LIBOBJS) $(LIBS)
-	- ( cd ../../bin ; ln -fs ../CPV/src/cp.x . )
+		libcp.a $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS) $(LIBS)
+	- ( cd ../../bin ; ln -fs ../CPV/src/manycp.x . )
 
-cp.x : cprstart.o libcp.a $(QEMODS) $(LIBOBJS)
+cp.x : cprstart.o libcp.a $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS)
 	$(LD) $(LDFLAGS) -o cp.x cprstart.o \
-		libcp.a $(QEMODS) $(LIBOBJS) $(LIBS)
+		libcp.a $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin ; ln -fs ../CPV/src/cp.x . )
 
 libcp.a : $(FOBJS) $(LOBJS) 
@@ -132,12 +146,12 @@ cpver.h :
 	echo "CHARACTER(LEN=70), PARAMETER :: version_date = '"`date`"'" \
 		> cpver.h
 
-cppp.x : fpmdpp.o $(QEMODS) $(LIBOBJS)
-	$(LD) $(LDFLAGS) -o cppp.x fpmdpp.o $(QEMODS) $(LIBOBJS) $(LIBS)
+cppp.x : fpmdpp.o $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS)
+	$(LD) $(LDFLAGS) -o cppp.x fpmdpp.o $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS) $(LIBS)
 	- (cd ../../bin ; ln -fs ../CPV/src/cppp.x . )
 
 wfdd.x : wfdd.o
-	$(LD) $(LDFLAGS) -o $@ wfdd.o $(QEMODS) $(LIBOBJS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ wfdd.o $(QEMODS) $(QEFFT) $(QELA) $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin ; ln -fs ../CPV/src/$@ . )
 
 tldeps :

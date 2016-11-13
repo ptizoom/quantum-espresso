@@ -13,15 +13,15 @@
    <blockquote>
 <h3>TABLE OF CONTENTS</h3>
 <blockquote>
-<p><a href="#idm1680">INTRODUCTION</a></p>
-<p><a href="#idm1296">&amp;INPUTMOPDOS</a><blockquote>
-<a href="#idm240">xmlfile_full</a> | <a href="#idp18000">xmlfile_part</a> | <a href="#idp19264">i_atmwfc_beg_full</a> | <a href="#idp21056">i_atmwfc_end_full</a> | <a href="#idp22912">i_atmwfc_beg_part</a> | <a href="#idp24752">i_atmwfc_end_part</a> | <a href="#idp26624">i_bnd_beg_full</a> | <a href="#idp28464">i_bnd_end_full</a> | <a href="#idp30320">i_bnd_beg_part</a> | <a href="#idp32160">i_bnd_end_part</a> | <a href="#idp34016">fileout</a> | <a href="#idp35840">ngauss</a> | <a href="#idp37856">degauss</a> | <a href="#idp40176">Emin</a> | <a href="#idp40832">Emax</a> | <a href="#idp42560">DeltaE</a>
+<p><a href="#idm6507504">INTRODUCTION</a></p>
+<p><a href="#idm6507120">&amp;INPUTMOPDOS</a><blockquote>
+<a href="#idm6506064">xmlfile_full</a> | <a href="#idm6490736">xmlfile_part</a> | <a href="#idm6489472">i_atmwfc_beg_full</a> | <a href="#idm6487680">i_atmwfc_end_full</a> | <a href="#idm6485824">i_atmwfc_beg_part</a> | <a href="#idm6483984">i_atmwfc_end_part</a> | <a href="#idm6482112">i_bnd_beg_full</a> | <a href="#idm6480272">i_bnd_end_full</a> | <a href="#idm6478416">i_bnd_beg_part</a> | <a href="#idm6476576">i_bnd_end_part</a> | <a href="#idm6474720">fileout</a> | <a href="#idm6472896">ngauss</a> | <a href="#idm6470880">degauss</a> | <a href="#idm6468560">Emin</a> | <a href="#idm6467904">Emax</a> | <a href="#idm6466176">DeltaE</a> | <a href="#idm6464400">kresolveddos</a>
 </blockquote></p>
-<p><a href="#idp44464">Notes</a><blockquote><a href="#idp44992">Format of output files</a></blockquote><blockquote><a href="#idp46944">Important notices</a></blockquote></p>
+<p><a href="#idm6462352">Notes</a><blockquote><a href="#idm6461824">Format of output files</a></blockquote><blockquote><a href="#idm6459872">Important notices</a></blockquote></p>
 </blockquote>
 </blockquote>
    <blockquote>
-<a name="idm1680"><h3>INTRODUCTION</h3></a><blockquote><pre>
+<a name="idm6507504"><h3>INTRODUCTION</h3></a><blockquote><pre>
 Purpose of molecularpdos.x:
     Takes the projections onto orthogonalized atomic wavefunctions
     as computed by projwfc.x (see outdir/prefix.save/atomic_proj.xml)
@@ -31,6 +31,12 @@ Purpose of molecularpdos.x:
     of the part. For example, to decompose the PDOS of an adsorbed molecule
     into its molecular orbital, as determined by a gas-phase calculation.
 
+Reference:
+    An explanation of the keywords and the implementation
+    is provided in Scientific Reports | 6:24603 (2016)
+    DOI: 10.1038/srep24603 (Supp. Info).
+
+
 Structure of the input data:
 ============================
 
@@ -39,13 +45,13 @@ Structure of the input data:
    /
    </pre></blockquote>
 </blockquote>
-   <a name="idm1296"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6507120"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: INPUTMOPDOS</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
       <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idm240"><a name="xmlfile_full">xmlfile_full, </a></a><a name="idp18000"><a name="xmlfile_part">xmlfile_part</a></a>
+<a name="idm6506064"><a name="xmlfile_full">xmlfile_full, </a></a><a name="idm6490736"><a name="xmlfile_part">xmlfile_part</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
@@ -55,7 +61,7 @@ for the full system and its molecular part
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-      <a name="idp19264"><a name="i_atmwfc_beg_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6489472"><a name="i_atmwfc_beg_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_atmwfc_beg_full</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -71,7 +77,7 @@ considered for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp21056"><a name="i_atmwfc_end_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6487680"><a name="i_atmwfc_end_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_atmwfc_end_full</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -87,7 +93,7 @@ considered for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp22912"><a name="i_atmwfc_beg_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6485824"><a name="i_atmwfc_beg_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_atmwfc_beg_part</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -103,7 +109,7 @@ considered for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp24752"><a name="i_atmwfc_end_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6483984"><a name="i_atmwfc_end_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_atmwfc_end_part</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -119,7 +125,7 @@ considered for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp26624"><a name="i_bnd_beg_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6482112"><a name="i_bnd_beg_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_bnd_beg_full</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -135,7 +141,7 @@ into account for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp28464"><a name="i_bnd_end_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6480272"><a name="i_bnd_end_full"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_bnd_end_full</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -151,7 +157,7 @@ into account for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp30320"><a name="i_bnd_beg_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6478416"><a name="i_bnd_beg_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_bnd_beg_part</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -167,7 +173,7 @@ into account for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp32160"><a name="i_bnd_end_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6476576"><a name="i_bnd_end_part"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">i_bnd_end_part</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -183,7 +189,7 @@ into account for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp34016"><a name="fileout"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6474720"><a name="fileout"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">fileout</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -197,7 +203,7 @@ into account for the projection
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp35840"><a name="ngauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6472896"><a name="ngauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ngauss</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -216,7 +222,7 @@ Type of gaussian broadening:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp37856"><a name="degauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6470880"><a name="degauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">degauss</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -233,7 +239,7 @@ Type of gaussian broadening:
       <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp40176"><a name="Emin">Emin, </a></a><a name="idp40832"><a name="Emax">Emax</a></a>
+<a name="idm6468560"><a name="Emin">Emin, </a></a><a name="idm6467904"><a name="Emax">Emax</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
@@ -246,7 +252,7 @@ Type of gaussian broadening:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-      <a name="idp42560"><a name="DeltaE"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6466176"><a name="DeltaE"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">DeltaE</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -260,12 +266,29 @@ Type of gaussian broadening:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idm6464400"><a name="kresolveddos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">kresolveddos</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> .false.
+         </td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+if .true. the k-resolved DOS is computed: not summed over
+all k-points but written as a function of the k-point index.
+In this case all k-point weights are set to unity
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
    </td></tr></tbody></table></td></tr>
 </table></a>
    <blockquote>
-<a name="idp44464"><h3>Notes</h3></a>
+<a name="idm6462352"><h3>Notes</h3></a>
       <blockquote>
-<a name="idp44992"><h4>Format of output files</h4></a>
+<a name="idm6461824"><h4>Format of output files</h4></a>
          <blockquote><pre>
 Projections are written to standard output.
 
@@ -294,7 +317,7 @@ All DOS(E) are in states/eV plotted vs E in eV
          </pre></blockquote>
       </blockquote>
       <blockquote>
-<a name="idp46944"><h4>Important notices</h4></a>
+<a name="idm6459872"><h4>Important notices</h4></a>
          <blockquote><pre>
 * The atomic wavefunctions identified by the ranges
   i_atmwfc_beg_full:i_atmwfc_end_full (full system) and

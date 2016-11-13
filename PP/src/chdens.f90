@@ -26,13 +26,14 @@ SUBROUTINE chdens (filplot,plot_num)
   USE cell_base,  ONLY : at, bg, celldm, ibrav, alat, omega, tpiba, tpiba2
   USE ions_base,  ONLY : nat, ityp, atm, ntyp => nsp, tau, zv
   USE lsda_mod,   ONLY : nspin
-  USE fft_base,   ONLY : grid_scatter, dfftp, dffts
+  USE fft_base,   ONLY : dfftp, dffts
+  USE scatter_mod,   ONLY : scatter_grid
   USE fft_interfaces,  ONLY : fwfft
-  USE grid_subroutines,ONLY : realspace_grids_init
+  USE grid_subroutines,ONLY : realspace_grid_init
   USE gvect,      ONLY : ngm, nl, g, gcutm
   USE gvecs,      ONLY : gcutms, doublegrid, dual, ecuts 
   USE recvec_subs,ONLY: ggen 
-  USE wvfct,      ONLY: ecutwfc
+  USE gvecw,      ONLY: ecutwfc
   USE run_info,   ONLY: title
   USE control_flags, ONLY: gamma_only
   USE wavefunctions_module,  ONLY: psic
@@ -273,7 +274,8 @@ SUBROUTINE chdens (filplot,plot_num)
 
      CALL recips (at(1,1), at(1,2), at(1,3), bg(1,1), bg(1,2), bg(1,3) )
      CALL volume (alat, at(1,1), at(1,2), at(1,3), omega)
-     CALL realspace_grids_init ( dfftp, dffts, at, bg, gcutm, gcutms )
+     CALL realspace_grid_init ( dfftp, at, bg, gcutm )
+     CALL realspace_grid_init ( dffts, at, bg, gcutms)
   ENDIF
 
   ALLOCATE  (rhor(dfftp%nr1x*dfftp%nr2x*dfftp%nr3x))
@@ -417,7 +419,7 @@ SUBROUTINE chdens (filplot,plot_num)
      ENDIF
 #ifdef __MPI
      ALLOCATE(aux(dfftp%nnr))
-     CALL grid_scatter(rhor, aux)
+     CALL scatter_grid(dfftp, rhor, aux)
      psic(:) = cmplx(aux(:), 0.d0,kind=DP)
      DEALLOCATE(aux)
 #else

@@ -9,7 +9,8 @@
 Input data format: { } = optional, [ ] = it depends, | = or
 
 All quantities whose dimensions are not explicitly specified are in
-HARTREE ATOMIC UNITS
+HARTREE ATOMIC UNITS. Charge is &quot;number&quot; charge (i.e. not multiplied
+by e); potentials are in energy units (i.e. they are multiplied by e)
 
 BEWARE: TABS, DOS &lt;CR&gt;&lt;LF&gt; CHARACTERS ARE POTENTIAL SOURCES OF TROUBLE
 Comment lines in namelists can be introduced by a &quot;!&quot;, exactly as in
@@ -54,7 +55,7 @@ ATOMIC_POSITIONS { alat | bohr | crystal | angstrom }
   Y 0.5  0.0  0.0
   Z O.0  0.2  0.2
 
-[ CELL_PARAMETERS { bohr | angstrom }
+[ CELL_PARAMETERS { alat | bohr | angstrom }
    v1(1) v1(2) v1(3)
    v2(1) v2(2) v2(3)
    v3(1) v3(2) v3(3) ]
@@ -320,7 +321,7 @@ through the modern theory of the polarization is applied.
          <info>
   Bravais-lattice index. If ibrav /= 0, specify EITHER
   [ celldm(1)-celldm(6) ] OR [ A,B,C,cosAB,cosAC,cosBC ]
-  but NOT both. The lattice parameter alat is set to
+  but NOT both. The lattice parameter &quot;alat&quot; is set to
   alat = celldm(1) (in a.u.) or alat = A (in Angstrom);
   see below for the other parameters.
   For ibrav=0 specify the lattice vectors in CELL_PARAMETER,
@@ -376,7 +377,7 @@ ibrav      structure                   celldm(2)-celldm(6)
                                              celldm(3)=c/a
       v1 = (a/2, b/2,0),  v2 = (-a/2,b/2,0),  v3 = (0,0,c)
  -9          as 9, alternate description
-      v1 = (a/2,-b/2,0),  v2 = (a/2,-b/2,0),  v3 = (0,0,c)
+      v1 = (a/2,-b/2,0),  v2 = (a/2, b/2,0),  v3 = (0,0,c)
 
  10          Orthorhombic face-centered      celldm(2)=b/a
                                              celldm(3)=c/a
@@ -394,7 +395,7 @@ ibrav      structure                   celldm(2)-celldm(6)
 -12          Monoclinic P, unique axis b     celldm(2)=b/a
                                              celldm(3)=c/a,
                                              celldm(5)=cos(ac)
-      v1 = (a,0,0), v2 = (0,b,0), v3 = (c*sin(beta),0,c*cos(beta))
+      v1 = (a,0,0), v2 = (0,b,0), v3 = (c*cos(beta),0,c*sin(beta))
       where beta is the angle between axis a and c
 
  13          Monoclinic base-centered        celldm(2)=b/a
@@ -427,9 +428,9 @@ ibrav      structure                   celldm(2)-celldm(6)
             <see> ibrav
             </see>
             <info>
-Crystallographic constants - see description of ibrav variable.
+Crystallographic constants - see the &quot;ibrav&quot; variable.
 Specify either these OR A,B,C,cosAB,cosBC,cosAC NOT both.
-Only needed celldm (depending on ibrav) must be specified
+Only needed values (depending on &quot;ibrav&quot;) must be specified
 alat = celldm(1) is the lattice parameter &quot;a&quot; (in BOHR)
 If ibrav=0, only celldm(1) is used if present;
 cell vectors are read from card CELL_PARAMETERS
@@ -455,9 +456,9 @@ Traditional crystallographic constants: a,b,c in ANGSTROM
   cosAB = cosine of the angle between axis a and b (gamma)
   cosAC = cosine of the angle between axis a and c (beta)
   cosBC = cosine of the angle between axis b and c (alpha)
-The axis are chosen according to the value of ibrav.
-Specify either these OR celldm but NOT both.
-Only needed values (depending on ibrav) must be specified
+The axis are chosen according to the value of &quot;ibrav&quot;.
+Specify either these OR &quot;celldm&quot; but NOT both.
+Only needed values (depending on &quot;ibrav&quot;) must be specified
 The lattice parameter alat = A (in ANGSTROM )
 If ibrav = 0, only A is used if present;
 cell vectors are read from card CELL_PARAMETERS

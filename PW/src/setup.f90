@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2001-2011 Quantum ESPRESSO group
+! Copyright (C) 2001-2016 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -33,7 +33,7 @@ SUBROUTINE setup()
   ! ...    electric-field, LDA+U calculations, and for parallelism
   !
   USE kinds,              ONLY : DP
-  USE constants,          ONLY : eps8, rytoev 
+  USE constants,          ONLY : eps8, rytoev, fpi
   USE parameters,         ONLY : npk
   USE io_global,          ONLY : stdout
   USE io_files,           ONLY : tmp_dir, prefix, xmlpun, delete_if_present
@@ -41,10 +41,11 @@ SUBROUTINE setup()
   USE cell_base,          ONLY : at, bg, alat, tpiba, tpiba2, ibrav, omega
   USE ions_base,          ONLY : nat, tau, ntyp => nsp, ityp, zv
   USE basis,              ONLY : starting_pot, natomwfc
-  USE gvect,              ONLY : gcutm
+  USE gvect,              ONLY : gcutm, ecutrho
+  USE gvecw,              ONLY : gcutw, ecutwfc
   USE fft_base,           ONLY : dfftp
   USE fft_base,           ONLY : dffts
-  USE grid_subroutines,   ONLY : realspace_grids_init
+  USE grid_subroutines,   ONLY : realspace_grid_init
   USE gvecs,              ONLY : doublegrid, gcutms, dual
   USE klist,              ONLY : xk, wk, nks, nelec, degauss, lgauss, &
                                  lxkcry, nkstot, &
@@ -59,16 +60,18 @@ SUBROUTINE setup()
   USE ktetra,             ONLY : tetra, ntetra, ltetra
   USE symm_base,          ONLY : s, t_rev, irt, nrot, nsym, invsym, nosym, &
                                  d1,d2,d3, time_reversal, sname, set_sym_bl, &
-                                 find_sym, inverse_s, no_t_rev
-  USE wvfct,              ONLY : nbnd, nbndx, ecutwfc
+                                 find_sym, inverse_s, no_t_rev, allfrac
+  USE wvfct,              ONLY : nbnd, nbndx
   USE control_flags,      ONLY : tr2, ethr, lscf, lmd, david, lecrpa,  &
-                                 isolve, niter, noinv, ts_vdw, &
-                                 lbands, use_para_diag, gamma_only
+                                 isolve, niter, noinv, ts_vdw, tqr, &
+                                 lbands, use_para_diag, gamma_only, &
+                                 restart
   USE cellmd,             ONLY : calc
   USE uspp_param,         ONLY : upf, n_atom_wfc
   USE uspp,               ONLY : okvan
   USE ldaU,               ONLY : lda_plus_u, init_lda_plus_u
-  USE bp,                 ONLY : gdir, lberry, nppstr, lelfield, lorbm, nx_el, nppstr_3d,l3dstring, efield, lcalc_z2
+  USE bp,                 ONLY : gdir, lberry, nppstr, lelfield, lorbm, nx_el,&
+                                 nppstr_3d,l3dstring, efield, lcalc_z2
   USE fixed_occ,          ONLY : f_inp, tfixed_occ, one_atom_occupations
   USE funct,              ONLY : set_dft_from_name
   USE mp_pools,           ONLY : kunit
@@ -77,10 +80,10 @@ SUBROUTINE setup()
                                  angle1, angle2, bfield, ux, nspin_lsda, &
                                  nspin_gga, nspin_mag
   USE pw_restart,         ONLY : pw_readfile
-  USE exx,                ONLY : exx_grid_init, exx_div_check
+  USE exx,                ONLY : ecutfock, exx_grid_init, exx_div_check
   USE funct,              ONLY : dft_is_meta, dft_is_hybrid, dft_is_gradient
   USE paw_variables,      ONLY : okpaw
-  USE cellmd,             ONLY : lmovecell  
+  USE fcp_variables,      ONLY : lfcpopt, lfcpdyn
   !
   IMPLICIT NONE
   !
@@ -92,7 +95,7 @@ SUBROUTINE setup()
   !
   ! ... okvan/okpaw = .TRUE. : at least one pseudopotential is US/PAW
   !
-  okvan = ANY( upf(:)%tvanp )
+  okvan = ANY( upf(1:ntyp)%tvanp )
   okpaw = ANY( upf(1:ntyp)%tpawp )
   !
   ! ... check for features not implemented with US-PP or PAW
@@ -109,19 +112,20 @@ SUBROUTINE setup()
   END IF
 
   IF ( dft_is_hybrid() ) THEN
+     IF ( allfrac ) CALL errore( 'setup ', &
+                         'option use_all_frac incompatible with hybrid XC', 1 )
      IF (.NOT. lscf) CALL errore( 'setup ', &
                          'hybrid XC not allowed in non-scf calculations', 1 )
      IF ( ANY (upf(1:ntyp)%nlcc) ) CALL infomsg( 'setup ', 'BEWARE:' // &
                & ' nonlinear core correction is not consistent with hybrid XC')
-     IF (lmovecell) CALL errore('setup','Variable cell and hybrid XC not tested',1)
-     IF (okpaw.OR.okvan) CALL errore('setup','PAW and hybrid XC not tested',1)
-     IF ( noncolin ) THEN
-        IF ( okvan ) THEN
-           CALL errore('setup','Noncolinear hybrid XC for USPP not implemented',1)
-        ELSE
-           no_t_rev=.true.
-        END IF
+     IF (okpaw) CALL errore('setup','PAW and hybrid XC not tested',1)
+     IF (okvan) THEN
+        IF (ecutfock /= 4*ecutwfc) CALL infomsg &
+           ('setup','Warning: US/PAW use ecutfock=4*ecutwfc, ecutfock ignored')
+        IF ( noncolin ) CALL errore &
+           ('setup','Noncolinear hybrid XC for USPP not implemented',1)
      END IF
+     IF ( noncolin ) no_t_rev=.true.
   END IF
   !
   ! ... Compute the ionic charge for each atom type and the total ionic charge
@@ -140,6 +144,16 @@ SUBROUTINE setup()
   ! ... set the number of electrons 
   !
   nelec = ionic_charge - tot_charge
+  !
+  IF ( lfcpopt .AND. restart ) THEN
+     CALL pw_readfile( 'fcpopt', ierr )
+     tot_charge = ionic_charge - nelec
+  END IF
+  !
+  IF ( lfcpdyn .AND. restart ) THEN
+     CALL pw_readfile( 'fcpdyn', ierr )
+     tot_charge = ionic_charge - nelec
+  END IF
   !
   ! ... magnetism-related quantities
   !
@@ -376,6 +390,7 @@ SUBROUTINE setup()
   IF ( doublegrid .AND. (.NOT.okvan .AND. .not.okpaw) ) &
      CALL infomsg ( 'setup', 'no reason to have ecutrho>4*ecutwfc' )
   gcutm = dual * ecutwfc / tpiba2
+  gcutw = ecutwfc / tpiba2
   !
   IF ( doublegrid ) THEN
      !
@@ -393,7 +408,14 @@ SUBROUTINE setup()
   !
   ! ... calculate dimensions of the FFT grid
   !
-  CALL realspace_grids_init ( dfftp, dffts, at, bg, gcutm, gcutms )
+  CALL realspace_grid_init ( dfftp, at, bg, gcutm )
+  IF ( gcutms == gcutm ) THEN
+     ! ... No double grid, the two grids are the same
+     dffts%nr1 = dfftp%nr1 ; dffts%nr2 = dfftp%nr2 ; dffts%nr3 = dfftp%nr3
+     dffts%nr1x= dfftp%nr1x; dffts%nr2x= dfftp%nr2x; dffts%nr3x= dfftp%nr3x
+  ELSE
+     CALL realspace_grid_init ( dffts, at, bg, gcutms)
+  END IF
   !
   !  ... generate transformation matrices for the crystal point group
   !  ... First we generate all the symmetry matrices of the Bravais lattice
@@ -611,7 +633,9 @@ END SUBROUTINE setup
 LOGICAL FUNCTION check_para_diag( nbnd )
   !
   USE io_global,        ONLY : stdout, ionode, ionode_id
-  USE mp_diag,          ONLY : np_ortho
+  USE mp_diag,          ONLY : np_ortho, ortho_parent_comm 
+  USE mp_bands,         ONLY : intra_bgrp_comm
+  USE mp_pools,         ONLY : intra_pool_comm
   USE control_flags,    ONLY : gamma_only
 
   IMPLICIT NONE
@@ -637,6 +661,13 @@ LOGICAL FUNCTION check_para_diag( nbnd )
      WRITE( stdout, '(/,5X,"Subspace diagonalization in iterative solution ",&
                      &     "of the eigenvalue problem:")' ) 
      IF ( check_para_diag ) THEN
+        IF (ortho_parent_comm .EQ. intra_pool_comm) THEN
+           WRITE( stdout, '(5X,"one sub-group per k-point group (pool) will be used")' )
+        ELSE IF (ortho_parent_comm .EQ. intra_bgrp_comm) THEN
+           WRITE( stdout, '(5X,"one sub-group per band group will be used")' )
+        ELSE
+           CALL errore( 'setup','Unexpected sub-group communicator ', 1 )
+        END IF
 #if defined(__ELPA)
         WRITE( stdout, '(5X,"ELPA distributed-memory algorithm ", &
               & "(size of sub-group: ", I2, "*", I3, " procs)",/)') &

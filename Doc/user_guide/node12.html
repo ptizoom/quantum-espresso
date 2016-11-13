@@ -26,26 +26,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html266"
+<A NAME="tex2html267"
   HREF="node13.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html262"
+<A NAME="tex2html263"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html256"
+<A NAME="tex2html257"
   HREF="node11.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html264"
+<A NAME="tex2html265"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html267"
+<B> Next:</B> <A NAME="tex2html268"
   HREF="node13.html">2.6 Running tests and</A>
-<B> Up:</B> <A NAME="tex2html263"
+<B> Up:</B> <A NAME="tex2html264"
   HREF="node7.html">2 Installation</A>
-<B> Previous:</B> <A NAME="tex2html257"
+<B> Previous:</B> <A NAME="tex2html258"
   HREF="node11.html">2.4 Libraries</A>
- &nbsp; <B>  <A NAME="tex2html265"
+ &nbsp; <B>  <A NAME="tex2html266"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -58,13 +58,13 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </H2>
 
 <P>
-There are a few adjustable parameters in <TT>Modules/parameters.f90</TT>. 
+There are a few adjustable parameters in <TT>Modules/parameters.f90</TT>.
 The
 present values will work for most cases. All other variables are dynamically
 allocated: you do not need to recompile your code for a different system.
 
 <P>
-At your choice, you may compile the complete Q<SMALL>UANTUM </SMALL>ESPRESSO suite of programs 
+At your choice, you may compile the complete Q<SMALL>UANTUM </SMALL>ESPRESSO suite of programs
 (with <TT>make all</TT>), or only some specific programs. <TT>make</TT> with no arguments yields a list of valid compilation targets:
 
 <UL>
@@ -83,19 +83,19 @@ At your choice, you may compile the complete Q<SMALL>UANTUM </SMALL>ESPRESSO sui
 <LI><TT>make pp</TT>  compiles the postprocessing package <TT>PostProc</TT>
 </LI>
 <LI><TT>make pwcond</TT> downloads the balistic conductance package <TT>PWcond</TT>
-			from <TT>qe-forge</TT>
+			from <TT>QE-FORGE</TT>
 			unpacks it and compiles it. All executables are linked
 			in main <TT>bin</TT> directory
 </LI>
 <LI><TT>make pwall</TT> produces all of the above.
 </LI>
-<LI><TT>make ld1</TT>  downloads the pseudopotential generator package <TT>atomic</TT> 
-			from <TT>qe-forge</TT>
+<LI><TT>make ld1</TT>  downloads the pseudopotential generator package <TT>atomic</TT>
+			from <TT>QE-FORGE</TT>
 			unpacks it and compiles it. All executables are linked
 			in main <TT>bin</TT> directory
 </LI>
-<LI><TT>make xspectra</TT> downloads the package <TT>XSpectra</TT> 
-			from <TT>qe-forge</TT>
+<LI><TT>make xspectra</TT> downloads the package <TT>XSpectra</TT>
+			from <TT>QE-FORGE</TT>
 			unpacks it and compiles it. All executables are linked
 			in main <TT>bin</TT> directory
 </LI>
@@ -113,20 +113,24 @@ At your choice, you may compile the complete Q<SMALL>UANTUM </SMALL>ESPRESSO sui
                        <TT>make.sys</TT> file,  produces all executables
                        in <TT>W90/wannier90.x</TT> and in <TT>bin/</TT>
 </LI>
-<LI><TT>make want</TT> downloads <TT>WanT</TT> from <TT>qe-forge</TT>, 
+<LI><TT>make want</TT> downloads <TT>WanT</TT> from <TT>QE-FORGE</TT>,
 			 unpacks it, runs its <TT>configure</TT>,
-                         produces all executables for <TT>WanT</TT> in 
+                         produces all executables for <TT>WanT</TT> in
                          <TT>WANT/bin</TT>.
 </LI>
-<LI><TT>make yambo</TT> downloads <TT>yambo</TT> from <TT>qe-forge</TT>, 
+<LI><TT>make yambo</TT> downloads <TT>yambo</TT> from <TT>QE-FORGE</TT>,
 			  unpacks it, runs its <TT>configure</TT>,
-                          produces all <TT>yambo</TT> executables in 
+                          produces all <TT>yambo</TT> executables in
                           <TT>YAMBO/bin</TT>
 </LI>
-<LI><TT>make gipaw</TT> downloads <TT>GIPAW</TT> from <TT>qe-forge</TT>,
+<LI><TT>make gipaw</TT> downloads <TT>GIPAW</TT> from <TT>QE-FORGE</TT>,
                           unpacks it, runs its <TT>configure</TT>,
-                          produces all <TT>GIPAW</TT> executables in 
+                          produces all <TT>GIPAW</TT> executables in
                           <TT>GIPAW/bin</TT> and in main <TT>bin</TT> directory.
+</LI>
+<LI><TT>make west</TT> downloads <TT>WEST</TT> from <TT>www.west-code.org</TT>,
+                          unpacks it, produces all the executables
+                          in <TT>West/Wfreq</TT> and <TT>West/Wstat</TT>.
 </LI>
 </UL>
 For the setup of the GUI, refer to the <TT>PWgui-X.Y.Z /INSTALL</TT> file, where
@@ -135,39 +139,39 @@ general version number). If you are using the SVN sources, see
 the <TT>GUI/README</TT> file instead.
 
 <P>
-If <TT>make</TT> refuses for some reason to download additional 
-packages, manually download them into subdirectory 
+If <TT>make</TT> refuses for some reason to download additional
+packages, manually download them into subdirectory
 <TT>archive/</TT>, <EM>not unpacking or or uncompressing them</EM>,
 and try <TT>make</TT> again. Also see Sec.(<A HREF="node8.html#SubSec:Download">2.1</A>).
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html266"
+<A NAME="tex2html267"
   HREF="node13.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html262"
+<A NAME="tex2html263"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html256"
+<A NAME="tex2html257"
   HREF="node11.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html264"
+<A NAME="tex2html265"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html267"
+<B> Next:</B> <A NAME="tex2html268"
   HREF="node13.html">2.6 Running tests and</A>
-<B> Up:</B> <A NAME="tex2html263"
+<B> Up:</B> <A NAME="tex2html264"
   HREF="node7.html">2 Installation</A>
-<B> Previous:</B> <A NAME="tex2html257"
+<B> Previous:</B> <A NAME="tex2html258"
   HREF="node11.html">2.4 Libraries</A>
- &nbsp; <B>  <A NAME="tex2html265"
+ &nbsp; <B>  <A NAME="tex2html266"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

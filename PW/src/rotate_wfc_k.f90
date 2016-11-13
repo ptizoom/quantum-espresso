@@ -51,6 +51,7 @@ SUBROUTINE rotate_wfc_k( npwx, npw, nstart, nbnd, npol, psi, overlap, evc, e )
      !
   END IF
   !
+
   ALLOCATE( aux(kdmx, nstart ) )    
   ALLOCATE( hc( nstart, nstart) )    
   ALLOCATE( sc( nstart, nstart) )    
@@ -112,11 +113,11 @@ SUBROUTINE protate_wfc_k( npwx, npw, nstart, nbnd, npol, psi, overlap, evc, e )
   ! ... Subroutine with distributed matrices, written by Carlo Cavazzoni
   !
   USE kinds,            ONLY : DP
-  USE mp_bands,         ONLY : intra_bgrp_comm
+  USE mp_bands,         ONLY : intra_bgrp_comm, nbgrp
   USE mp_diag,          ONLY : ortho_comm, np_ortho, me_ortho, ortho_comm_id,&
-                               leg_ortho
+                               leg_ortho, ortho_parent_comm, ortho_cntx
   USE descriptors,      ONLY : descla_init , la_descriptor
-  USE parallel_toolkit, ONLY : zsqmred, zsqmher, zsqmdst
+  USE parallel_toolkit, ONLY : zsqmher
   USE mp,               ONLY : mp_bcast, mp_root_sum, mp_sum, mp_barrier
   !
   IMPLICIT NONE
@@ -230,7 +231,7 @@ CONTAINS
      INTEGER :: i, j, rank
      INTEGER :: coor_ip( 2 )
      !
-     CALL descla_init( desc, nsiz, nsiz, np_ortho, me_ortho, ortho_comm, ortho_comm_id )
+     CALL descla_init( desc, nsiz, nsiz, np_ortho, me_ortho, ortho_comm, ortho_cntx, ortho_comm_id )
      !
      nx = desc%nrcx
      !
@@ -239,7 +240,7 @@ CONTAINS
            coor_ip( 1 ) = i
            coor_ip( 2 ) = j
            CALL descla_init( desc_ip(i+1,j+1), desc%n, desc%nx, &
-                             np_ortho, coor_ip, ortho_comm, 1 )
+                             np_ortho, coor_ip, ortho_comm, ortho_cntx, 1 )
            CALL GRID2D_RANK( 'R', desc%npr, desc%npc, i, j, rank )
            rank_ip( i+1, j+1 ) = rank * leg_ortho
         END DO
@@ -286,11 +287,12 @@ CONTAINS
            CALL ZGEMM( 'C', 'N', nr, nc, kdim, ( 1.D0, 0.D0 ) ,  v(1,ir), kdmx, w(1,ic), kdmx, ( 0.D0, 0.D0 ), work, nx )
 
            ! accumulate result on dm of root proc.
-           CALL mp_root_sum( work, dm, root, intra_bgrp_comm )
+           CALL mp_root_sum( work, dm, root, ortho_parent_comm )
 
         END DO
         !
      END DO
+     if (ortho_parent_comm.ne.intra_bgrp_comm .and. nbgrp > 1) dm = dm/nbgrp
      !
      CALL zsqmher( nstart, dm, nx, desc )
      !
@@ -331,13 +333,13 @@ CONTAINS
                  !
                  !  this proc sends his block
                  ! 
-                 CALL mp_bcast( vc(:,1:nc), root, intra_bgrp_comm )
+                 CALL mp_bcast( vc(:,1:nc), root, ortho_parent_comm )
                  CALL ZGEMM( 'N', 'N', kdim, nc, nr, ( 1.D0, 0.D0 ),  psi(1,ir), kdmx, vc, nx, beta, aux(1,ic), kdmx )
               ELSE
                  !
                  !  all other procs receive
                  ! 
-                 CALL mp_bcast( vtmp(:,1:nc), root, intra_bgrp_comm )
+                 CALL mp_bcast( vtmp(:,1:nc), root, ortho_parent_comm )
                  CALL ZGEMM( 'N', 'N', kdim, nc, nr, ( 1.D0, 0.D0 ),  psi(1,ir), kdmx, vtmp, nx, beta, aux(1,ic), kdmx )
               END IF
               ! 

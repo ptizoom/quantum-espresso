@@ -21,19 +21,6 @@ MODULE becmod
   !
   SAVE
   !
-#ifdef __STD_F95
-  TYPE bec_type
-     REAL(DP),   POINTER :: r(:,:)    ! appropriate for gammaonly
-     COMPLEX(DP),POINTER :: k(:,:)    ! appropriate for generic k
-     COMPLEX(DP),POINTER :: nc(:,:,:)   ! appropriate for noncolin
-     INTEGER :: comm
-     INTEGER :: nbnd
-     INTEGER :: nproc
-     INTEGER :: mype
-     INTEGER :: nbnd_loc
-     INTEGER :: ibnd_begin
-  END TYPE bec_type
-#else
   TYPE bec_type
      REAL(DP),   ALLOCATABLE :: r(:,:)    ! appropriate for gammaonly
      COMPLEX(DP),ALLOCATABLE :: k(:,:)    ! appropriate for generic k
@@ -45,17 +32,10 @@ MODULE becmod
      INTEGER :: nbnd_loc
      INTEGER :: ibnd_begin
   END TYPE bec_type
-#endif
   !
   TYPE (bec_type) :: becp  ! <beta|psi>
 
   PRIVATE
-
-  REAL(DP), ALLOCATABLE :: &
-       becp_r(:,:)       !   <beta|psi> for real (at Gamma) wavefunctions
-  COMPLEX(DP), ALLOCATABLE ::  &
-       becp_k (:,:), &    !  as above for complex wavefunctions
-       becp_nc(:,:,:)   !  as above for spinors
   !
   INTERFACE calbec
      !
@@ -78,7 +58,7 @@ CONTAINS
     !-----------------------------------------------------------------------
     !_
     USE mp_bands, ONLY: intra_bgrp_comm
-    USE mp,       ONLY: mp_size, mp_rank, mp_get_comm_null
+    USE mp,       ONLY: mp_get_comm_null
     !
     IMPLICIT NONE
     COMPLEX (DP), INTENT (in) :: beta(:,:), psi(:,:)
@@ -88,9 +68,8 @@ CONTAINS
     INTEGER, OPTIONAL :: nbnd
     !
     INTEGER :: local_nbnd
-    INTEGER, EXTERNAL :: ldim_block, lind_block, gind_block
-    INTEGER :: nproc, mype, m_loc, m_begin, m_max, ip
-    INTEGER :: ibnd, ibnd_loc
+    INTEGER, EXTERNAL :: ldim_block, gind_block
+    INTEGER :: m_loc, m_begin, ip
     REAL(DP), ALLOCATABLE :: dtmp(:,:)
     !
     IF ( present (nbnd) ) THEN
@@ -333,11 +312,7 @@ CONTAINS
     IMPLICIT NONE
     TYPE (bec_type) :: bec
     LOGICAL :: isalloc
-#ifdef __STD_F95
-    isalloc = (associated(bec%r) .or. associated(bec%nc) .or. associated(bec%k))
-#else
     isalloc = (allocated(bec%r) .or. allocated(bec%nc) .or. allocated(bec%k))
-#endif
     RETURN
     !
     !-----------------------------------------------------------------------
@@ -353,13 +328,7 @@ CONTAINS
     INTEGER, INTENT (in) :: nkb, nbnd
     INTEGER, INTENT (in), OPTIONAL :: comm
     INTEGER :: ierr, nbnd_siz
-    INTEGER, EXTERNAL :: ldim_block, lind_block, gind_block
-    !
-#ifdef __STD_F95
-    NULLIFY(bec%r)
-    NULLIFY(bec%nc)
-    NULLIFY(bec%k)
-#endif
+    INTEGER, EXTERNAL :: ldim_block, gind_block
     !
     nbnd_siz = nbnd
     bec%comm = mp_get_comm_null()
@@ -422,15 +391,9 @@ CONTAINS
     bec%comm = mp_get_comm_null()
     bec%nbnd = 0
     !
-#ifdef __STD_F95
-    IF (associated(bec%r))  DEALLOCATE(bec%r)
-    IF (associated(bec%nc)) DEALLOCATE(bec%nc)
-    IF (associated(bec%k))  DEALLOCATE(bec%k)
-#else
     IF (allocated(bec%r))  DEALLOCATE(bec%r)
     IF (allocated(bec%nc)) DEALLOCATE(bec%nc)
     IF (allocated(bec%k))  DEALLOCATE(bec%k)
-#endif
     !
     RETURN
     !

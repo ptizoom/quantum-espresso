@@ -4,7 +4,7 @@ include ../../make.sys
 
 # location of needed modules and included files (if any)
 MODFLAGS= $(MOD_FLAG)../../iotk/src $(MOD_FLAG)../../Modules \
-          $(MOD_FLAG)../../PW/src $(MOD_FLAG).
+          $(MOD_FLAG)../../FFTXlib $(MOD_FLAG)../../LAXlib $(MOD_FLAG)../../PW/src $(MOD_FLAG).
 IFLAGS=
 
 PPOBJS = \
@@ -44,27 +44,24 @@ sym_band.o \
 work_function.o \
 write_p_avg.o \
 write_proj.o \
-xsf.o \
 xk_et_collect.o \
 write_io_header.o \
-wannier_hamiltonians.o \
-wannier_umatrix_subroutines.o \
-wannier_u_matrix.o
+write_hamiltonians.o 
 
 PWOBJS = ../../PW/src/libpw.a
-QEOBJS = ../../Modules/libqemod.a
+QEOBJS = ../../Modules/libqemod.a ../../FFTXlib/libqefft.a ../../LAXlib/libqela.a
 
 MODULES = $(PWOBJS) $(QEOBJS)
 
 TLDEPS= bindir mods libs pw
 
-LIBOBJS = ../../flib/ptools.a ../../flib/flib.a ../../clib/clib.a ../../iotk/src/libiotk.a
+LIBOBJS = ../../clib/clib.a ../../iotk/src/libiotk.a
 
-all : tldeps average.x bands.x dos.x epsilon.x initial_state.x \
+all : tldeps average.x bands.x dos.x epsilon.x initial_state.x fs.x \
       plan_avg.x plotband.x plotproj.x plotrho.x pmw.x pp.x projwfc.x \
       pawplot.x sumpdos.x pw2wannier90.x pw_export.x pw2gw.x \
       wannier_ham.x wannier_plot.x molecularpdos.x \
-      pw2bgw.x bgw2pw.x wfck2r.x
+      pw2bgw.x bgw2pw.x wfck2r.x importexport_binary.x
 
 
 libpp.a : $(PPOBJS) 
@@ -131,6 +128,12 @@ pp.x : postproc.o libpp.a $(MODULES) $(LIBOBJS)
 		$(LIBOBJS) $(LIBS)
 	- ( cd ../../bin ; ln -fs ../PP/src/$@ . )
 
+importexport_binary.x : importexport_binary.o libpp.a $(MODULES) $(LIBOBJS)
+	$(LD) $(LDFLAGS) -o $@ \
+		importexport_binary.o libpp.a $(MODULES) \
+		$(LIBOBJS) $(LIBS)
+	- ( cd ../../bin ; ln -fs ../PP/src/$@ . )
+
 projwfc.x : projwfc.o libpp.a $(MODULES) $(LIBOBJS)
 	$(LD) $(LDFLAGS) -o $@ \
 		projwfc.o libpp.a $(MODULES) $(LIBOBJS) $(LIBS)
@@ -163,7 +166,7 @@ pw_export.x : pw_export.o libpp.a $(MODULES) $(LIBOBJS)
 	- ( cd ../../bin ; ln -fs ../PP/src/$@ . )
 
 sumpdos.x : sumpdos.o 
-	$(LD) $(LDFLAGS) -o $@ sumpdos.o
+	$(LD) $(LDFLAGS) -o $@ sumpdos.o $(MODULES) $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin ; ln -fs ../PP/src/$@ . )
 
 epsilon.x : epsilon.o libpp.a $(MODULES) $(LIBOBJS)
@@ -194,6 +197,11 @@ pw2bgw.x : pw2bgw.o libpp.a $(MODULES) $(LIBOBJS)
 bgw2pw.x : bgw2pw.o libpp.a $(MODULES) $(LIBOBJS)
 	$(LD) $(LDFLAGS) -o $@ \
 		bgw2pw.o libpp.a $(MODULES) $(LIBOBJS) $(LIBS)
+	- ( cd ../../bin ; ln -fs ../PP/src/$@ . )
+
+fs.x : fermisurface.o libpp.a $(MODULES) $(LIBOBJS)
+	$(LD) $(LDFLAGS) -o $@ \
+		fermisurface.o libpp.a $(MODULES) $(LIBOBJS) $(LIBS)
 	- ( cd ../../bin ; ln -fs ../PP/src/$@ . )
 
 tldeps :

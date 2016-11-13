@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2013 Quantum ESPRESSO group
+! Copyright (C) 2013-2015 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -7,7 +7,8 @@
 !
 ! Written by Lorenzo Paulatto (2012-2013) 
 ! Gamma-only tricks by Simon Binnie
-! G-space code based on addusdens.f90 and compute_becsum.f90 
+! G-space code based on addusdens.f90 and compute_becsum.f90,
+! modified by Paolo Giannozzi (2015) for speed
 ! Real space code based on realus.f90
 !-----------------------------------------------------------------------
 MODULE us_exx
@@ -17,6 +18,11 @@ MODULE us_exx
   !   * compute_becxx is still in exx.f90 as it uses plenty of global variables from there
   !   * some tests and loops are done directly in exx.f90        
   !   * PAW specific parts are in paw_exx.f90
+  !   * USPP terms in G-space are now computed on the "custom" grid (cutoff
+  !     ecutfock), the same used in exx.f90, instead of the "smooth" grid
+  !     (cutoff 4*ecutwfc). Not sure what happens when the two do not coincide,
+  !     but I expect things to work. Previously the "smooth" grid was used,
+  !     but this lead to erratic problems with non-coincident shell ordering
   !
   USE kinds,   ONLY : DP
   USE becmod,  ONLY : bec_type, calbec, ALLOCATE_bec_type, DEALLOCATE_bec_type
@@ -24,16 +30,12 @@ MODULE us_exx
   IMPLICIT NONE
   SAVE
   !
-  LOGICAL,PARAMETER :: dovanxx = .true. ! DEBUG option
-  !
   TYPE(bec_type),ALLOCATABLE :: becxx(:) ! <beta_I|phi_j,k>, with the wavefunctions from exxbuff
   ! the visible index is k; while I and J are inside bec_type
 
   COMPLEX(DP),ALLOCATABLE :: becxx_gamma(:,:)  ! gamma only version of becxx%r
                                                ! two bands stored per stripe 
-  ! FIXME: put somewhere else (there is a copy in exx)
-  REAL(DP),PARAMETER :: eps_occ  = 1.d-8 ! skip band where occupation is less than this
-                                          
+  COMPLEX(DP),ALLOCATABLE :: qgm(:,:)          ! used in addusxx_g and newdxx_g
 
  CONTAINS ! ~~+~~---//--~~~-+
   !
@@ -44,10 +46,10 @@ MODULE us_exx
     !         w(i)          if i==imax
     !         iw(i+1)       if i==imin-1
     !         0             otherwise
+    INTEGER,INTENT(in)  :: m, n, imin, imax, i
     COMPLEX(DP) :: bexg_merge(m)
     !
     REAL(DP),INTENT(in) :: w(m,n)
-    INTEGER,INTENT(in)  :: m,n, imin, imax, i
     !
     bexg_merge = (0._dp, 0._dp)
     IF(imin<=i .and. i<imax) THEN
@@ -61,9 +63,71 @@ MODULE us_exx
     ENDIF
     RETURN
   END FUNCTION bexg_merge
+
+  !-----------------------------------------------------------------------
+  SUBROUTINE qvan_init ( ngms, xkq, xk )
+  !-----------------------------------------------------------------------
+    ! allocate and store augmentation charges in G space Q(G) for USPP
+    !
+    USE ions_base,           ONLY : ntyp => nsp
+    USE uspp_param,          ONLY : upf, nh, lmaxq
+    USE gvect,               ONLY : g
+    IMPLICIT NONE
+    !
+    REAL(dp),   INTENT(in)    :: xkq(3), xk(3)
+    INTEGER, INTENT(IN)  :: ngms
+    !
+    REAL(dp), ALLOCATABLE :: ylmk0(:,:), qmod(:), q(:,:), qq(:)
+    INTEGER  :: nij, ijh, ig, nt, ih, jh
+    !
+    CALL start_clock('qvan_init')
+    !
+    ! nij = number of (ih,jh) pairs for all atom types
+    !
+    nij = 0
+    DO nt = 1, ntyp
+       IF ( upf(nt)%tvanp ) nij = nij + nh(nt)*(nh(nt)+1)/2
+    END DO
+    ALLOCATE ( qgm(ngms,nij) )
+    !
+    ALLOCATE( ylmk0(ngms, lmaxq * lmaxq), qmod(ngms) )
+    ALLOCATE( q(3,ngms), qq(ngms) )
+    DO ig = 1, ngms
+       q(:,ig) = xk(:) - xkq(:) + g(:,ig)
+       qq(ig)  = SUM(q(:,ig)**2)
+       qmod(ig)= SQRT(qq(ig))
+    ENDDO
+    CALL ylmr2 (lmaxq * lmaxq, ngms, q, qq, ylmk0)
+    DEALLOCATE(qq, q)
+    !
+    ! ijh = position of (ih,jh) pairs for atom type nt
+    !
+    ijh = 0
+    DO nt = 1, ntyp
+       IF ( upf(nt)%tvanp ) THEN
+          DO ih = 1, nh(nt)
+             DO jh = ih, nh(nt)
+                ijh = ijh + 1
+                CALL qvan2(ngms, ih, jh, nt, qmod, qgm(1,ijh), ylmk0)
+             END DO
+          END DO
+       END IF
+    END DO
+    DEALLOCATE(qmod, ylmk0)
+    CALL stop_clock('qvan_init')
+
+  END SUBROUTINE qvan_init
+
+  !-----------------------------------------------------------------------
+  SUBROUTINE qvan_clean ( )
+  !-----------------------------------------------------------------------
+    !
+    DEALLOCATE (qgm)
+    !
+  END SUBROUTINE qvan_clean
   !
   !-----------------------------------------------------------------------
-  SUBROUTINE addusxx_g(rhoc, xkq, xk, flag, becphi_c, becpsi_c, becphi_r, becpsi_r )
+  SUBROUTINE addusxx_g(exx_fft, rhoc, xkq, xk, flag, becphi_c, becpsi_c, becphi_r, becpsi_r )
     !-----------------------------------------------------------------------
     ! 
     ! Add US contribution to rhoc for hybrid functionals
@@ -75,17 +139,18 @@ MODULE us_exx
     !
     USE constants,           ONLY : tpi
     USE ions_base,           ONLY : nat, ntyp => nsp, ityp, tau
-    USE uspp,                ONLY : nkb, vkb,  okvan, indv_ijkb0
+    USE uspp,                ONLY : nkb, vkb,  okvan, indv_ijkb0, ijtoh
     USE uspp_param,          ONLY : upf, nh, nhm, lmaxq
     USE fft_base,            ONLY : dffts
-    USE gvect,               ONLY : ngm, nl, nlm, g, &
-                                    eigts1, eigts2, eigts3, mill, gstart
-    USE gvecs,               ONLY : ngms, nls, nlsm
+    USE gvect,               ONLY : g, eigts1, eigts2, eigts3, mill, gstart
     USE cell_base,           ONLY : tpiba
     USE control_flags,       ONLY : gamma_only
+    USE fft_custom,          ONLY : fft_cus
     IMPLICIT NONE
     !
-    ! In input I get a slice of <beta|left> and <beta|right> only for this kpoint and this band
+    TYPE(fft_cus), INTENT(inout):: exx_fft
+    ! In input I get a slice of <beta|left> and <beta|right>
+    ! only for this kpoint and this band
     COMPLEX(DP),INTENT(inout) :: rhoc(dffts%nnr)
     COMPLEX(DP),INTENT(in), OPTIONAL  :: becphi_c(nkb), becpsi_c(nkb)
     REAL(DP),   INTENT(in), OPTIONAL  :: becphi_r(nkb), becpsi_r(nkb)
@@ -94,15 +159,13 @@ MODULE us_exx
     !
     ! ... local variables
     !
-    REAL(DP),ALLOCATABLE    :: qmod(:), q(:,:), qq(:),  &! the modulus of G
-                               ylmk0(:,:)  ! the spherical harmonics
-    COMPLEX(DP),ALLOCATABLE :: qgm(:), aux(:), eigqts(:)
-    INTEGER :: ikb, jkb, ijkb0, ih, jh, na, np, ig
-    COMPLEX(DP) :: skk, becfac_c
+    COMPLEX(DP),ALLOCATABLE :: aux1(:), aux2(:), eigqts(:)
+    INTEGER :: ngms, ikb, jkb, ijkb0, ih, jh, na, nt, ig, nij, ijh
+    COMPLEX(DP) :: becfac_c
     REAL(DP) :: arg, becfac_r
     LOGICAL :: add_complex, add_real, add_imaginary
     !
-    IF(.not.(okvan .and. dovanxx)) RETURN
+    IF(.not.okvan) RETURN
     CALL start_clock( 'addusxx' )
     !
     add_complex = ( flag=='c' .OR. flag=='C' )
@@ -119,102 +182,115 @@ MODULE us_exx
          ( add_imaginary.AND.(.NOT. PRESENT(becphi_r) .OR. .NOT. PRESENT(becpsi_r) ) ) )    &
        CALL errore('addusxx_g', 'called with incorrect arguments', 2 )
     !
-    ALLOCATE(qmod(ngms), qgm(ngms), aux(ngms))
-    ALLOCATE(ylmk0(ngms, lmaxq * lmaxq))    
-    ALLOCATE(qq(ngms), q(3,ngm))
-    !
-    DO ig = 1, ngms
-      q(:,ig) = xk(:) - xkq(:) + g(:,ig)
-      qq(ig)  = SUM(q(:,ig)**2)
-      qmod(ig)= SQRT(qq(ig))
-    ENDDO
-    !
-    CALL ylmr2 (lmaxq * lmaxq, ngms, q, qq, ylmk0)
-    !
-    DEALLOCATE(qq, q)
+    ngms = exx_fft%ngmt
+    ALLOCATE( aux1(ngms), aux2(ngms) )
     ALLOCATE(eigqts(nat))
+    !
     DO na = 1, nat
       arg = tpi* SUM( (xk(:) - xkq(:))*tau(:,na) )
       eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
     END DO
     !
-    DO np = 1, ntyp
-      ONLY_FOR_USPP : &
-      IF ( upf(np)%tvanp .and. ANY(ityp(1:nat) == np) ) THEN
-        !
-        DO ih = 1, nh(np)
-        DO jh = 1, nh(np)
-            !
-            CALL qvan2(ngms, ih, jh, np, qmod, qgm, ylmk0)
-            !
-            ATOMS_LOOP : &
-            DO na = 1, nat
-              IF (ityp(na)==np) THEN
+    nij = 0
+    DO nt = 1, ntyp
+       !
+       IF ( upf(nt)%tvanp ) THEN
+          !
+          DO na = 1, nat
+             !
+             IF (ityp(na)==nt) THEN
                 !
-                ! NOTE: the next line counts the number of beta in the atoms (not types!) before 
-                ! this one (na) this hack is necessary to minimize the number of calls to qvan2
-                ijkb0 = indv_ijkb0(na) !SUM(nh(ityp(1:na)))-nh(ityp(na)) 
-                ikb = ijkb0 + ih
-                jkb = ijkb0 + jh
-
+                ! ijkb0 points to the manifold of beta functions for atom na
+                !
+                ijkb0 = indv_ijkb0(na) 
+                !
+                aux2(:) = (0.0_dp, 0.0_dp)
+                DO ih = 1, nh(nt)
+                   ikb = ijkb0 + ih
+                   aux1(:) = (0.0_dp, 0.0_dp)
+                   DO jh = 1, nh(nt)
+                      jkb = ijkb0 + jh
+                      IF ( add_complex ) THEN
+!$omp parallel do default(shared) private(ig)
+                         DO ig = 1, ngms
+                            aux1(ig) = aux1(ig) + qgm(ig,nij+ijtoh(ih,jh,nt)) * &
+                                 becpsi_c(jkb)
+                         ENDDO
+!$omp end parallel do
+                      ELSE
+!$omp parallel do default(shared) private(ig)
+                         DO ig = 1, ngms
+                            aux1(ig) = aux1(ig) + qgm(ig,nij+ijtoh(ih,jh,nt)) * &
+                                 becpsi_r(jkb)
+                         ENDDO
+!$omp end parallel do
+                      END IF
+                   END DO
+                   IF ( add_complex ) THEN
+!$omp parallel do default(shared) private(ig)
+                      DO ig = 1,ngms
+                         aux2(ig) = aux2(ig) + aux1(ig) * CONJG(becphi_c(ikb))
+                      ENDDO
+!$omp end parallel do
+                   ELSE
+!$omp parallel do default(shared) private(ig)
+                      DO ig = 1,ngms
+                         aux2(ig) = aux2(ig) + aux1(ig) * becphi_r(ikb)
+                      ENDDO
+!$omp end parallel do
+                   END IF
+                END DO
+!$omp parallel do default(shared) private(ig)
+                DO ig = 1, ngms
+                   aux2(ig) = aux2(ig) * eigqts(na) * &
+                                 eigts1 (mill (1,ig), na) * &
+                                 eigts2 (mill (2,ig), na) * &
+                                 eigts3 (mill (3,ig), na)
+                ENDDO
+!$omp end parallel do
                 IF ( add_complex ) THEN
-                   becfac_c = CONJG(becphi_c(ikb))*becpsi_c(jkb)
                    DO ig = 1, ngms
-                      skk = eigts1(mill(1,ig), na) * &
-                            eigts2(mill(2,ig), na) * &
-                            eigts3(mill(3,ig), na)
-                      aux(ig) = qgm(ig)*eigqts(na)*skk*becfac_c
-                   ENDDO
-                   DO ig = 1,ngms
-                     rhoc(nls(ig)) = rhoc(nls(ig)) + aux(ig)
-                   ENDDO
-                ELSE 
-                   becfac_r = becphi_r(ikb)*becpsi_r(jkb)
+                      rhoc(exx_fft%nlt(ig)) = rhoc(exx_fft%nlt(ig)) + aux2(ig)
+                   END DO
+                ELSE IF ( add_real ) THEN
                    DO ig = 1, ngms
-                      skk = eigts1(mill(1,ig), na) * &
-                            eigts2(mill(2,ig), na) * &
-                            eigts3(mill(3,ig), na)
-                      aux(ig) = qgm(ig)*eigqts(na)*skk*becfac_r
+                      rhoc(exx_fft%nlt(ig)) = rhoc(exx_fft%nlt(ig)) + aux2(ig)
                    ENDDO
-                   IF ( add_real ) THEN
-                      DO ig = 1,ngms
-                         rhoc(nls(ig)) = rhoc(nls(ig)) + aux(ig)
-                      ENDDO
-                      DO ig = gstart,ngms
-                         rhoc(nlsm(ig)) = rhoc(nlsm(ig)) + CONJG(aux(ig))
-                      ENDDO
-                   ELSE IF ( add_imaginary ) THEN
-                      DO ig = 1,ngms
-                         rhoc(nls(ig)) = rhoc(nls(ig)) + (0.0_dp,1.0_dp)*aux(ig)
-                      ENDDO
-                      DO ig = gstart,ngms
-                         rhoc(nlsm(ig)) = rhoc(nlsm(ig)) + &
-                                          (0.0_dp,1.0_dp)*CONJG(aux(ig))
-                      ENDDO
-                   ENDIF
+                   DO ig = gstart, ngms
+                      rhoc(exx_fft%nltm(ig)) = rhoc(exx_fft%nltm(ig)) &
+                                               + CONJG(aux2(ig))
+                   ENDDO
+                ELSE IF ( add_imaginary ) THEN
+                   DO ig = 1, ngms
+                      rhoc(exx_fft%nlt(ig)) = rhoc(exx_fft%nlt(ig)) &
+                                              + (0.0_dp,1.0_dp) * aux2(ig)
+                   ENDDO
+                   DO ig = gstart, ngms
+                      rhoc(exx_fft%nltm(ig)) = rhoc(exx_fft%nltm(ig)) &
+                                             + (0.0_dp,1.0_dp)* CONJG(aux2(ig))
+                   ENDDO
                 ENDIF
-                !
-              END IF
-            ENDDO ATOMS_LOOP  ! nat
-            !
-        END DO ! jh
-        END DO ! ih
-      END IF &
-      ONLY_FOR_USPP 
-    ENDDO
+             ENDIF
+          ENDDO   ! nat
+          !
+          nij = nij + nh(nt)*(nh(nt)+1)/2
+          !
+       END IF
+       !
+    ENDDO   ! nt
     !
-    DEALLOCATE( ylmk0, qmod, qgm, eigqts, aux)
+    DEALLOCATE( eigqts, aux2, aux1)
     !
     CALL stop_clock( 'addusxx' )
     !
     RETURN
-    !
-    !-----------------------------------------------------------------------
+  !
+  !-----------------------------------------------------------------------
   END SUBROUTINE addusxx_g
   !-----------------------------------------------------------------------
   !
   !-----------------------------------------------------------------------
-  SUBROUTINE newdxx_g(vc, xkq, xk, flag, deexx, becphi_r, becphi_c)
+  SUBROUTINE newdxx_g(exx_fft, vc, xkq, xk, flag, deexx, becphi_r, becphi_c)
     !-----------------------------------------------------------------------
     !
     ! This subroutine computes some sort of EXX contribution to the non-local 
@@ -229,40 +305,39 @@ MODULE us_exx
     ! 
     USE constants,      ONLY : tpi
     USE ions_base,      ONLY : nat, ntyp => nsp, ityp, tau
-    USE uspp,           ONLY : nkb, vkb,  okvan, indv_ijkb0
+    USE uspp,           ONLY : nkb, vkb,  okvan, indv_ijkb0, ijtoh
     USE uspp_param,     ONLY : upf, nh, nhm, lmaxq
     USE fft_base,       ONLY : dffts
-    USE gvect,          ONLY : ngm, nl, nlm, gg, g, gstart, &
-                               eigts1, eigts2, eigts3, mill
-    USE gvecs,          ONLY : ngms, nls, nlsm
+    USE gvect,          ONLY : gg, g, gstart, eigts1, eigts2, eigts3, mill
     USE cell_base,      ONLY : tpiba, omega
     USE control_flags,  ONLY : gamma_only
+    USE fft_custom,          ONLY : fft_cus
     !
     IMPLICIT NONE
     !
+    TYPE(fft_cus), INTENT(inout):: exx_fft
     COMPLEX(DP),INTENT(in)    :: vc(dffts%nnr)
-    ! In input I get a slice of <beta|left> and <beta|right> only for this kpoint and this band
+    ! In input I get a slice of <beta|left> and <beta|right> 
+    ! only for this kpoint and this band
     COMPLEX(DP),INTENT(in), OPTIONAL :: becphi_c(nkb)
     REAL(DP),   INTENT(in), OPTIONAL :: becphi_r(nkb)
     COMPLEX(DP),INTENT(inout) :: deexx(nkb)
     REAL(DP),INTENT(in)       :: xk(3), xkq(3)
     CHARACTER(LEN=1), INTENT(IN) :: flag
+    INTEGER:: ngms
     !
     ! ... local variables
-    INTEGER :: ikb, jkb, ijkb0, ih, jh, na, np !, ijh
-    INTEGER :: ig, fact
-    COMPLEX(DP) :: skk
+    INTEGER :: ig, ikb, jkb, ijkb0, ih, jh, na, nt, nij
+    REAL(DP) :: fact
+    COMPLEX(DP), EXTERNAL :: zdotc
     !
-    REAL(DP),ALLOCATABLE    :: qmod (:), q(:,:), qq(:), &
-                               ylmk0 (:,:)  ! the spherical harmonics
-    COMPLEX(DP),ALLOCATABLE :: qgm(:),    & ! the Q(r) function
-                               auxvc(:), &  ! vc in order of |g|
-                               eigqts(:)
+    COMPLEX(DP),ALLOCATABLE :: auxvc(:), &  ! vc in order of |g|
+                               eigqts(:), aux1(:), aux2(:)
     COMPLEX(DP) :: fp, fm
     REAL(DP) :: arg
     LOGICAL :: add_complex, add_real, add_imaginary
     !
-    IF(.not.(okvan .and. dovanxx)) RETURN
+    IF(.not.okvan) RETURN
     !
     add_complex = ( flag=='c' .OR. flag=='C' )
     add_real    = ( flag=='r' .OR. flag=='R' )
@@ -280,19 +355,10 @@ MODULE us_exx
     !
     CALL start_clock( 'newdxx' )
     !
-    ALLOCATE(qgm(ngms), auxvc(ngms), qmod( ngms))
-    ALLOCATE(ylmk0(ngms, lmaxq**2))    
-    ALLOCATE(qq(ngms), q(3,ngm))
-    !
-    DO ig = 1, ngms
-      q(:,ig) = xk(:) - xkq(:) + g(:,ig)
-      qq(ig)  = SUM(q(:,ig)**2)
-      qmod(ig)= SQRT(qq (ig) )
-    ENDDO
-    CALL ylmr2 (lmaxq * lmaxq, ngms, q, qq, ylmk0)
-    !
-    DEALLOCATE(qq, q)
+    ngms = exx_fft%ngmt
+    ALLOCATE(aux1(ngms), aux2(ngms), auxvc( ngms))
     ALLOCATE(eigqts(nat))
+    !
     DO na = 1, nat
       arg = tpi* SUM( (xk(:) - xkq(:))*tau(:,na) )
       eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
@@ -304,73 +370,81 @@ MODULE us_exx
     !
     auxvc = (0._dp, 0._dp)
     IF ( add_complex ) THEN
-       auxvc(1:ngms) = vc(nls(1:ngms) )
-       fact=1.0_dp
+       auxvc(1:ngms) = vc(exx_fft%nlt(1:ngms) )
+       fact=omega
     ELSE IF ( add_real ) THEN
        DO ig = 1, ngms
-          fp = (vc(nls(ig)) + vc(nlsm(ig)))/2.0_dp
-          fm = (vc(nls(ig)) - vc(nlsm(ig)))/2.0_dp
+          fp = (vc(exx_fft%nlt(ig)) + vc(exx_fft%nltm(ig)))/2.0_dp
+          fm = (vc(exx_fft%nlt(ig)) - vc(exx_fft%nltm(ig)))/2.0_dp
           auxvc(ig) = CMPLX( DBLE(fp), AIMAG(fm), KIND=dp)
        END DO
-       fact=2.0_dp
+       fact=2.0_dp*omega
     ELSE IF ( add_imaginary ) THEN
        DO ig = 1, ngms
-          fp = (vc(nls(ig)) + vc(nlsm(ig)))/2.0_dp
-          fm = (vc(nls(ig)) - vc(nlsm(ig)))/2.0_dp
+          fp = (vc(exx_fft%nlt(ig)) + vc(exx_fft%nltm(ig)))/2.0_dp
+          fm = (vc(exx_fft%nlt(ig)) - vc(exx_fft%nltm(ig)))/2.0_dp
           auxvc(ig) = CMPLX( AIMAG(fp), -DBLE(fm), KIND=dp)
        END DO
-       fact=2.0_dp
+       fact=2.0_dp*omega
     END IF 
     !
-    DO np = 1, ntyp
-      ONLY_FOR_USPP : &
-      IF ( upf(np)%tvanp ) THEN
-        DO ih = 1, nh(np)
-          DO jh = 1, nh(np)
-            !
-            CALL qvan2(ngms, ih, jh, np, qmod, qgm, ylmk0)
-            !
-            ATOMS_LOOP : &
-            DO na = 1, nat
-              IF (ityp(na)==np) THEN
+    nij = 0
+    DO nt = 1, ntyp
+       !
+       IF ( upf(nt)%tvanp ) THEN
+          !
+          DO na = 1, nat
+             !
+             IF (ityp(na)==nt) THEN
                 !
-                ! NOTE: see addusxx_g for the next line:
-                ijkb0 = indv_ijkb0(na) !SUM(nh(ityp(1:na)))-nh(ityp(na)) 
-                ikb = ijkb0 + ih
-                jkb = ijkb0 + jh
+                ! ijkb0 points to the manifold of beta functions for atom na
                 !
-                IF(gamma_only) THEN
-                   DO ig = 1, ngms
-                      skk = eigts1(mill(1,ig), na) * &
-                            eigts2(mill(2,ig), na) * &
-                            eigts3(mill(3,ig), na)
-                      ! \sum_J Q_IJ V_F
-                      deexx(ikb) = deexx(ikb) + becphi_r(jkb)*auxvc(ig)*fact &
-                                      * omega*CONJG(eigqts(na)*skk*qgm(ig)) 
-                   ENDDO
+                ijkb0 = indv_ijkb0(na) 
+                !
+!$omp parallel do default(shared) private(ig)
+                DO ig = 1, ngms
+                   aux2(ig) = CONJG( auxvc(ig) ) * eigqts(na) * &
+                              eigts1(mill(1,ig), na) * &
+                              eigts2(mill(2,ig), na) * &
+                              eigts3(mill(3,ig), na)
+                END DO
+!$omp end parallel do
+                DO ih = 1, nh(nt)
+                   ikb = ijkb0 + ih
+                   aux1(:) = (0.0_dp, 0.0_dp)
+                   DO jh = 1, nh(nt)
+                      jkb = ijkb0 + jh
+                      IF ( gamma_only ) THEN
+!$omp parallel do default(shared) private(ig)
+                         DO ig = 1, ngms
+                            aux1(ig) = aux1(ig) + becphi_r(jkb) * &
+                                 CONJG( qgm(ig,nij+ijtoh(ih,jh,nt)) )
+                         ENDDO
+!$omp end parallel do
+                      ELSE
+!$omp parallel do default(shared) private(ig)
+                         DO ig = 1, ngms
+                            aux1(ig) = aux1(ig) + becphi_c(jkb) * &
+                                 CONJG( qgm(ig,nij+ijtoh(ih,jh,nt)) )
+                         ENDDO
+!$omp end parallel do
+                      END IF
+                   END DO
                    !
-                   IF(gstart==2) deexx(ikb) = deexx(ikb) - becphi_r(jkb)* &
-                               auxvc(1)*omega*CONJG(eigqts(na)*skk*qgm(1))
-                ELSE
-                   DO ig = 1, ngms
-                      skk = eigts1(mill(1,ig), na) * &
-                            eigts2(mill(2,ig), na) * &
-                            eigts3(mill(3,ig), na)
-                      ! \sum_J Q_IJ V_F
-                      deexx(ikb) = deexx(ikb) + becphi_c(jkb)*auxvc(ig)*fact &
-                                      * omega*CONJG(eigqts(na)*skk*qgm(ig)) 
-                   ENDDO
-                ENDIF
-                !
-              END IF
-            ENDDO ATOMS_LOOP ! nat
-          ENDDO ! jh
-        ENDDO ! ih
-      END IF &
-      ONLY_FOR_USPP 
+                   deexx(ikb) = deexx(ikb) + fact*zdotc(ngms, aux2, 1, aux1, 1)
+                   IF( gamma_only .AND. gstart == 2 ) &
+                        deexx(ikb) =  deexx(ikb) - fact*CONJG (aux2(1))*aux1(1)
+                ENDDO
+             ENDIF
+             !
+          ENDDO  ! nat
+          !
+          nij = nij + nh(nt)*(nh(nt)+1)/2
+          !
+       END IF
     ENDDO
     !
-    DEALLOCATE( ylmk0, qmod, qgm, auxvc, eigqts)
+    DEALLOCATE( eigqts, auxvc, aux2, aux1)
     CALL stop_clock( 'newdxx' )
     !
     RETURN
@@ -379,152 +453,8 @@ MODULE us_exx
   END SUBROUTINE newdxx_g
   !-----------------------------------------------------------------------
   !
-!   !----------------------------------------------------------------------
-!   SUBROUTINE addusxx_force(forcenl)
-!     !----------------------------------------------------------------------
-!     !
-!     !   This routine computes the contribution to atomic forces due
-!     !   to the dependence of the Q function on the atomic position.
-!     !   On output: the contribution is added to forcenl
-!     !
-!     USE kinds,      ONLY : DP
-!     USE ions_base,  ONLY : nat, ntyp => nsp, ityp
-!     USE cell_base,  ONLY : omega, tpiba
-!     USE fft_base,   ONLY : dfftp
-!     USE gvect,      ONLY : ngm, nl, nlm, gg, g, eigts1, eigts2, eigts3, mill
-!     USE scf,        ONLY : v, vltot
-!     USE uspp,       ONLY : becsum, okvan
-!     USE uspp_param, ONLY : upf, lmaxq, nh, nhm
-!     USE mp_bands,   ONLY : intra_bgrp_comm
-!     USE mp,         ONLY : mp_sum
-!     USE noncollin_module,   ONLY : nspin_mag
-!     USE control_flags,      ONLY : gamma_only
-!     USE fft_interfaces,     ONLY : fwfft
-!     !
-!     IMPLICIT NONE
-!     !
-!     REAL(DP) :: forcenl (3, nat)
-!     ! local variables
-!     INTEGER :: ig, ir, dim, nt, ih, jh, ijh, ipol, is, na
-!     COMPLEX(DP):: cfac
-!     REAL(DP) :: fact, ddot
-!     ! work space
-!     COMPLEX(DP),ALLOCATABLE :: aux(:,:), aux1(:,:), vg(:), qgm(:), eigqts(:)
-!     REAL(DP),ALLOCATABLE :: ddeeq(:,:,:,:), qmod(:), ylmk0(:,:)
-! 
-!     !
-!     if (.not.okvan) return
-!     !
-!     DO ig = 1, ngms
-!       q(:,ig) = xk(:) - xkq(:) + g(:,ig)
-!       qq(ig)  = SUM(q(:,ig)**2)
-!       qmod(ig)= SQRT(qq (ig) )
-!     ENDDO
-!     !
-!     ALLOCATE(eigqts(nat))
-!     DO na = 1, nat
-!       arg = tpi* SUM( (xk(:) - xkq(:))*tau(:,na) )
-!       eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
-!     END DO
-!     !
-!     IF (gamma_only) THEN
-!       fact = 2.d0
-!     ELSE
-!       fact = 1.d0
-!     ENDIF
-!     ALLOCATE (aux(ngm,nspin_mag))    
-!     !
-!     ! fourier transform of the total effective potential
-!     !
-!     ALLOCATE (vg(dfftp%nnr))    
-!     DO is = 1, nspin_mag
-!       IF (nspin_mag.eq.4.and.is.ne.1) then
-!           vg (:) = v%of_r(:,is)
-!       ELSE
-!           vg (:) = vltot (:) + v%of_r (:, is)
-!       ENDIF
-!       CALL fwfft ('Dense', vg, dfftp)
-!       aux (:, is) = vg (nl (:) ) * tpiba * (0.d0, -1.d0)
-!     ENDDO
-!     DEALLOCATE (vg)
-!     !
-!     ALLOCATE (aux1(ngm,3))    
-!     ALLOCATE (ddeeq( 3, (nhm*(nhm+1))/2,nat,nspin_mag))    
-!     ALLOCATE (qgm( ngm))
-!     ALLOCATE (qmod( ngm))    
-!     ALLOCATE (ylmk0(ngm,lmaxq*lmaxq))    
-!     !
-!     ddeeq(:,:,:,:) = 0.d0
-!     !
-!     CALL ylmr2 (lmaxq * lmaxq, ngm, g, gg, ylmk0)
-!     !
-!     qmod (:) = sqrt (gg (:) )
-!     !
-!     ! here we compute the integral Q*V for each atom,
-!     !       I = sum_G i G_a exp(-iR.G) Q_nm v^*
-!     !
-!     DO nt = 1, ntyp
-!       IF ( upf(nt)%tvanp ) then
-!           ijh = 1
-!           DO ih = 1, nh (nt)
-!             DO jh = ih, nh (nt)
-!                 call qvan2 (ngm, ih, jh, nt, qmod, qgm, ylmk0)
-!                 DO na = 1, nat
-!                   IF (ityp (na) == nt) then
-!                       !
-!                       ! The product of potential, structure factor and iG
-!                       !
-!                       DO is = 1, nspin_mag
-!                         DO ig = 1, ngm
-!                             cfac = aux(ig, is) * eigqts(na) * &
-!                                          CONJG(eigts1(mill(1,ig), na) *&
-!                                                eigts2(mill(2,ig), na) *&
-!                                                eigts3(mill(3,ig), na) )
-!                             aux1(ig, 1) = g(1, ig) * cfac
-!                             aux1(ig, 2) = g(2, ig) * cfac
-!                             aux1(ig, 3) = g(3, ig) * cfac
-!                         ENDDO
-!                         !
-!                         !    and the product with the Q functions
-!                         !    G=0 term gives no contribution
-!                         !
-!                         DO ipol = 1, 3
-!                             ddeeq (ipol, ijh, na, is) = omega * fact * &
-!                                 ddot (2 * ngm, aux1(1, ipol), 1, qgm, 1)
-!                         ENDDO
-!                       ENDDO
-!                   ENDIF
-!                 ENDDO
-!                 ijh = ijh + 1
-!             ENDDO
-!           ENDDO
-!       ENDIF
-! 
-!     ENDDO
-! 
-!     call mp_sum ( ddeeq, intra_bgrp_comm )
-!     !
-!     DO is = 1, nspin_mag
-!       DO na = 1, nat
-!           nt = ityp (na)
-!           dim = (nh (nt) * (nh (nt) + 1) ) / 2
-!           DO ipol = 1, 3
-!             DO ir = 1, dim
-!                 forcenl(ipol, na) = forcenl(ipol, na) + &
-!                     ddeeq(ipol, ir, na, is) * becsum(ir, na, is)
-!             ENDDO
-!           ENDDO
-!       ENDDO
-!     ENDDO
-!     !
-!     DEALLOCATE(ylmk0,qgm,qmod,ddeeq,aux1,aux,eigqts)
-!     RETURN
-!     !-----------------------------------------------------------------------
-!   END SUBROUTINE addusxx_force
-!   !-----------------------------------------------------------------------
-  !
   !-----------------------------------------------------------------------
-   SUBROUTINE add_nlxx_pot(lda, hpsi, xkp, npwp, igkp, deexx, exxalfa)
+   SUBROUTINE add_nlxx_pot(lda, hpsi, xkp, npwp, igkp, deexx, eps_occ, exxalfa)
     !-----------------------------------------------------------------------
     !
     ! This subroutine computes some sort of EXX contribution to the non-local 
@@ -534,10 +464,9 @@ MODULE us_exx
     !  H = H+\sum_I |beta_I> alpha_Ii
     ! 
     USE ions_base,           ONLY : nat, ntyp => nsp, ityp
-    USE uspp,                ONLY : nkb, okvan
+    USE uspp,                ONLY : nkb, okvan,indv_ijkb0
     USE uspp_param,          ONLY : upf, nh
-    USE gvecs,               ONLY : nls
-    USE wvfct,               ONLY : nbnd, npwx !, ecutwfc
+    USE wvfct,               ONLY : nbnd, npwx
     USE control_flags,       ONLY : gamma_only
     IMPLICIT NONE
     !
@@ -547,6 +476,7 @@ MODULE us_exx
     COMPLEX(DP),INTENT(in)    :: deexx(nkb)       ! \int \sum_J Q_IJ <beta_J|phi_i> d3r
     REAL(DP),INTENT(in)       :: xkp(3)           ! current k point
     REAL(DP),INTENT(in)       :: exxalfa       ! fraction of ex. exchange to add
+    REAL(DP),INTENT(in)       :: eps_occ ! skip band where occupation is less than this
     INTEGER,INTENT(IN)        :: npwp, igkp(npwp)
     !
     ! ... local variables
@@ -557,20 +487,22 @@ MODULE us_exx
     !
     CALL start_clock( 'nlxx_pot' )
     !
-    IF(.not.(okvan .and. dovanxx)) RETURN
+    IF(.not.okvan) RETURN
+    !
+    ! These are beta functions for k-point "xkp" with indices "igkp"
+    ! Possibly already available in the calling routines vexx, since
+    ! xkp and igkp are the "current" k-point and indices in hpsi
     !
     ALLOCATE(vkbp(npwx,nkb))
-    !
     CALL init_us_2(npwp, igkp, xkp, vkbp)
     !
-    ijkb0 = 0
     DO np = 1, ntyp
       ONLY_FOR_USPP : &
       IF ( upf(np)%tvanp ) THEN
           DO na = 1, nat
             IF (ityp(na)==np) THEN
               DO ih = 1, nh(np)
-                ikb = ijkb0 + ih
+                ikb = indv_ijkb0(na) + ih
                 !
                 IF(ABS(deexx(ikb))<eps_occ) CYCLE
                 !
@@ -584,13 +516,8 @@ MODULE us_exx
                    ENDDO
                 ENDIF
               ENDDO
-              ijkb0 = ijkb0 + nh(np)
             END IF
           ENDDO ! nat
-      ELSE ONLY_FOR_USPP 
-          DO na = 1, nat
-            IF ( ityp(na) == np ) ijkb0 = ijkb0 + nh(np)
-          ENDDO
       END IF &
       ONLY_FOR_USPP 
     ENDDO
@@ -645,7 +572,7 @@ MODULE us_exx
       IF ( .not. upf(nt)%tvanp ) CYCLE
         DO ih = 1, nh(nt)
         DO jh = 1, nh(nt)
-            ijkb0 = indv_ijkb0(ia) !SUM(nh(ityp(1:ia)))-nh(ityp(ia)) 
+            ijkb0 = indv_ijkb0(ia)
             ikb = ijkb0 + ih
             jkb = ijkb0 + jh
             !
@@ -675,7 +602,6 @@ MODULE us_exx
     USE ions_base,        ONLY : nat, ityp
     USE uspp_param,       ONLY : upf, nh, nhm
     USE uspp,             ONLY : nkb, ijtoh, indv_ijkb0
-    USE control_flags,    ONLY : tqr
     USE noncollin_module, ONLY : nspin_mag
     USE mp,               ONLY : mp_sum
 
@@ -693,6 +619,7 @@ MODULE us_exx
     REAL(DP)    :: domega
     COMPLEX(DP) :: aux
     !
+    CALL start_clock( 'newdxx' )
     domega = omega/(dffts%nr1*dffts%nr2*dffts%nr3)
     !
     DO ia = 1, nat
@@ -705,7 +632,7 @@ MODULE us_exx
       !
       DO ih = 1, nh(nt)
       DO jh = 1, nh(nt)
-          ijkb0 = indv_ijkb0(ia) !SUM(nh(ityp(1:ia)))-nh(ityp(ia)) 
+          ijkb0 = indv_ijkb0(ia)
           ikb = ijkb0 + ih
           jkb = ijkb0 + jh
           !
@@ -720,6 +647,7 @@ MODULE us_exx
       !
     ENDDO
     !
+    CALL stop_clock( 'newdxx' )
   !------------------------------------------------------------------------
   END SUBROUTINE newdxx_r
   !------------------------------------------------------------------------

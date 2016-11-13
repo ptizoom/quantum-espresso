@@ -72,7 +72,9 @@ The code must terminate properly in order for restart to be possible. A clean st
 <OL>
 <LI>The amount of time specified by the input variable max_seconds is reached
 </LI>
-<LI>A file named "$prefix.EXIT" is found in the execution directory, $prefix is the prefix specified in the control namelist
+<LI>The user creates a file named "$prefix.EXIT" either in the working
+directory or in output directory "$outdir" 
+(variables $outdir and $prefix as specified in the control namelist)
 </LI>
 <LI>(experimental) The code is compiled with signal-trapping support and one of the trapped signals is received (see the next section for details).
 </LI>
@@ -150,8 +152,8 @@ e.g. you can give pw.x thirty minutes to stop using:
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

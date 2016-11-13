@@ -79,15 +79,14 @@ taking into account periodicity
 </LI>
 <LI><TT>PW/tools/kpoints.x</TT> produces lists of k-points
 </LI>
-<LI><TT>PW/tools/pwi2xsf.sh</TT>,  <TT>pwo2xsf.sh</TT> process respectively input and output
-  files (not data files!) for <TT>pw.x</TT>and produce an XSF-formatted file
+<LI><TT>PW/tools/pwi2xsf.sh</TT>,  <TT>pwo2xsf.sh</TT> process respectively 
+  input and output files (not data files!) for <TT>pw.x</TT> and <TT>neb.x</TT> 
+  (the latter, courtesy of Pietro Bonf&#224;) and produce an XSF-formatted file
   suitable for plotting with XCrySDen:
-  <TT>http://www.xcrysden.org/</TT>,  powerful crystalline and
+  <TT>http://www.xcrysden.org/</TT>, a powerful crystalline and
   molecular structure visualization program.
-  BEWARE: the  <TT>pwi2xsf.sh</TT> shell script
-  requires the  <TT>pwi2xsf.x</TT> executables to be located somewhere in your PATH. 
-</LI>
-<LI><TT>PW/tools/band_plot.x</TT>: undocumented and possibly obsolete 
+  BEWARE: the  <TT>pwi2xsf.sh</TT> shell script requires the
+  <TT>pwi2xsf.x</TT> executables to be located somewhere in your PATH. 
 </LI>
 <LI><TT>PW/tools/bs.awk</TT>,  <TT>PW/tools/mv.awk</TT> are scripts that process the output of <TT>pw.x</TT> (not
 data files!). Usage: 
@@ -98,9 +97,6 @@ data files!). Usage:
 The files so produced are suitable for use with  <TT>xbs</TT>, a very simple
 X-windows utility to display molecules, available at:
 <BR> <TT>http://www.ccl.net/cca/software/X-WINDOW/xbsa/README.shtml</TT>
-</LI>
-<LI><TT>PW/tools/kvecs_FS.x</TT>,  <TT>PW/tools/bands_FS.x</TT>: utilities for Fermi Surface plotting
-  using XCrySDen (contributed by the late Prof. Eyvaz)
 </LI>
 <LI><TT>PW/tools/cif2qe.sh</TT>: script converting from CIF 
 (Crystallographic Information File) to a format suitable for Q<SMALL>UANTUM </SMALL>ESPRESSO.
@@ -136,8 +132,8 @@ themselves, e.g. in the header of files.
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

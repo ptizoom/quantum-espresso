@@ -13,17 +13,17 @@
    <blockquote>
 <h3>TABLE OF CONTENTS</h3>
 <blockquote>
-<p><a href="#idm1680">INTRODUCTION</a></p>
-<p><a href="#idm1296">&amp;INPUTPP</a><blockquote>
-<a href="#idm768">prefix</a> | <a href="#idp23328">outdir</a> | <a href="#idp25136">filplot</a> | <a href="#idp26672">plot_num</a> | <a href="#idp31088">spin_component</a> | <a href="#idp34064">spin_component</a> | <a href="#idp37008">sample_bias</a> | <a href="#idp39504">kpoint</a> | <a href="#idp41024">kband</a> | <a href="#idp42384">lsign</a> | <a href="#idp43776">spin_component</a> | <a href="#idp46464">emin</a> | <a href="#idp47840">emax</a> | <a href="#idp49248">spin_component</a> | <a href="#idp51840">spin_component</a> | <a href="#idp54864">spin_component</a>
+<p><a href="#idm6507504">INTRODUCTION</a></p>
+<p><a href="#idm6507120">&amp;INPUTPP</a><blockquote>
+<a href="#idm6506592">prefix</a> | <a href="#idm6486688">outdir</a> | <a href="#idm6484880">filplot</a> | <a href="#idm6483344">plot_num</a> | <a href="#idm6478800">spin_component</a> | <a href="#idm6475824">spin_component</a> | <a href="#idm6472880">sample_bias</a> | <a href="#idm6470384">kpoint</a> | <a href="#idm6468864">kband</a> | <a href="#idm6467504">lsign</a> | <a href="#idm6466112">spin_component</a> | <a href="#idm6463424">emin</a> | <a href="#idm6462048">emax</a> | <a href="#idm6460640">spin_component</a> | <a href="#idm6458048">spin_component</a> | <a href="#idm6455024">spin_component</a>
 </blockquote></p>
-<p><a href="#idp57072">&amp;PLOT</a><blockquote>
-<a href="#idp57600">nfile</a> | <a href="#idp60144">filepp</a> | <a href="#idp62592">weight</a> | <a href="#idp65776">iflag</a> | <a href="#idp67200">output_format</a> | <a href="#idp69008">fileout</a> | <a href="#idp70832">interpolation</a> | <a href="#idp73984">e1</a> | <a href="#idp75872">x0</a> | <a href="#idp78144">nx</a> | <a href="#idp81648">e1</a> | <a href="#idp82272">e2</a> | <a href="#idp83552">x0</a> | <a href="#idp86352">nx</a> | <a href="#idp86976">ny</a> | <a href="#idp90432">e1</a> | <a href="#idp91056">e2</a> | <a href="#idp91680">e3</a> | <a href="#idp93024">x0</a> | <a href="#idp95408">nx</a> | <a href="#idp96032">ny</a> | <a href="#idp96656">nz</a> | <a href="#idp99856">radius</a> | <a href="#idp101776">nx</a> | <a href="#idp102400">ny</a>
+<p><a href="#idm6452816">&amp;PLOT</a><blockquote>
+<a href="#idm6452288">nfile</a> | <a href="#idm6449744">filepp</a> | <a href="#idm6447296">weight</a> | <a href="#idm6444112">iflag</a> | <a href="#idm6442688">output_format</a> | <a href="#idm6440880">fileout</a> | <a href="#idm6439056">interpolation</a> | <a href="#idm6435904">e1</a> | <a href="#idm6434016">x0</a> | <a href="#idm6431744">nx</a> | <a href="#idm6428240">e1</a> | <a href="#idm6427616">e2</a> | <a href="#idm6426336">x0</a> | <a href="#idm6423536">nx</a> | <a href="#idm6422912">ny</a> | <a href="#idm6419456">e1</a> | <a href="#idm6418832">e2</a> | <a href="#idm6418208">e3</a> | <a href="#idm6416864">x0</a> | <a href="#idm6414480">nx</a> | <a href="#idm6413856">ny</a> | <a href="#idm6413232">nz</a> | <a href="#idm6410032">radius</a> | <a href="#idm6408112">nx</a> | <a href="#idm6407488">ny</a>
 </blockquote></p>
 </blockquote>
 </blockquote>
    <blockquote>
-<a name="idm1680"><h3>INTRODUCTION</h3></a><blockquote><pre>
+<a name="idm6507504"><h3>INTRODUCTION</h3></a><blockquote><pre>
 Purpose of pp.x: data analysis and plotting.
 
 The code performs two steps:
@@ -57,10 +57,10 @@ All output quantities are in ATOMIC (RYDBERG) UNITS unless
 otherwise explicitly specified.
    </pre></blockquote>
 </blockquote>
-   <a name="idm1296"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6507120"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: INPUTPP</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="idm768"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6506592"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">prefix</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARATER</td>
@@ -70,7 +70,7 @@ prefix of files saved by program pw.x
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp23328"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6486688"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">outdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -88,7 +88,7 @@ i.e. the same as in pw.x
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp25136"><a name="filplot"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6484880"><a name="filplot"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">filplot</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -99,7 +99,7 @@ file "filplot" contains the quantity selected by plot_num
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp26672"><a name="plot_num"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6483344"><a name="plot_num"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">plot_num</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -160,6 +160,10 @@ selects what to save in filplot:
    20 = Product of the electron density (charge) and the second
         eigenvalue of the electron-density Hessian matrix;
         used to colorize the RDG plot (plot_num = 19)
+
+   21 = all-electron charge density (valence+core).
+        For PAW calculations only; requires a very dense
+        real-space grid.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
@@ -168,7 +172,7 @@ selects what to save in filplot:
             <b>
 Options for total charge (plot_num=0):
             </b><p></p>
-            <a name="idp31088"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6478800"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">spin_component</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -190,7 +194,7 @@ Options for total charge (plot_num=0):
             <b>
 Options for total potential (plot_num=1):
             </b><p></p>
-            <a name="idp34064"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6475824"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">spin_component</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -212,7 +216,7 @@ Options for total potential (plot_num=1):
             <b>
 Options for STM images (plot_num=5):
             </b><p></p>
-            <a name="idp37008"><a name="sample_bias"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6472880"><a name="sample_bias"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">sample_bias</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -227,7 +231,7 @@ the bias of the sample (Ry) in stm images
             <b>
 Options for |psi|^2 (plot_num=7):
             </b><p></p>
-            <a name="idp39504"><a name="kpoint"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6470384"><a name="kpoint"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">kpoint</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -239,7 +243,7 @@ LSDA:  k-point and spin polarization to be plotted
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-            <a name="idp41024"><a name="kband"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6468864"><a name="kband"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">kband</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -249,7 +253,7 @@ band to be plotted
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-            <a name="idp42384"><a name="lsign"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6467504"><a name="lsign"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lsign</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -259,7 +263,7 @@ if true and k point is Gamma, plot |psi|^2 sign(psi)
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-            <a name="idp43776"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6466112"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">spin_component</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -283,7 +287,7 @@ Ignored in unpolarized or LSDA case
             <b>
 Options for ILDOS (plot_num=10):
             </b><p></p>
-            <a name="idp46464"><a name="emin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6463424"><a name="emin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">emin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -293,7 +297,7 @@ lower energy boundary (in eV)
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-            <a name="idp47840"><a name="emax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6462048"><a name="emax"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">emax</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -304,7 +308,7 @@ ILDOS from emin to emax
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-            <a name="idp49248"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6460640"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">spin_component</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -322,7 +326,7 @@ for LSDA case only: plot the contribution to ILDOS of
             <b>
 Options for noncollinear magnetization (plot_num=13):
             </b><p></p>
-            <a name="idp51840"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6458048"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">spin_component</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -345,7 +349,7 @@ Options for noncollinear magnetization (plot_num=13):
             <b>
 Options for reconstructed charge density (plot_num=17):
             </b><p></p>
-            <a name="idp54864"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6455024"><a name="spin_component"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">spin_component</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -366,10 +370,10 @@ Options for reconstructed charge density (plot_num=17):
 </td></tr></table>
    </td></tr></tbody></table></td></tr>
 </table></a>
-   <a name="idp57072"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6452816"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: PLOT</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="idp57600"><a name="nfile"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6452288"><a name="nfile"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nfile</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -390,7 +394,7 @@ the number of data files
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
       <table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
-         <a name="idp60144"><a name="filepp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6449744"><a name="filepp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">filepp(i), i=1,nfile</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -406,7 +410,7 @@ nfile &gt; 1 : see "weight"
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp62592"><a name="weight"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6447296"><a name="weight"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">weight(i), i=1,nfile</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -429,7 +433,7 @@ BEWARE: atomic coordinates are read from the first file;
         the first file must have the largest number of atoms
          </pre>
       </td></tr></table>
-      <a name="idp65776"><a name="iflag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6444112"><a name="iflag"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">iflag</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -443,7 +447,7 @@ BEWARE: atomic coordinates are read from the first file;
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp67200"><a name="output_format"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6442688"><a name="output_format"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">output_format</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -463,7 +467,7 @@ BEWARE: atomic coordinates are read from the first file;
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp69008"><a name="fileout"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6440880"><a name="fileout"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">fileout</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -478,7 +482,7 @@ name of the file to which the plot is written
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp70832"><a name="interpolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6439056"><a name="interpolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">interpolation</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -497,7 +501,7 @@ type of interpolation: "fourier" or "bspline" (EXPERIMENTAL!)
 <b>IF </b><em>iflag = 0 or 1</em> : <blockquote><table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
             <b> the following variables are REQUIRED:
             </b><p></p>
-            <a name="idp73984"><a name="e1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6435904"><a name="e1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">e1(i), i=1,3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -507,7 +511,7 @@ type of interpolation: "fourier" or "bspline" (EXPERIMENTAL!)
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-            <a name="idp75872"><a name="x0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6434016"><a name="x0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">x0(i), i=1,3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -520,7 +524,7 @@ type of interpolation: "fourier" or "bspline" (EXPERIMENTAL!)
             <pre>
 !!! x0 and e1 are in alat units !!!
             </pre>
-            <a name="idp78144"><a name="nx"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6431744"><a name="nx"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nx</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -538,8 +542,8 @@ rho(i) = rho( x0 + e1 * (i-1)/(nx-1) ), i=1, nx
             <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp81648"><a name="e1">e1(i), 
-		  </a></a><a name="idp82272"><a name="e2">e2(i), 
+<a name="idm6428240"><a name="e1">e1(i), 
+		  </a></a><a name="idm6427616"><a name="e2">e2(i), 
 		   
 		    i=1,3</a></a>
 </th>
@@ -551,7 +555,7 @@ rho(i) = rho( x0 + e1 * (i-1)/(nx-1) ), i=1, nx
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-            <a name="idp83552"><a name="x0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6426336"><a name="x0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">x0(i), i=1,3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -567,7 +571,7 @@ rho(i) = rho( x0 + e1 * (i-1)/(nx-1) ), i=1, nx
             <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp86352"><a name="nx">nx, </a></a><a name="idp86976"><a name="ny">ny</a></a>
+<a name="idm6423536"><a name="nx">nx, </a></a><a name="idm6422912"><a name="ny">ny</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -586,9 +590,9 @@ rho(i,j) = rho( x0 + e1 * (i-1)/(nx-1)
             <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp90432"><a name="e1">e1(i), 
-		  </a></a><a name="idp91056"><a name="e2">e2(i), 
-		  </a></a><a name="idp91680"><a name="e3">e3(i), 
+<a name="idm6419456"><a name="e1">e1(i), 
+		  </a></a><a name="idm6418832"><a name="e2">e2(i), 
+		  </a></a><a name="idm6418208"><a name="e3">e3(i), 
 		   
 		    i=1,3</a></a>
 </th>
@@ -602,7 +606,7 @@ e1, e2, and e3 are in alat units !
                </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-            <a name="idp93024"><a name="x0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6416864"><a name="x0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">x0(i), i=1,3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -617,7 +621,7 @@ x0 is in alat units !
             <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp95408"><a name="nx">nx, </a></a><a name="idp96032"><a name="ny">ny, </a></a><a name="idp96656"><a name="nz">nz</a></a>
+<a name="idm6414480"><a name="nx">nx, </a></a><a name="idm6413856"><a name="ny">ny, </a></a><a name="idm6413232"><a name="nz">nz</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -652,7 +656,7 @@ Fourier components (may be VERY slow)
 <b>ELSEIF </b><em>iflag = 4</em> : <blockquote><table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
             <b> the following variables are REQUIRED:
             </b><p></p>
-            <a name="idp99856"><a name="radius"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+            <a name="idm6410032"><a name="radius"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">radius</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -665,7 +669,7 @@ Radius of the sphere (alat units), centered at (0,0,0)
             <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp101776"><a name="nx">nx, </a></a><a name="idp102400"><a name="ny">ny</a></a>
+<a name="idm6408112"><a name="nx">nx, </a></a><a name="idm6407488"><a name="ny">ny</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>

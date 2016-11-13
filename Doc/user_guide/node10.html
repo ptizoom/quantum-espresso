@@ -26,26 +26,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html236"
+<A NAME="tex2html237"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html232"
+<A NAME="tex2html233"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html226"
+<A NAME="tex2html227"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html234"
+<A NAME="tex2html235"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html237"
+<B> Next:</B> <A NAME="tex2html238"
   HREF="node11.html">2.4 Libraries</A>
-<B> Up:</B> <A NAME="tex2html233"
+<B> Up:</B> <A NAME="tex2html234"
   HREF="node7.html">2 Installation</A>
-<B> Previous:</B> <A NAME="tex2html227"
+<B> Previous:</B> <A NAME="tex2html228"
   HREF="node9.html">2.2 Prerequisites</A>
- &nbsp; <B>  <A NAME="tex2html235"
+ &nbsp; <B>  <A NAME="tex2html236"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -54,7 +54,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
 <UL>
-<LI><A NAME="tex2html238"
+<LI><A NAME="tex2html239"
   HREF="node10.html#SECTION00033100000000000000">2.3.1 Manual configuration</A>
 </UL>
 <!--End of Table of Child-Links-->
@@ -68,9 +68,9 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 To install the Q<SMALL>UANTUM </SMALL>ESPRESSO source package, run the <TT>configure</TT> script. This is actually a wrapper to the true <TT>configure</TT>,
 located in the <TT>install/</TT> subdirectory. <TT>configure</TT> will (try to) detect compilers and libraries available on
 your machine, and set up things accordingly. Presently it is expected
-to work on most Linux 32- and 64-bit PCs (all Intel and AMD CPUs) and 
+to work on most Linux 32- and 64-bit PCs (all Intel and AMD CPUs) and
 PC clusters, SGI Altix, IBM SP and BlueGene machines, NEC SX, Cray XT
-machines, Mac OS X, MS-Windows PCs, and (for experts!) on several 
+machines, Mac OS X, MS-Windows PCs, and (for experts!) on several
 GPU-accelerated hardware. Detailed installation instructions for some
 specific HPC machines can be found in files <TT>install/README.</TT><EM>sys</EM>,
 where <EM>sys</EM> is the machine name.
@@ -82,8 +82,10 @@ Instructions for the impatient:
     ./configure
      make all
 </PRE>
-Symlinks to executable programs will be placed in the
-<TT>bin/</TT>
+This will (try to) produce parallel (MPI) executable if a proper parallel
+environment is detected, serial executables otherwise. For OpenMP executables,
+specify <TT>./configure -enable-openmp</TT>. Symlinks to executable programs
+will be placed in the <TT>bin/</TT>
 subdirectory. Note that both C and Fortran compilers must be in your execution
 path, as specified in the PATH environment variable.
 Additional instructions for special machines:
@@ -129,8 +131,8 @@ Additional instructions for special machines:
 </TR>
 </TABLE>
 <BR>
-NOTA BENE: unlike previous versions, <TT>configure</TT> no longer runs the 
-<TT>makedeps.sh</TT> shell script that updates dependencies. If you modify the  
+NOTA BENE: unlike previous versions, <TT>configure</TT> no longer runs the
+<TT>makedeps.sh</TT> shell script that updates dependencies. If you modify the
 sources, run <TT>./install/makedeps.sh</TT> or type <TT>make depend</TT>
 to update files <TT>make.depend</TT> in the various subdirectories.
 
@@ -157,10 +159,10 @@ Some environment variables that are relevant to <TT>configure</TT> are:
 <TD ALIGN="LEFT">label identifying the machine type (see below)</TD>
 </TR>
 <TR><TD ALIGN="LEFT"><TT>F90, F77, CC</TT></TD>
-<TD ALIGN="LEFT">names of Fortran 95, Fortran 77, and C compilers</TD>
+<TD ALIGN="LEFT">names of Fortran 90, Fortran 77, and C compilers</TD>
 </TR>
 <TR><TD ALIGN="LEFT"><TT>MPIF90</TT></TD>
-<TD ALIGN="LEFT">name of parallel Fortran 95 compiler (using MPI)</TD>
+<TD ALIGN="LEFT">name of parallel Fortran 90 compiler (using MPI)</TD>
 </TR>
 <TR><TD ALIGN="LEFT"><TT>CPP</TT></TD>
 <TD ALIGN="LEFT">source file preprocessor (defaults to $CC -E)</TD>
@@ -178,21 +180,21 @@ Some environment variables that are relevant to <TT>configure</TT> are:
 <BR>
 For example, the following command line:
 <PRE>
-     ./configure MPIF90=mpf90 FFLAGS="-O2 -assume byterecl" \
+     ./configure MPIF90=mpif90 FFLAGS="-O2 -assume byterecl" \
                   CC=gcc CFLAGS=-O3 LDFLAGS=-static
 </PRE>
-instructs <TT>configure</TT> to use <TT>mpf90</TT> as Fortran 95 compiler 
-with flags <TT>-O2 -assume byterecl</TT>, <TT>gcc</TT> as C compiler with 
-flags <TT>-O3</TT>, and to link with flag <TT>-static</TT>. 
+instructs <TT>configure</TT> to use <TT>mpif90</TT> as Fortran 90 compiler
+with flags <TT>-O2 -assume byterecl</TT>, <TT>gcc</TT> as C compiler with
+flags <TT>-O3</TT>, and to link with flag <TT>-static</TT>.
 Note that the value of <TT>FFLAGS</TT> must be quoted, because it contains
 spaces. NOTA BENE: do not pass compiler names with the leading path
-included. <TT>F90=f90xyz</TT> is ok, <TT>F90=/path/to/f90xyz</TT> is not. 
+included. <TT>F90=f90xyz</TT> is ok, <TT>F90=/path/to/f90xyz</TT> is not.
 Do not use
-environmental variables with <TT>configure</TT> unless they are needed! try
+environment variables with <TT>configure</TT> unless they are needed! try
 <TT>configure</TT> with no options as a first step.
 
 <P>
-If your machine type is unknown to <TT>configure</TT>, you may use the 
+If your machine type is unknown to <TT>configure</TT>, you may use the
 <TT>ARCH</TT>
 variable to suggest an architecture among supported ones. Some large
 parallel machines using a front-end (e.g. Cray XT) will actually
@@ -200,7 +202,7 @@ need it, or else <TT>configure</TT> will correctly recognize the front-end
 but not the specialized compilation environment of those
 machines. In some cases, cross-compilation requires to specify the target machine with the
 <TT>-host</TT> option. This feature has not been extensively
-tested, but we had at least one successful report (compilation 
+tested, but we had at least one successful report (compilation
 for NEC SX6 on a PC). Currently supported architectures are:
 
 <P>
@@ -254,8 +256,8 @@ for NEC SX6 on a PC). Currently supported architectures are:
 <TD ALIGN="LEFT">ARM machines (with gfortran)</TD>
 </TR>
 </TABLE>
-<BR><EM>Note</EM>: <TT>x86_64</TT> replaces <TT>amd64</TT> since v.4.1. 
-Cray Unicos machines, SGI 
+<BR><EM>Note</EM>: <TT>x86_64</TT> replaces <TT>amd64</TT> since v.4.1.
+Cray Unicos machines, SGI
 machines with MIPS architecture, HP-Compaq Alphas are no longer supported
 since v.4.2; PowerPC Macs are no longer
 supported since v.5.0.
@@ -300,7 +302,7 @@ and the following optional packages:
 </TR>
 </TABLE>
 <BR>
-If you want to modify the <TT>configure</TT> script (advanced users only!), 
+If you want to modify the <TT>configure</TT> script (advanced users only!),
 see the Developer Manual.
 
 <P>
@@ -312,58 +314,58 @@ see the Developer Manual.
 </H3>
 If <TT>configure</TT> stops before the end, and you don't find a way to fix
 it, you have to write working <TT>make.sys</TT>, <TT>include/fft_defs.h</TT>
-and <TT>include/c_defs.h</TT> files. 
-For the latter two files, follow the explanations in 
+and <TT>include/c_defs.h</TT> files.
+For the latter two files, follow the explanations in
 <TT>include/defs.h.README</TT>.
 
 <P>
 If <TT>configure</TT> has run till the end, you should need only to
 edit <TT>make.sys</TT>. A few sample <TT>make.sys</TT> files
-are provided in <TT>install/Make.</TT><EM>system</EM>. The template used 
-by <TT>configure</TT> is also found there as <TT>install/make.sys.in</TT> 
+are provided in <TT>install/Make.</TT><EM>system</EM>. The template used
+by <TT>configure</TT> is also found there as <TT>install/make.sys.in</TT>
 and contains explanations of the meaning
-of the various variables. Note that you may need 
+of the various variables. Note that you may need
 to select appropriate preprocessing flags
 in conjunction with the desired or available
 libraries (e.g. you need to add <TT>-D__FFTW</TT> to <TT>DFLAGS</TT>
-if you want to link internal FFTW). For a correct choice of preprocessing 
+if you want to link internal FFTW). For a correct choice of preprocessing
 flags, refer to the documentation in <TT>include/defs.h.README</TT>.
 
 <P>
 NOTA BENE: If you change any settings (e.g. preprocessing,
-compilation flags) 
-after a previous (successful or failed) compilation, you must run 
-<TT>make clean</TT> before recompiling, unless you know exactly which 
+compilation flags)
+after a previous (successful or failed) compilation, you must run
+<TT>make clean</TT> before recompiling, unless you know exactly which
 routines are affected by the changed settings and how to force their recompilation.
 
 <P>
 <HR>
 <!--Navigation Panel-->
-<A NAME="tex2html236"
+<A NAME="tex2html237"
   HREF="node11.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html232"
+<A NAME="tex2html233"
   HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html226"
+<A NAME="tex2html227"
   HREF="node9.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html234"
+<A NAME="tex2html235"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html237"
+<B> Next:</B> <A NAME="tex2html238"
   HREF="node11.html">2.4 Libraries</A>
-<B> Up:</B> <A NAME="tex2html233"
+<B> Up:</B> <A NAME="tex2html234"
   HREF="node7.html">2 Installation</A>
-<B> Previous:</B> <A NAME="tex2html227"
+<B> Previous:</B> <A NAME="tex2html228"
   HREF="node9.html">2.2 Prerequisites</A>
- &nbsp; <B>  <A NAME="tex2html235"
+ &nbsp; <B>  <A NAME="tex2html236"
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

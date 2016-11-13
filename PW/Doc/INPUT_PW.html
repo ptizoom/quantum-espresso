@@ -13,47 +13,47 @@
    <blockquote>
 <h3>TABLE OF CONTENTS</h3>
 <blockquote>
-<p><a href="#idm1680">INTRODUCTION</a></p>
-<p><a href="#idm1296">&amp;CONTROL</a><blockquote>
-<a href="#idm768">calculation</a> | <a href="#idp25408">title</a> | <a href="#idp27136">verbosity</a> | <a href="#idp29184">restart_mode</a> | <a href="#idp32096">wf_collect</a> | <a href="#idp35568">nstep</a> | <a href="#idp37440">iprint</a> | <a href="#idp39264">tstress</a> | <a href="#idp41152">tprnfor</a> | <a href="#idp42624">dt</a> | <a href="#idp44544">outdir</a> | <a href="#idp46576">wfcdir</a> | <a href="#idp49456">prefix</a> | <a href="#idp51280">lkpoint_dir</a> | <a href="#idp53504">max_seconds</a> | <a href="#idp55872">etot_conv_thr</a> | <a href="#idp58304">forc_conv_thr</a> | <a href="#idp60352">disk_io</a> | <a href="#idp63504">pseudo_dir</a> | <a href="#idp65408">tefield</a> | <a href="#idp67376">dipfield</a> | <a href="#idp70112">lelfield</a> | <a href="#idp72128">nberrycyc</a> | <a href="#idp74096">lorbm</a> | <a href="#idp76272">lberry</a> | <a href="#idp78128">gdir</a> | <a href="#idp79904">nppstr</a>
+<p><a href="#idm6507568">INTRODUCTION</a></p>
+<p><a href="#idm6507184">&amp;CONTROL</a><blockquote>
+<a href="#idm6506656">calculation</a> | <a href="#idm6484672">title</a> | <a href="#idm6482944">verbosity</a> | <a href="#idm6480896">restart_mode</a> | <a href="#idm6477984">wf_collect</a> | <a href="#idm6474512">nstep</a> | <a href="#idm6472560">iprint</a> | <a href="#idm6470736">tstress</a> | <a href="#idm6468848">tprnfor</a> | <a href="#idm6467376">dt</a> | <a href="#idm6465456">outdir</a> | <a href="#idm6463424">wfcdir</a> | <a href="#idm6460544">prefix</a> | <a href="#idm6458720">lkpoint_dir</a> | <a href="#idm6456496">max_seconds</a> | <a href="#idm6454192">etot_conv_thr</a> | <a href="#idm6451760">forc_conv_thr</a> | <a href="#idm6449712">disk_io</a> | <a href="#idm6446560">pseudo_dir</a> | <a href="#idm6444656">tefield</a> | <a href="#idm6442688">dipfield</a> | <a href="#idm6439952">lelfield</a> | <a href="#idm6437936">nberrycyc</a> | <a href="#idm6435968">lorbm</a> | <a href="#idm6433792">lberry</a> | <a href="#idm6431936">gdir</a> | <a href="#idm6430160">nppstr</a> | <a href="#idm6428656">lfcpopt</a>
 </blockquote></p>
-<p><a href="#idp81536">&amp;SYSTEM</a><blockquote>
-<a href="#idp82064">ibrav</a> | <a href="#idp95568">celldm</a> | <a href="#idp99248">A</a> | <a href="#idp99920">B</a> | <a href="#idp100592">C</a> | <a href="#idp101264">cosAB</a> | <a href="#idp101920">cosAC</a> | <a href="#idp102576">cosBC</a> | <a href="#idp104448">nat</a> | <a href="#idp106208">ntyp</a> | <a href="#idp108000">nbnd</a> | <a href="#idp110032">tot_charge</a> | <a href="#idp112160">tot_magnetization</a> | <a href="#idp114192">starting_magnetization</a> | <a href="#idp117360">ecutwfc</a> | <a href="#idp119152">ecutrho</a> | <a href="#idp121584">ecutfock</a> | <a href="#idp124192">nr1</a> | <a href="#idp124864">nr2</a> | <a href="#idp125488">nr3</a> | <a href="#idp127504">nr1s</a> | <a href="#idp128160">nr2s</a> | <a href="#idp128816">nr3s</a> | <a href="#idp130256">nosym</a> | <a href="#idp133296">nosym_evc</a> | <a href="#idp135760">noinv</a> | <a href="#idp137776">no_t_rev</a> | <a href="#idp139632">force_symmorphic</a> | <a href="#idp141520">use_all_frac</a> | <a href="#idp143616">occupations</a> | <a href="#idp145952">one_atom_occupations</a> | <a href="#idp149888">starting_spin_angle</a> | <a href="#idp152144">degauss</a> | <a href="#idp153984">smearing</a> | <a href="#idp156192">nspin</a> | <a href="#idp158560">noncolin</a> | <a href="#idp160384">ecfixed</a> | <a href="#idp162144">qcutz</a> | <a href="#idp163904">q2sigma</a> | <a href="#idp166448">input_dft</a> | <a href="#idp168704">exx_fraction</a> | <a href="#idp170896">screening_parameter</a> | <a href="#idp172800">exxdiv_treatment</a> | <a href="#idp174992">x_gamma_extrapolation</a> | <a href="#idp176896">ecutvcut</a> | <a href="#idp179696">nqx1</a> | <a href="#idp180352">nqx2</a> | <a href="#idp181008">nqx3</a> | <a href="#idp182576">lda_plus_u</a> | <a href="#idp185344">lda_plus_u_kind</a> | <a href="#idp187408">Hubbard_U</a> | <a href="#idp189760">Hubbard_J0</a> | <a href="#idp192144">Hubbard_alpha</a> | <a href="#idp194608">Hubbard_beta</a> | <a href="#idp197104">Hubbard_J(i,ityp)</a> | <a href="#idp199024">starting_ns_eigenvalue(m,ispin,I)</a> | <a href="#idp201104">U_projection_type</a> | <a href="#idp204976">edir</a> | <a href="#idp206544">emaxpos</a> | <a href="#idp208656">eopreg</a> | <a href="#idp210560">eamp</a> | <a href="#idp213232">angle1</a> | <a href="#idp215232">angle2</a> | <a href="#idp217232">constrained_magnetization</a> | <a href="#idp222128">fixed_magnetization</a> | <a href="#idp225024">lambda</a> | <a href="#idp227408">report</a> | <a href="#idp229264">lspinorb</a> | <a href="#idp230672">assume_isolated</a> | <a href="#idp235296">esm_bc</a> | <a href="#idp238240">esm_w</a> | <a href="#idp240880">esm_efield</a> | <a href="#idp243376">esm_nfit</a> | <a href="#idp245824">vdw_corr</a> | <a href="#idp249536">london</a> | <a href="#idp251344">london_s6</a> | <a href="#idp253152">london_rcut</a> | <a href="#idp254960">xdm</a> | <a href="#idp256736">xdm_a1</a> | <a href="#idp258800">xdm_a2</a> | <a href="#idp260864">space_group</a> | <a href="#idp263024">uniqueb</a> | <a href="#idp265104">origin_choice</a> | <a href="#idp267072">rhombohedral</a>
+<p><a href="#idm6425968">&amp;SYSTEM</a><blockquote>
+<a href="#idm6425440">ibrav</a> | <a href="#idm6410656">celldm</a> | <a href="#idm6406976">A</a> | <a href="#idm6406304">B</a> | <a href="#idm6405632">C</a> | <a href="#idm6404960">cosAB</a> | <a href="#idm6404304">cosAC</a> | <a href="#idm6403648">cosBC</a> | <a href="#idm6401776">nat</a> | <a href="#idm6399936">ntyp</a> | <a href="#idm6398144">nbnd</a> | <a href="#idm6396112">tot_charge</a> | <a href="#idm6393984">tot_magnetization</a> | <a href="#idm6391952">starting_magnetization</a> | <a href="#idm6388784">ecutwfc</a> | <a href="#idm6386992">ecutrho</a> | <a href="#idm6384560">ecutfock</a> | <a href="#idm6381888">nr1</a> | <a href="#idm6381216">nr2</a> | <a href="#idm6380592">nr3</a> | <a href="#idm6378576">nr1s</a> | <a href="#idm6377920">nr2s</a> | <a href="#idm6377264">nr3s</a> | <a href="#idm6375824">nosym</a> | <a href="#idm6372464">nosym_evc</a> | <a href="#idm6369664">noinv</a> | <a href="#idm6367648">no_t_rev</a> | <a href="#idm6365792">force_symmorphic</a> | <a href="#idm6363904">use_all_frac</a> | <a href="#idm6361792">occupations</a> | <a href="#idm6359456">one_atom_occupations</a> | <a href="#idm6355520">starting_spin_angle</a> | <a href="#idm6353264">degauss</a> | <a href="#idm6351424">smearing</a> | <a href="#idm6349216">nspin</a> | <a href="#idm6346848">noncolin</a> | <a href="#idm6345024">ecfixed</a> | <a href="#idm6343264">qcutz</a> | <a href="#idm6341504">q2sigma</a> | <a href="#idm6338960">input_dft</a> | <a href="#idm6336704">exx_fraction</a> | <a href="#idm6334512">screening_parameter</a> | <a href="#idm6332608">exxdiv_treatment</a> | <a href="#idm6330416">x_gamma_extrapolation</a> | <a href="#idm6328512">ecutvcut</a> | <a href="#idm6325712">nqx1</a> | <a href="#idm6325056">nqx2</a> | <a href="#idm6324400">nqx3</a> | <a href="#idm6322832">lda_plus_u</a> | <a href="#idm6320064">lda_plus_u_kind</a> | <a href="#idm6318000">Hubbard_U</a> | <a href="#idm6315648">Hubbard_J0</a> | <a href="#idm6313264">Hubbard_alpha</a> | <a href="#idm6310800">Hubbard_beta</a> | <a href="#idm6308304">Hubbard_J(i,ityp)</a> | <a href="#idm6505280">starting_ns_eigenvalue(m,ispin,I)</a> | <a href="#idm6503200">U_projection_type</a> | <a href="#idm6499328">edir</a> | <a href="#idm6497760">emaxpos</a> | <a href="#idm6495648">eopreg</a> | <a href="#idm6493744">eamp</a> | <a href="#idm6491072">angle1</a> | <a href="#idm6274256">angle2</a> | <a href="#idm6272320">constrained_magnetization</a> | <a href="#idm6267424">fixed_magnetization</a> | <a href="#idm6264528">lambda</a> | <a href="#idm6262144">report</a> | <a href="#idm6260304">lspinorb</a> | <a href="#idm6258896">assume_isolated</a> | <a href="#idm6254272">esm_bc</a> | <a href="#idm6251328">esm_w</a> | <a href="#idm6248688">esm_efield</a> | <a href="#idm6246192">esm_nfit</a> | <a href="#idm6243744">fcp_mu</a> | <a href="#idm6241328">vdw_corr</a> | <a href="#idm6237616">london</a> | <a href="#idm6235808">london_s6</a> | <a href="#idm6234000">london_c6</a> | <a href="#idm6231552">london_rvdw</a> | <a href="#idm6229104">london_rcut</a> | <a href="#idm6227296">xdm</a> | <a href="#idm6225520">xdm_a1</a> | <a href="#idm6223456">xdm_a2</a> | <a href="#idm6221392">space_group</a> | <a href="#idm6219232">uniqueb</a> | <a href="#idm6217152">origin_choice</a> | <a href="#idm6215184">rhombohedral</a>
 </blockquote></p>
-<p><a href="#idp269376">&amp;ELECTRONS</a><blockquote>
-<a href="#idp269904">electron_maxstep</a> | <a href="#idp271696">scf_must_converge</a> | <a href="#idp273568">conv_thr</a> | <a href="#idp276064">adaptive_thr</a> | <a href="#idp277920">conv_thr_init</a> | <a href="#idp279760">conv_thr_multi</a> | <a href="#idp281632">mixing_mode</a> | <a href="#idp283808">mixing_beta</a> | <a href="#idp285600">mixing_ndim</a> | <a href="#idp287456">mixing_fixed_ns</a> | <a href="#idp289312">diagonalization</a> | <a href="#idp292448">ortho_para</a> | <a href="#idp294656">diago_thr_init</a> | <a href="#idp296400">diago_cg_maxiter</a> | <a href="#idp297808">diago_david_ndim</a> | <a href="#idp299888">diago_full_acc</a> | <a href="#idp301888">efield</a> | <a href="#idp303808">efield_cart</a> | <a href="#idp306208">startingpot</a> | <a href="#idp308256">startingwfc</a> | <a href="#idp311456">tqr</a>
+<p><a href="#idm6212880">&amp;ELECTRONS</a><blockquote>
+<a href="#idm6212352">electron_maxstep</a> | <a href="#idm6210560">scf_must_converge</a> | <a href="#idm6208688">conv_thr</a> | <a href="#idm6206192">adaptive_thr</a> | <a href="#idm6204336">conv_thr_init</a> | <a href="#idm6202496">conv_thr_multi</a> | <a href="#idm6200624">mixing_mode</a> | <a href="#idm6198448">mixing_beta</a> | <a href="#idm6196656">mixing_ndim</a> | <a href="#idm6194800">mixing_fixed_ns</a> | <a href="#idm6192944">diagonalization</a> | <a href="#idm6189808">ortho_para</a> | <a href="#idm6187600">diago_thr_init</a> | <a href="#idm6185856">diago_cg_maxiter</a> | <a href="#idm6184448">diago_david_ndim</a> | <a href="#idm6182368">diago_full_acc</a> | <a href="#idm6180368">efield</a> | <a href="#idm6178448">efield_cart</a> | <a href="#idm6176048">startingpot</a> | <a href="#idm6174000">startingwfc</a> | <a href="#idm6170800">tqr</a>
 </blockquote></p>
-<p><a href="#idp313600">&amp;IONS</a><blockquote>
-<a href="#idp314624">ion_dynamics</a> | <a href="#idp318256">ion_positions</a> | <a href="#idp320384">pot_extrapolation</a> | <a href="#idp322624">wfc_extrapolation</a> | <a href="#idp324848">remove_rigid_rot</a> | <a href="#idp328032">ion_temperature</a> | <a href="#idp331312">tempw</a> | <a href="#idp333152">tolp</a> | <a href="#idp335040">delta_t</a> | <a href="#idp337920">nraise</a> | <a href="#idp340672">refold_pos</a> | <a href="#idp343408">upscale</a> | <a href="#idp345408">bfgs_ndim</a> | <a href="#idp347424">trust_radius_max</a> | <a href="#idp349248">trust_radius_min</a> | <a href="#idp351168">trust_radius_ini</a> | <a href="#idp352992">w_1</a> | <a href="#idp354720">w_2</a>
+<p><a href="#idm6168656">&amp;IONS</a><blockquote>
+<a href="#idm6167632">ion_dynamics</a> | <a href="#idm6164000">ion_positions</a> | <a href="#idm6161872">pot_extrapolation</a> | <a href="#idm6159632">wfc_extrapolation</a> | <a href="#idm6157408">remove_rigid_rot</a> | <a href="#idm6154224">ion_temperature</a> | <a href="#idm6150944">tempw</a> | <a href="#idm6149104">tolp</a> | <a href="#idm6147216">delta_t</a> | <a href="#idm6144336">nraise</a> | <a href="#idm6141584">refold_pos</a> | <a href="#idm6138848">upscale</a> | <a href="#idm6136848">bfgs_ndim</a> | <a href="#idm6134832">trust_radius_max</a> | <a href="#idm6133008">trust_radius_min</a> | <a href="#idm6131088">trust_radius_ini</a> | <a href="#idm6129264">w_1</a> | <a href="#idm6127536">w_2</a>
 </blockquote></p>
-<p><a href="#idp356768">&amp;CELL</a><blockquote>
-<a href="#idp357792">cell_dynamics</a> | <a href="#idp359984">press</a> | <a href="#idp361808">wmass</a> | <a href="#idp363776">cell_factor</a> | <a href="#idp365664">press_conv_thr</a> | <a href="#idp367872">cell_dofree</a>
+<p><a href="#idm6125488">&amp;CELL</a><blockquote>
+<a href="#idm6124464">cell_dynamics</a> | <a href="#idm6122272">press</a> | <a href="#idm6120448">wmass</a> | <a href="#idm6118480">cell_factor</a> | <a href="#idm6116592">press_conv_thr</a> | <a href="#idm6114384">cell_dofree</a>
 </blockquote></p>
-<p><a href="#idp370640">ATOMIC_SPECIES</a><blockquote>
-<a href="#idp372864">X</a> | <a href="#idp374560">Mass_X</a> | <a href="#idp376192">PseudoPot_X</a>
+<p><a href="#idm6111616">ATOMIC_SPECIES</a><blockquote>
+<a href="#idm6109392">X</a> | <a href="#idm6107696">Mass_X</a> | <a href="#idm6106064">PseudoPot_X</a>
 </blockquote></p>
-<p><a href="#idp378816">ATOMIC_POSITIONS</a><blockquote>
-<a href="#idm51088">X</a> | <a href="#idm48800">x</a> | <a href="#idm48176">y</a> | <a href="#idm47552">z</a> | <a href="#idp417728">if_pos(1)</a> | <a href="#idp418352">if_pos(2)</a> | <a href="#idp418976">if_pos(3)</a>
+<p><a href="#idm6103440">ATOMIC_POSITIONS</a><blockquote>
+<a href="#idm6557072">X</a> | <a href="#idm6554784">x</a> | <a href="#idm6554160">y</a> | <a href="#idm6553536">z</a> | <a href="#idm6064960">if_pos(1)</a> | <a href="#idm6064336">if_pos(2)</a> | <a href="#idm6063712">if_pos(3)</a>
 </blockquote></p>
-<p><a href="#idp420624">K_POINTS</a><blockquote>
-<a href="#idp428384">nks</a> | <a href="#idp431568">xk_x</a> | <a href="#idp432192">xk_y</a> | <a href="#idp432816">xk_z</a> | <a href="#idp433440">wk</a> | <a href="#idp437504">nk1</a> | <a href="#idp438128">nk2</a> | <a href="#idp438752">nk3</a> | <a href="#idp440512">sk1</a> | <a href="#idp441136">sk2</a> | <a href="#idp441760">sk3</a>
+<p><a href="#idm6062064">K_POINTS</a><blockquote>
+<a href="#idm6054304">nks</a> | <a href="#idm6051120">xk_x</a> | <a href="#idm6050496">xk_y</a> | <a href="#idm6049872">xk_z</a> | <a href="#idm6049248">wk</a> | <a href="#idm6045184">nk1</a> | <a href="#idm6044560">nk2</a> | <a href="#idm6043936">nk3</a> | <a href="#idm6042176">sk1</a> | <a href="#idm6041552">sk2</a> | <a href="#idm6040928">sk3</a>
 </blockquote></p>
-<p><a href="#idp444992">CELL_PARAMETERS</a><blockquote>
-<a href="#idp451360">v1</a> | <a href="#idp451984">v2</a> | <a href="#idp452608">v3</a>
+<p><a href="#idm6037728">CELL_PARAMETERS</a><blockquote>
+<a href="#idm6031344">v1</a> | <a href="#idm6030720">v2</a> | <a href="#idm6030096">v3</a>
 </blockquote></p>
-<p><a href="#idp453872">CONSTRAINTS</a><blockquote>
-<a href="#idp455984">nconstr</a> | <a href="#idp457600">constr_tol</a> | <a href="#idp460544">constr_type</a> | <a href="#idp463696">constr(1)</a> | <a href="#idp464352">constr(2)</a> | <a href="#idp465264">constr(3)</a> | <a href="#idp465920">constr(4)</a> | <a href="#idp470592">constr_target</a>
+<p><a href="#idm6028784">CONSTRAINTS</a><blockquote>
+<a href="#idm6026672">nconstr</a> | <a href="#idm6025056">constr_tol</a> | <a href="#idm6022112">constr_type</a> | <a href="#idm6018960">constr(1)</a> | <a href="#idm6018304">constr(2)</a> | <a href="#idm6017344">constr(3)</a> | <a href="#idm6016688">constr(4)</a> | <a href="#idm6012016">constr_target</a>
 </blockquote></p>
-<p><a href="#idp472672">OCCUPATIONS</a><blockquote>
-<a href="#idp475248">f_inp1</a> | <a href="#idp476960">f_inp2</a>
+<p><a href="#idm6009936">OCCUPATIONS</a><blockquote>
+<a href="#idm6007360">f_inp1</a> | <a href="#idm6005648">f_inp2</a>
 </blockquote></p>
-<p><a href="#idp479056">ATOMIC_FORCES</a><blockquote>
-<a href="#idp481696">X</a> | <a href="#idp484064">fx</a> | <a href="#idp484688">fy</a> | <a href="#idp485312">fz</a>
+<p><a href="#idm6003552">ATOMIC_FORCES</a><blockquote>
+<a href="#idm6000912">X</a> | <a href="#idm5998544">fx</a> | <a href="#idm5997920">fy</a> | <a href="#idm5997296">fz</a>
 </blockquote></p>
 </blockquote>
 </blockquote>
    <blockquote>
-<a name="idm1680"><h3>INTRODUCTION</h3></a><blockquote><pre>
+<a name="idm6507568"><h3>INTRODUCTION</h3></a><blockquote><pre>
 Input data format: { } = optional, [ ] = it depends, | = or
 
 All quantities whose dimensions are not explicitly specified are in
@@ -129,10 +129,10 @@ if (not automatic)
    label_n Fx(n) Fy(n) Fz(n) ]
    </pre></blockquote>
 </blockquote>
-   <a name="idm1296"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6507184"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: CONTROL</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="idm768"><a name="calculation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6506656"><a name="calculation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">calculation</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -156,7 +156,7 @@ a string describing the task to be performed:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp25408"><a name="title"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6484672"><a name="title"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">title</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -171,7 +171,7 @@ reprinted on output.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp27136"><a name="verbosity"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6482944"><a name="verbosity"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">verbosity</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -188,7 +188,7 @@ Currently two verbosity levels are implemented:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp29184"><a name="restart_mode"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6480896"><a name="restart_mode"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">restart_mode</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -214,7 +214,7 @@ Currently two verbosity levels are implemented:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp32096"><a name="wf_collect"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6477984"><a name="wf_collect"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wf_collect</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -243,7 +243,7 @@ Note that this flag has no effect on reading, only on writing.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp35568"><a name="nstep"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6474512"><a name="nstep"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nstep</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -256,11 +256,11 @@ Note that this flag has no effect on reading, only on writing.
          </td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
-number of ionic + electronic steps
+number of ionic + electronic steps performed in this run
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp37440"><a name="iprint"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6472560"><a name="iprint"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">iprint</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -275,7 +275,7 @@ band energies are written every "iprint" iterations
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp39264"><a name="tstress"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6470736"><a name="tstress"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tstress</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -291,7 +291,7 @@ calculation='vc-md' or 'vc-relax'
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp41152"><a name="tprnfor"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6468848"><a name="tprnfor"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tprnfor</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -302,7 +302,7 @@ calculation='relax','md','vc-md'
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp42624"><a name="dt"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6467376"><a name="dt"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">dt</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -319,7 +319,7 @@ time step for molecular dynamics, in Rydberg atomic units
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp44544"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6465456"><a name="outdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">outdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -337,7 +337,7 @@ see also "wfcdir"
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp46576"><a name="wfcdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6463424"><a name="wfcdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfcdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -359,7 +359,7 @@ may need to copy files to "outdir". Works only for pw.x.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp49456"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6460544"><a name="prefix"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">prefix</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -375,7 +375,7 @@ prefix.wfc, prefix.rho, etc.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp51280"><a name="lkpoint_dir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6458720"><a name="lkpoint_dir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lkpoint_dir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -393,7 +393,7 @@ doesn't work together with "wf_collect"
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp53504"><a name="max_seconds"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6456496"><a name="max_seconds"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">max_seconds</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -411,7 +411,7 @@ fit into your batch queues.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp55872"><a name="etot_conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6454192"><a name="etot_conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">etot_conv_thr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -431,7 +431,7 @@ See also "forc_conv_thr" - both criteria must be satisfied
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp58304"><a name="forc_conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6451760"><a name="forc_conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">forc_conv_thr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -449,7 +449,7 @@ See also "etot_conv_thr" - both criteria must be satisfied
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp60352"><a name="disk_io"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6449712"><a name="disk_io"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">disk_io</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -481,7 +481,7 @@ but you cannot restart in disk_io='none'
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp63504"><a name="pseudo_dir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6446560"><a name="pseudo_dir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">pseudo_dir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -498,7 +498,7 @@ directory containing pseudopotential files
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp65408"><a name="tefield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6444656"><a name="tefield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tefield</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -516,7 +516,7 @@ the added potential.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp67376"><a name="dipfield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6442688"><a name="dipfield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">dipfield</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -536,7 +536,7 @@ with the discontinuity FALLING IN THE EMPTY SPACE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp70112"><a name="lelfield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6439952"><a name="lelfield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lelfield</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -553,7 +553,7 @@ This is different from "tefield=.true." !
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp72128"><a name="nberrycyc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6437936"><a name="nberrycyc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nberrycyc</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -571,7 +571,7 @@ external iteration on the charge density
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp74096"><a name="lorbm"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6435968"><a name="lorbm"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lorbm</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -592,7 +592,7 @@ Works ONLY with norm-conserving pseudopotentials.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp76272"><a name="lberry"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6433792"><a name="lberry"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lberry</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -608,7 +608,7 @@ See the header of PW/src/bp_c_phase.f90 for documentation
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp78128"><a name="gdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6431936"><a name="gdir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">gdir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -622,7 +622,7 @@ For calculations with finite electric fields
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp79904"><a name="nppstr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6430160"><a name="nppstr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nppstr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -635,12 +635,40 @@ The same for calculation with finite electric fields
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idm6428656"><a name="lfcpopt"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lfcpopt</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> .FALSE.
+         </td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>See:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "><a href="#fcp_mu"> fcp_mu
+         </a></td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+If .TRUE. perform a constant bias potential (constant-mu) calculation
+for a static system with ESM method. See the header of PW/src/fcp.f90
+for documentation
+NB:
+- The total energy displayed in 'prefix.out' includes the potentiostat
+  contribution (-mu*N).
+- 'calculation' must be 'relax'.
+- assume_isolated = 'esm' and esm_bc = 'bc2' or 'bc3' must be set in
+  SYSTEM namelist).
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
    </td></tr></tbody></table></td></tr>
 </table></a>
-   <a name="idp81536"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6425968"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: SYSTEM</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="idp82064"><a name="ibrav"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6425440"><a name="ibrav"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ibrav</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -709,7 +737,7 @@ ibrav      structure                   celldm(2)-celldm(6)
                                              celldm(3)=c/a
       v1 = (a/2, b/2,0),  v2 = (-a/2,b/2,0),  v3 = (0,0,c)
  -9          as 9, alternate description
-      v1 = (a/2,-b/2,0),  v2 = (a/2,-b/2,0),  v3 = (0,0,c)
+      v1 = (a/2,-b/2,0),  v2 = (a/2, b/2,0),  v3 = (0,0,c)
 
  10          Orthorhombic face-centered      celldm(2)=b/a
                                              celldm(3)=c/a
@@ -757,7 +785,7 @@ ibrav      structure                   celldm(2)-celldm(6)
       <table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
          <b> Either:
          </b><p></p>
-         <a name="idp95568"><a name="celldm"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6410656"><a name="celldm"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">celldm(i), i=1,6</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -782,7 +810,7 @@ cell vectors are read from card CELL_PARAMETERS
          <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp99248"><a name="A">A, </a></a><a name="idp99920"><a name="B">B, </a></a><a name="idp100592"><a name="C">C, </a></a><a name="idp101264"><a name="cosAB">cosAB, </a></a><a name="idp101920"><a name="cosAC">cosAC, </a></a><a name="idp102576"><a name="cosBC">cosBC</a></a>
+<a name="idm6406976"><a name="A">A, </a></a><a name="idm6406304"><a name="B">B, </a></a><a name="idm6405632"><a name="C">C, </a></a><a name="idm6404960"><a name="cosAB">cosAB, </a></a><a name="idm6404304"><a name="cosAC">cosAC, </a></a><a name="idm6403648"><a name="cosBC">cosBC</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
@@ -801,7 +829,7 @@ cell vectors are read from card CELL_PARAMETERS
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
       </td></tr></table>
-      <a name="idp104448"><a name="nat"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6401776"><a name="nat"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nat</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -812,11 +840,12 @@ cell vectors are read from card CELL_PARAMETERS
          </td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
-number of atoms in the unit cell
+number of atoms in the unit cell (ALL atoms, except if
+space_group is set, in which case, INEQUIVALENT atoms)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp106208"><a name="ntyp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6399936"><a name="ntyp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -831,7 +860,7 @@ number of types of atoms in the unit cell
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp108000"><a name="nbnd"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6398144"><a name="nbnd"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nbnd</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -851,7 +880,7 @@ k-point, not the number of bands per k-point, is doubled
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp110032"><a name="tot_charge"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6396112"><a name="tot_charge"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tot_charge</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -872,7 +901,7 @@ inserted to remove divergences if the cell is not neutral.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp112160"><a name="tot_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6393984"><a name="tot_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tot_magnetization</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -891,7 +920,7 @@ the self-consistent cycle.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp114192"><a name="starting_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6391952"><a name="starting_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">starting_magnetization(i), i=1,ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -922,7 +951,7 @@ kept zero (the internal variable domag is .FALSE.).
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp117360"><a name="ecutwfc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6388784"><a name="ecutwfc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ecutwfc</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -937,7 +966,7 @@ kinetic energy cutoff (Ry) for wavefunctions
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp119152"><a name="ecutrho"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6386992"><a name="ecutrho"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ecutrho</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -963,7 +992,7 @@ to be accurately converged.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp121584"><a name="ecutfock"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6384560"><a name="ecutfock"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ecutfock</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -978,15 +1007,16 @@ kinetic energy cutoff (Ry) for the exact exchange operator in
 EXX type calculations. By default this is the same as ecutrho
 but in some EXX calculations significant speed-up can be found
 by reducing ecutfock, at the expense of some loss in accuracy.
-Currently only implemented for the optimized gamma point only
-calculations.
+Must be .gt. ecutwfc. Not implemented for stress calculation.
+Use with care, especially in metals where it may give raise
+to instabilities.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
       <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp124192"><a name="nr1">nr1, </a></a><a name="idp124864"><a name="nr2">nr2, </a></a><a name="idp125488"><a name="nr3">nr3</a></a>
+<a name="idm6381888"><a name="nr1">nr1, </a></a><a name="idm6381216"><a name="nr2">nr2, </a></a><a name="idm6380592"><a name="nr3">nr3</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -1003,7 +1033,7 @@ be used.
       <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp127504"><a name="nr1s">nr1s, </a></a><a name="idp128160"><a name="nr2s">nr2s, </a></a><a name="idp128816"><a name="nr3s">nr3s</a></a>
+<a name="idm6378576"><a name="nr1s">nr1s, </a></a><a name="idm6377920"><a name="nr2s">nr2s, </a></a><a name="idm6377264"><a name="nr3s">nr3s</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -1016,7 +1046,7 @@ be used.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-      <a name="idp130256"><a name="nosym"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6375824"><a name="nosym"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nosym</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1027,12 +1057,15 @@ be used.
          </td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
-if (.TRUE.) symmetry is not used. Note that
-- if the k-point grid is provided in input, it is used "as is"
-  and symmetry-inequivalent k-points are not generated;
-- if the k-point grid is automatically generated, it will
-  contain only points in the irreducible BZ for the bravais
-  lattice, irrespective of the actual crystal symmetry.
+if (.TRUE.) symmetry is not used, which means that:
+- if a list of k points is provided in input, it is used
+  "as is": symmetry-inequivalent k-points are not generated,
+  and the charge density is not symmetrized;
+- if a uniform (Monkhorst-Pack) k-point grid is provided in
+  input, it is expanded to cover the entire Brillouin Zone,
+  irrespective of the crystal symmetry.
+  Time reversal symmetry is assumed so k and -k are considered
+  as equivalent unless noinv=.true. is specified.
 A careful usage of this option can be advantageous
 - in low-symmetry large cells, if you cannot afford a k-point
   grid with the correct symmetry
@@ -1041,7 +1074,7 @@ A careful usage of this option can be advantageous
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp133296"><a name="nosym_evc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6372464"><a name="nosym_evc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nosym_evc</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1052,19 +1085,22 @@ A careful usage of this option can be advantageous
          </td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
-if(.TRUE.) symmetry is not used but the k-points are
+if(.TRUE.) symmetry is not used, and k points are
 forced to have the symmetry of the Bravais lattice;
-an automatically generated k-point grid will contain
-all the k-points of the grid and the points rotated by
-the symmetries of the Bravais lattice which are not in the
-original grid. If available, time reversal is
-used to reduce the k-points (and the q =&gt; -q symmetry
-is used in the phonon code). To disable also this symmetry set
-noinv=.TRUE..
+an automatically generated Monkhorst-Pack grid will contain
+all points of the grid over the entire Brillouin Zone,
+plus the points rotated by the symmetries of the Bravais
+lattice which were not in the original grid. The same
+applies if a k-point list is provided in input instead
+of a Monkhorst-Pack grid. Time reversal symmetry is assumed
+so k and -k are equivalent unless noinv=.true. is specified.
+This option differs from "nosym" because it forces k-points
+in all cases to have the full symmetry of the Bravais lattice
+(not all uniform grids have such property!)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp135760"><a name="noinv"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6369664"><a name="noinv"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">noinv</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1080,7 +1116,7 @@ if (.TRUE.) disable the usage of k =&gt; -k symmetry
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp137776"><a name="no_t_rev"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6367648"><a name="no_t_rev"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">no_t_rev</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1096,7 +1132,7 @@ that consist in a rotation + time reversal.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp139632"><a name="force_symmorphic"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6365792"><a name="force_symmorphic"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">force_symmorphic</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1112,7 +1148,7 @@ symmetry operations having an associated fractionary translation
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp141520"><a name="use_all_frac"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6363904"><a name="use_all_frac"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">use_all_frac</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1127,12 +1163,13 @@ if (.TRUE.) do not discard symmetry operations with an
 associated fractionary translation that does not send the
 real-space FFT grid into itself. These operations are
 incompatible with real-space symmetrization but not with the
-new G-space symmetrization. BEWARE: do not use for phonons!
-The phonon code still uses real-space symmetrization.
+new G-space symmetrization. BEWARE: do not use for phonons
+and for hybrid functionals! Both still use symmetrization
+in real space.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp143616"><a name="occupations"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6361792"><a name="occupations"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">occupations</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1158,7 +1195,7 @@ The phonon code still uses real-space symmetrization.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp145952"><a name="one_atom_occupations"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6359456"><a name="one_atom_occupations"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">one_atom_occupations</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1197,7 +1234,7 @@ starting_spin_angle to .TRUE..
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp149888"><a name="starting_spin_angle"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6355520"><a name="starting_spin_angle"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">starting_spin_angle</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1221,7 +1258,7 @@ When lspinorb is .FALSE. this flag is not used.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp152144"><a name="degauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6353264"><a name="degauss"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">degauss</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1237,7 +1274,7 @@ integration in metals.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp153984"><a name="smearing"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6351424"><a name="smearing"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">smearing</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1264,7 +1301,7 @@ integration in metals.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp156192"><a name="nspin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6349216"><a name="nspin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nspin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -1287,7 +1324,7 @@ nspin = 4 :  spin-polarized calculation, noncollinear
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp158560"><a name="noncolin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6346848"><a name="noncolin"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">noncolin</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1302,7 +1339,7 @@ if .true. the program will perform a noncollinear calculation.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp160384"><a name="ecfixed"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6345024"><a name="ecfixed"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ecfixed</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1319,7 +1356,7 @@ if .true. the program will perform a noncollinear calculation.
 </tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp162144"><a name="qcutz"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6343264"><a name="qcutz"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">qcutz</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1336,7 +1373,7 @@ if .true. the program will perform a noncollinear calculation.
 </tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp163904"><a name="q2sigma"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6341504"><a name="q2sigma"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">q2sigma</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1358,7 +1395,7 @@ See: M. Bernasconi et al, J. Phys. Chem. Solids 56, 501 (1995)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp166448"><a name="input_dft"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6338960"><a name="input_dft"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">input_dft</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1370,13 +1407,13 @@ See: M. Bernasconi et al, J. Phys. Chem. Solids 56, 501 (1995)
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
 Exchange-correlation functional: eg 'PBE', 'BLYP' etc
-See Modules/functionals.f90 for allowed values.
+See Modules/funct.f90 for allowed values.
 Overrides the value read from pseudopotential files.
 Use with care and if you know what you are doing!
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp168704"><a name="exx_fraction"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6336704"><a name="exx_fraction"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">exx_fraction</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1393,7 +1430,7 @@ the exx_fraction default value is 0.20.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp170896"><a name="screening_parameter"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6334512"><a name="screening_parameter"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">screening_parameter</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1410,7 +1447,7 @@ and J. Chem. Phys. 124, 219906 (2006) for more informations.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp172800"><a name="exxdiv_treatment"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6332608"><a name="exxdiv_treatment"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">exxdiv_treatment</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1432,7 +1469,7 @@ none : sets Coulomb potential at G,q=0 to 0.0 (required for GAU-PBE)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp174992"><a name="x_gamma_extrapolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6330416"><a name="x_gamma_extrapolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">x_gamma_extrapolation</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1449,7 +1486,7 @@ Set this to .false. for GAU-PBE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp176896"><a name="ecutvcut"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6328512"><a name="ecutvcut"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ecutvcut</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1473,7 +1510,7 @@ Coulomb potential divergencies at small q vectors.
       <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp179696"><a name="nqx1">nqx1, </a></a><a name="idp180352"><a name="nqx2">nqx2, </a></a><a name="idp181008"><a name="nqx3">nqx3</a></a>
+<a name="idm6325712"><a name="nqx1">nqx1, </a></a><a name="idm6325056"><a name="nqx2">nqx2, </a></a><a name="idm6324400"><a name="nqx3">nqx3</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -1487,7 +1524,7 @@ Currently this defaults to the size of the k-point mesh used.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
-      <a name="idp182576"><a name="lda_plus_u"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6322832"><a name="lda_plus_u"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lda_plus_u</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1517,7 +1554,7 @@ see lda_plus_u_kind, Hubbard_U, Hubbard_alpha, Hubbard_J
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp185344"><a name="lda_plus_u_kind"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6320064"><a name="lda_plus_u_kind"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lda_plus_u_kind</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -1536,7 +1573,7 @@ Specifies the type of DFT+U calculation:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp187408"><a name="Hubbard_U"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6318000"><a name="Hubbard_U"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">Hubbard_U(i), i=1,ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1551,7 +1588,7 @@ Hubbard_U(i): U parameter (eV) for species i, DFT+U calculation
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp189760"><a name="Hubbard_J0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6315648"><a name="Hubbard_J0"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">Hubbard_J0(i), i=1,ntype</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1567,7 +1604,7 @@ see PRB 84, 115108 (2011) for details.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp192144"><a name="Hubbard_alpha"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6313264"><a name="Hubbard_alpha"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">Hubbard_alpha(i), i=1,ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1585,7 +1622,7 @@ Cococcioni and de Gironcoli, PRB 71, 35105 (2005)
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp194608"><a name="Hubbard_beta"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6310800"><a name="Hubbard_beta"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">Hubbard_beta(i), i=1,ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1604,7 +1641,7 @@ PRB 84, 115108 (2011).
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp197104"><a name="Hubbard_J(i,ityp)"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6308304"><a name="Hubbard_J(i,ityp)"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">Hubbard_J(i,ityp)</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; "></td>
@@ -1626,7 +1663,7 @@ calculated from J using atomic ratios.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp199024"><a name="starting_ns_eigenvalue(m,ispin,I)"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6505280"><a name="starting_ns_eigenvalue(m,ispin,I)"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">starting_ns_eigenvalue(m,ispin,I)</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1646,7 +1683,7 @@ takes another path.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp201104"><a name="U_projection_type"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6503200"><a name="U_projection_type"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">U_projection_type</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1689,7 +1726,7 @@ NB: forces and stress currently implemented only for the
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp204976"><a name="edir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6499328"><a name="edir"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">edir</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -1702,7 +1739,7 @@ edir = 1, 2 or 3. Used only if tefield is .TRUE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp206544"><a name="emaxpos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6497760"><a name="emaxpos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">emaxpos</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1719,7 +1756,7 @@ Used only if tefield is .TRUE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp208656"><a name="eopreg"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6495648"><a name="eopreg"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">eopreg</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1735,7 +1772,7 @@ Zone in the unit cell where the saw-like potential decreases.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp210560"><a name="eamp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6493744"><a name="eamp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">eamp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1757,7 +1794,7 @@ unphysical forces will result.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp213232"><a name="angle1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6491072"><a name="angle1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">angle1(i), i=1,ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1769,7 +1806,7 @@ only; index i runs over the atom types.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp215232"><a name="angle2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6274256"><a name="angle2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">angle2(i), i=1,ntyp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1781,7 +1818,7 @@ For noncollinear calculations only.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp217232"><a name="constrained_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6272320"><a name="constrained_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">constrained_magnetization</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1847,7 +1884,7 @@ N.B.: symmetrization may prevent to reach the desired orientation
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp222128"><a name="fixed_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6267424"><a name="fixed_magnetization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">fixed_magnetization(i), i=1,3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1868,7 +1905,7 @@ fixed when constrained_magnetization='total'
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp225024"><a name="lambda"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6264528"><a name="lambda"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lambda</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -1890,23 +1927,23 @@ N.B.: if the scf calculation does not converge, try to reduce lambda
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp227408"><a name="report"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6262144"><a name="report"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">report</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
 <tr>
 <td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
-<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> 1
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> 100
          </td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
-It is the number of iterations after which the program
-write all the atomic magnetic moments.
+Number of iterations after which the program
+writes all the atomic magnetic moments.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp229264"><a name="lspinorb"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6260304"><a name="lspinorb"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">lspinorb</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -1917,7 +1954,7 @@ spin-orbit.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp230672"><a name="assume_isolated"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6258896"><a name="assume_isolated"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">assume_isolated</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -1964,17 +2001,21 @@ Currently available choices:
          calculations of charged surfaces and interfaces:
          A plane-wave nonrepeated slab approach," PRB 73,
          115407 (2006).
-         NB: Requires cell with a_3 lattice vector along z,
-         normal to the xy plane, with the slab centered
-         around z=0. Also requires symmetry checking to be
-         disabled along z, either by setting 'nosym' = .TRUE.
-         or by very slight displacement (i.e., 5e-4 a.u.)
-         of the slab along z.
+         NB:
+         - Two dimensional (xy plane) average charge density
+           and electrostatic potentials are printed out to
+           'prefix.esm1'.
+         - Requires cell with a_3 lattice vector along z,
+           normal to the xy plane, with the slab centered
+           around z=0. Also requires symmetry checking to be
+           disabled along z, either by setting 'nosym' = .TRUE.
+           or by very slight displacement (i.e., 5e-4 a.u.)
+           of the slab along z.
          See 'esm_bc', 'esm_efield', 'esm_w', 'esm_nfit'.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp235296"><a name="esm_bc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6254272"><a name="esm_bc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">esm_bc</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2006,7 +2047,7 @@ Currently available choices:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp238240"><a name="esm_w"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6251328"><a name="esm_w"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">esm_w</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2029,7 +2070,7 @@ z = +/- [L_z/2 + esm_w] ).
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp240880"><a name="esm_efield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6248688"><a name="esm_efield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">esm_efield</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2041,7 +2082,7 @@ z = +/- [L_z/2 + esm_w] ).
 </tr>
 <tr>
 <td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>See:</i></td>
-<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "><a href="#assume_isolated,%20esm_bc"> assume_isolated, esm_bc
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "><a href="#assume_isolated"> assume_isolated
          </a></td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -2051,7 +2092,7 @@ between semi-infinite ESM electrodes.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp243376"><a name="esm_nfit"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6246192"><a name="esm_nfit"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">esm_nfit</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2072,7 +2113,28 @@ for the polynomial fit along the cell edge.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp245824"><a name="vdw_corr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6243744"><a name="fcp_mu"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">fcp_mu</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> 0.d0
+         </td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>See:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "><a href="#lfcpopt"> lfcpopt
+         </a></td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+If lfcpopt = .TRUE., gives the target Fermi energy [Ry]. One can start
+with appropriate total charge of the system by giving 'tot_charge'.
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idm6241328"><a name="vdw_corr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">vdw_corr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2086,7 +2148,7 @@ for the polynomial fit along the cell edge.
 Type of Van der Waals correction. Allowed values:
 
    'grimme-d2', 'Grimme-D2', 'DFT-D', 'dft-d': semiempirical Grimme's DFT-D2.
-    Optional variables: "london_s6", "london_rcut"
+    Optional variables: "london_s6", "london_rcut", "london_c6", "london_rvdw",
     S. Grimme, J. Comp. Chem. 27, 1787 (2006),
     V. Barone et al., J. Comp. Chem. 30, 934 (2009).
 
@@ -2103,7 +2165,7 @@ Note that non-local functionals (eg vdw-DF) are NOT specified here but in "input
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp249536"><a name="london"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6237616"><a name="london"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">london</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2118,7 +2180,7 @@ OBSOLESCENT, same as vdw_corr='DFT-D'
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp251344"><a name="london_s6"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6235808"><a name="london_s6"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">london_s6</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2133,7 +2195,43 @@ global scaling parameter for DFT-D. Default is good for PBE.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp253152"><a name="london_rcut"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6234000"><a name="london_c6"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">london_c6(i), i=1,ntyp</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> standard Grimme-D2 values
+         </td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+atomic C6 coefficient of each atom type
+
+( if not specified default values from S. Grimme, J. Comp. Chem. 27, 1787 (2006) are used;
+  see file Modules/mm_dispersion.f90 )
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idm6231552"><a name="london_rvdw"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<tr>
+<th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">london_rvdw(i), i=1,ntyp</th>
+<td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
+</tr>
+<tr>
+<td style="text-align: right; vertical-align: top; background: #ffffc3; padding: 2 10 2 10; "><i>Default:</i></td>
+<td style="text-align: left;  vertical-align: top; background: #fff3d9; padding: 2 2 2 5; "> standard Grimme-D2 values
+         </td>
+</tr>
+<tr><td align="left" valign="top" colspan="2"><blockquote><pre>
+atomic vdw radii of each atom type
+
+( if not specified default values from S. Grimme, J. Comp. Chem. 27, 1787 (2006) are used;
+  see file Modules/mm_dispersion.f90 )
+         </pre></blockquote></td></tr>
+</table>
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
+      <a name="idm6229104"><a name="london_rcut"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">london_rcut</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2148,7 +2246,7 @@ cutoff radius (a.u.) for dispersion interactions
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp254960"><a name="xdm"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6227296"><a name="xdm"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">xdm</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2163,7 +2261,7 @@ OBSOLESCENT, same as vdw_corr='xdm'
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp256736"><a name="xdm_a1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6225520"><a name="xdm_a1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">xdm_a1</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2183,7 +2281,7 @@ For other functionals, see:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp258800"><a name="xdm_a2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6223456"><a name="xdm_a2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">xdm_a2</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2203,7 +2301,7 @@ For other functionals, see:
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp260864"><a name="space_group"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6221392"><a name="space_group"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">space_group</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2223,7 +2321,7 @@ The number of the space group of the crystal, as given
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp263024"><a name="uniqueb"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6219232"><a name="uniqueb"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">uniqueb</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2242,7 +2340,7 @@ Used only for monoclinic lattices. If .TRUE. the b
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp265104"><a name="origin_choice"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6217152"><a name="origin_choice"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">origin_choice</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2260,7 +2358,7 @@ Used only for space groups that in the ITA allow
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp267072"><a name="rhombohedral"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6215184"><a name="rhombohedral"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">rhombohedral</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2282,10 +2380,10 @@ Used only for rhombohedral space groups.
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
    </td></tr></tbody></table></td></tr>
 </table></a>
-   <a name="idp269376"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6212880"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: ELECTRONS</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
-      <a name="idp269904"><a name="electron_maxstep"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6212352"><a name="electron_maxstep"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">electron_maxstep</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2300,7 +2398,7 @@ maximum number of iterations in a scf step
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp271696"><a name="scf_must_converge"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6210560"><a name="scf_must_converge"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">scf_must_converge</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2316,7 +2414,7 @@ when electron_maxstep is reached. Use with care.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp273568"><a name="conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6208688"><a name="conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">conv_thr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2336,7 +2434,7 @@ iterative diagonalizazion: see diago_thr_init
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp276064"><a name="adaptive_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6206192"><a name="adaptive_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">adaptive_thr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2352,7 +2450,7 @@ the inner scf loops when using EXX.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp277920"><a name="conv_thr_init"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6204336"><a name="conv_thr_init"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">conv_thr_init</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2368,7 +2466,7 @@ used for the first scf cycle.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp279760"><a name="conv_thr_multi"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6202496"><a name="conv_thr_multi"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">conv_thr_multi</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2385,7 +2483,7 @@ max( conv_thr, conv_thr_multi * dexx )
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp281632"><a name="mixing_mode"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6200624"><a name="mixing_mode"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">mixing_mode</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2406,7 +2504,7 @@ max( conv_thr, conv_thr_multi * dexx )
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp283808"><a name="mixing_beta"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6198448"><a name="mixing_beta"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">mixing_beta</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2421,7 +2519,7 @@ mixing factor for self-consistency
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp285600"><a name="mixing_ndim"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6196656"><a name="mixing_ndim"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">mixing_ndim</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2437,7 +2535,7 @@ If you are tight with memory, you may reduce it to 4 or so.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp287456"><a name="mixing_fixed_ns"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6194800"><a name="mixing_fixed_ns"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">mixing_fixed_ns</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2453,7 +2551,7 @@ For DFT+U : number of iterations with fixed ns ( ns is the
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp289312"><a name="diagonalization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6192944"><a name="diagonalization"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">diagonalization</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2483,7 +2581,7 @@ For DFT+U : number of iterations with fixed ns ( ns is the
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp292448"><a name="ortho_para"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6189808"><a name="ortho_para"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ortho_para</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2503,7 +2601,7 @@ For DFT+U : number of iterations with fixed ns ( ns is the
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp294656"><a name="diago_thr_init"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6187600"><a name="diago_thr_init"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">diago_thr_init</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2520,7 +2618,7 @@ For non-scf calculations: default is (conv_thr/N elec)/10.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp296400"><a name="diago_cg_maxiter"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6185856"><a name="diago_cg_maxiter"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">diago_cg_maxiter</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2531,7 +2629,7 @@ max number of iterations
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp297808"><a name="diago_david_ndim"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6184448"><a name="diago_david_ndim"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">diago_david_ndim</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2551,7 +2649,7 @@ your job is large: the speed penalty is often negligible
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp299888"><a name="diago_full_acc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6182368"><a name="diago_full_acc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">diago_full_acc</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2569,7 +2667,7 @@ total energy, forces, and other ground-state properties).
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp301888"><a name="efield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6180368"><a name="efield"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">efield</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2586,7 +2684,7 @@ and if k-points (K_POINTS card) are not automatic.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp303808"><a name="efield_cart"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6178448"><a name="efield_cart"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" style="white-space: nowrap; text-align: left; vertical-align: top; background: #ffff99; padding: 2 2 2 10; ">efield_cart(i), i=1,3</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2603,7 +2701,7 @@ k-points (K_POINTS card) are automatic.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp306208"><a name="startingpot"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6176048"><a name="startingpot"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">startingpot</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2619,7 +2717,7 @@ k-points (K_POINTS card) are automatic.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp308256"><a name="startingwfc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6174000"><a name="startingwfc"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">startingwfc</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2650,7 +2748,7 @@ k-points (K_POINTS card) are automatic.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp311456"><a name="tqr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6170800"><a name="tqr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tqr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2671,13 +2769,13 @@ Use with care and after testing!
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
    </td></tr></tbody></table></td></tr>
 </table></a>
-   <a name="idp313600"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6168656"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: IONS</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
       <b>
 input this namelist only if calculation = 'relax', 'md', 'vc-relax', 'vc-md'
       </b><p></p>
-      <a name="idp314624"><a name="ion_dynamics"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6167632"><a name="ion_dynamics"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ion_dynamics</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2717,7 +2815,7 @@ CASE ( calculation = 'vc-md' )
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp318256"><a name="ion_positions"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6164000"><a name="ion_positions"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ion_positions</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2737,7 +2835,7 @@ CASE ( calculation = 'vc-md' )
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp320384"><a name="pot_extrapolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6161872"><a name="pot_extrapolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">pot_extrapolation</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2765,7 +2863,7 @@ only for molecular dynamics calculations
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp322624"><a name="wfc_extrapolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6159632"><a name="wfc_extrapolation"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wfc_extrapolation</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2790,7 +2888,7 @@ only for molecular dynamics calculations
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp324848"><a name="remove_rigid_rot"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6157408"><a name="remove_rigid_rot"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">remove_rigid_rot</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2821,7 +2919,7 @@ but the relaxation itself should be faster.
          <b>
 keywords used for molecular dynamics
          </b><p></p>
-         <a name="idp328032"><a name="ion_temperature"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6154224"><a name="ion_temperature"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">ion_temperature</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -2859,7 +2957,7 @@ keywords used for molecular dynamics
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp331312"><a name="tempw"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6150944"><a name="tempw"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tempw</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2875,7 +2973,7 @@ target temperature for most thermostats.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp333152"><a name="tolp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6149104"><a name="tolp"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">tolp</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2891,7 +2989,7 @@ the run-averaged and target temperature differ more than tolp.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp335040"><a name="delta_t"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6147216"><a name="delta_t"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">delta_t</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2921,7 +3019,7 @@ equipartition between all quadratic degrees of freedom).
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp337920"><a name="nraise"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6144336"><a name="nraise"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nraise</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -2954,7 +3052,7 @@ if ion_temperature='andersen':
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp340672"><a name="refold_pos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6141584"><a name="refold_pos"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">refold_pos</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">LOGICAL</td>
@@ -2976,7 +3074,7 @@ the supercell.
          <b>
 keywords used only in BFGS calculations
          </b><p></p>
-         <a name="idp343408"><a name="upscale"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6138848"><a name="upscale"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">upscale</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -2995,7 +3093,7 @@ conv_thr / upscale.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp345408"><a name="bfgs_ndim"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6136848"><a name="bfgs_ndim"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">bfgs_ndim</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -3015,7 +3113,7 @@ used.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp347424"><a name="trust_radius_max"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6134832"><a name="trust_radius_max"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">trust_radius_max</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3031,7 +3129,7 @@ Maximum ionic displacement in the structural relaxation.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp349248"><a name="trust_radius_min"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6133008"><a name="trust_radius_min"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">trust_radius_min</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3048,7 +3146,7 @@ BFGS is reset when trust_radius &lt; trust_radius_min.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp351168"><a name="trust_radius_ini"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6131088"><a name="trust_radius_ini"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">trust_radius_ini</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3064,7 +3162,7 @@ Initial ionic displacement in the structural relaxation.
             </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp352992"><a name="w_1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6129264"><a name="w_1"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">w_1</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3081,7 +3179,7 @@ Initial ionic displacement in the structural relaxation.
 </tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-         <a name="idp354720"><a name="w_2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+         <a name="idm6127536"><a name="w_2"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">w_2</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3100,13 +3198,13 @@ Parameters used in line search based on the Wolfe conditions.
       </td></tr></table>
    </td></tr></tbody></table></td></tr>
 </table></a>
-   <a name="idp356768"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6125488"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> Namelist: CELL</h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody><tr><td>
       <b>
 input this namelist only if calculation = 'vc-relax', 'vc-md'
       </b><p></p>
-      <a name="idp357792"><a name="cell_dynamics"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6124464"><a name="cell_dynamics"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">cell_dynamics</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -3134,7 +3232,7 @@ CASE ( calculation = 'vc-md' )
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp359984"><a name="press"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6122272"><a name="press"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">press</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3149,7 +3247,7 @@ Target pressure [KBar] in a variable-cell md or relaxation run.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp361808"><a name="wmass"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6120448"><a name="wmass"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">wmass</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3167,7 +3265,7 @@ Fictitious cell mass [amu] for variable-cell simulations
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp363776"><a name="cell_factor"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6118480"><a name="cell_factor"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">cell_factor</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3184,7 +3282,7 @@ cell during a simulation.
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp365664"><a name="press_conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6116592"><a name="press_conv_thr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">press_conv_thr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3201,7 +3299,7 @@ thresholds for ionic relaxation apply as well).
          </pre></blockquote></td></tr>
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
-      <a name="idp367872"><a name="cell_dofree"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+      <a name="idm6114384"><a name="cell_dofree"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">cell_dofree</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
@@ -3235,29 +3333,29 @@ BEWARE: if axis are not orthogonal, some of these options do not
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a>
    </td></tr></tbody></table></td></tr>
 </table></a>
-   <a name="idp370640"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6111616"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: ATOMIC_SPECIES </h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody>
 <tr><td>
 <h3>Syntax:</h3>
 <blockquote>
-<b>ATOMIC_SPECIES </b><br><a name="idp371520"><table>
+<b>ATOMIC_SPECIES </b><br><a name="idm6110736"><table>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp372864">X(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp374560">Mass_X(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp376192">PseudoPot_X(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6109392">X(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6107696">Mass_X(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6106064">PseudoPot_X(1)</a></i> </td>
 </tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp372864">X(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp374560">Mass_X(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp376192">PseudoPot_X(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6109392">X(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6107696">Mass_X(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6106064">PseudoPot_X(2)</a></i> </td>
 </tr>
 <tr><td colspan="2"> . . .</td></tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp372864">X(ntyp)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp374560">Mass_X(ntyp)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp376192">PseudoPot_X(ntyp)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6109392">X(ntyp)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6107696">Mass_X(ntyp)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6106064">PseudoPot_X(ntyp)</a></i> </td>
 </tr>
 </table></a>
 </blockquote>
@@ -3268,7 +3366,7 @@ BEWARE: if axis are not orthogonal, some of these options do not
 <pre></pre>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="X"><a name="idp372864">X</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="X"><a name="idm6109392">X</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3282,7 +3380,7 @@ max total length cannot exceed 3 characters)
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="Mass_X"><a name="idp374560">Mass_X</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="Mass_X"><a name="idm6107696">Mass_X</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3297,7 +3395,7 @@ these values unless other values are provided)
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="PseudoPot_X"><a name="idp376192">PseudoPot_X</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="PseudoPot_X"><a name="idm6106064">PseudoPot_X</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3317,7 +3415,7 @@ none of the above  old PWscf norm-conserving format
 </td></tr>
 </tbody></table></td></tr>
 </table></a>
-   <a name="idp378816"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6103440"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal | crystal_sg
           } </h2></th></tr>
@@ -3333,39 +3431,39 @@ previous scf calculation will be used instead !!!
             <h3>Syntax:</h3>
 <blockquote>
 <b>ATOMIC_POSITIONS {  alat | bohr | angstrom | crystal | crystal_sg
-          } </b><br><a name="idp386496"><table>
+          } </b><br><a name="idm6095760"><table>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idm51088">X(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm48800">x(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm48176">y(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm47552">z(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6557072">X(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6554784">x(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6554160">y(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6553536">z(1)</a></i> </td>
 <td> { </td>
-<td style="white-space:nowrap"> <i><a href="#idp417728">if_pos(1)(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp418352">if_pos(2)(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp418976">if_pos(3)(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6064960">if_pos(1)(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6064336">if_pos(2)(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6063712">if_pos(3)(1)</a></i> </td>
 <td> } </td>
 </tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idm51088">X(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm48800">x(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm48176">y(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm47552">z(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6557072">X(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6554784">x(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6554160">y(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6553536">z(2)</a></i> </td>
 <td> { </td>
-<td style="white-space:nowrap"> <i><a href="#idp417728">if_pos(1)(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp418352">if_pos(2)(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp418976">if_pos(3)(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6064960">if_pos(1)(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6064336">if_pos(2)(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6063712">if_pos(3)(2)</a></i> </td>
 <td> } </td>
 </tr>
 <tr><td colspan="2"> . . .</td></tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idm51088">X(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm48800">x(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm48176">y(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idm47552">z(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6557072">X(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6554784">x(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6554160">y(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6553536">z(nat)</a></i> </td>
 <td> { </td>
-<td style="white-space:nowrap"> <i><a href="#idp417728">if_pos(1)(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp418352">if_pos(2)(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp418976">if_pos(3)(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6064960">if_pos(1)(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6064336">if_pos(2)(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6063712">if_pos(3)(nat)</a></i> </td>
 <td> } </td>
 </tr>
 </table></a>
@@ -3405,7 +3503,7 @@ crystal_sg : atomic positions are in crystal coordinates, i.e.
          </pre>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="X"><a name="idm51088">X</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="X"><a name="idm6557072">X</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre> label of the atom as specified in ATOMIC_SPECIES
@@ -3415,7 +3513,7 @@ crystal_sg : atomic positions are in crystal coordinates, i.e.
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" align="left" valign="top" style="background: #ffff99; padding: 2 2 2 10; ">
-<a name="x"><a name="idm48800">x</a></a>, <a name="y"><a name="idm48176">y</a></a>, <a name="z"><a name="idm47552">z</a></a>
+<a name="x"><a name="idm6554784">x</a></a>, <a name="y"><a name="idm6554160">y</a></a>, <a name="z"><a name="idm6553536">z</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
@@ -3442,20 +3540,21 @@ NOTE: each atomic coordinate can also be specified as a simple algebraic express
     Please note that this feature is NOT supported by XCrysDen (which will
     display a wrong structure, or nothing at all).
     When atomic positions are of type crystal_sg coordinates can be given
-    in the following three forms (Wyckoff positions):
+    in the following four forms (Wyckoff positions):
     C  1a
     C  8g   x
     C  24m  x y
+    C  48n  x y z
     The first form must be used when the Wyckoff letter determines uniquely
-    all three coordinates, the second form when the Wyckoff letter
-    and one coordinate are needed, the third form when one letter and two
-    coordinates are needed.
+    all three coordinates, forms 2,3,4 when the Wyckoff letter
+    and 1,2,3 coordinates respectively are needed
     The forms:
     C 8g  x  x  x
     C 24m x  x  y
     are not allowed, but
     C x x x
     C x x y
+    C x y z
     are correct.
                         </pre></blockquote></td></tr>
 </table>
@@ -3463,7 +3562,7 @@ NOTE: each atomic coordinate can also be specified as a simple algebraic express
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" align="left" valign="top" style="background: #ffff99; padding: 2 2 2 10; ">
-<a name="if_pos(1)"><a name="idp417728">if_pos(1)</a></a>, <a name="if_pos(2)"><a name="idp418352">if_pos(2)</a></a>, <a name="if_pos(3)"><a name="idp418976">if_pos(3)</a></a>
+<a name="if_pos(1)"><a name="idm6064960">if_pos(1)</a></a>, <a name="if_pos(2)"><a name="idm6064336">if_pos(2)</a></a>, <a name="if_pos(3)"><a name="idm6063712">if_pos(3)</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -3487,7 +3586,7 @@ atoms.
 </td></tr>
 </tbody></table></td></tr>
 </table></a>
-   <a name="idp420624"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6062064"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: K_POINTS {  tpiba | automatic | crystal | gamma | tpiba_b | crystal_b | tpiba_c | crystal_c
           } </h2></th></tr>
@@ -3496,25 +3595,25 @@ atoms.
 <b>IF </b><em>tpiba  OR  crystal  OR  tpiba_b  OR  crystal_b OR tpiba_c OR crystal_c</em> : <blockquote><table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
             <h3>Syntax:</h3>
 <blockquote>
-<b>K_POINTS tpiba | crystal | tpiba_b | crystal_b | tpiba_c | crystal_c </b><br><i><a href="#idp428384">nks</a></i>  <br><a name="idp429840"><table>
+<b>K_POINTS tpiba | crystal | tpiba_b | crystal_b | tpiba_c | crystal_c </b><br><i><a href="#idm6054304">nks</a></i>  <br><a name="idm6052848"><table>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp431568">xk_x(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp432192">xk_y(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp432816">xk_z(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp433440">wk(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6051120">xk_x(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6050496">xk_y(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6049872">xk_z(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6049248">wk(1)</a></i> </td>
 </tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp431568">xk_x(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp432192">xk_y(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp432816">xk_z(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp433440">wk(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6051120">xk_x(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6050496">xk_y(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6049872">xk_z(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6049248">wk(2)</a></i> </td>
 </tr>
 <tr><td colspan="2"> . . .</td></tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp431568">xk_x(nks)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp432192">xk_y(nks)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp432816">xk_z(nks)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp433440">wk(nks)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6051120">xk_x(nks)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6050496">xk_y(nks)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6049872">xk_z(nks)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6049248">wk(nks)</a></i> </td>
 </tr>
 </table></a>
 </blockquote>
@@ -3522,7 +3621,7 @@ atoms.
 <b>ELSEIF </b><em>automatic</em> : <blockquote><table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
             <h3>Syntax:</h3>
 <blockquote>
-<b>K_POINTS automatic</b><br><i><a href="#idp437504">nk1</a></i>  <i><a href="#idp438128">nk2</a></i>  <i><a href="#idp438752">nk3</a></i>  <i><a href="#idp440512">sk1</a></i>  <i><a href="#idp441136">sk2</a></i>  <i><a href="#idp441760">sk3</a></i>  <br>
+<b>K_POINTS automatic</b><br><i><a href="#idm6045184">nk1</a></i>  <i><a href="#idm6044560">nk2</a></i>  <i><a href="#idm6043936">nk3</a></i>  <i><a href="#idm6042176">sk1</a></i>  <i><a href="#idm6041552">sk2</a></i>  <i><a href="#idm6040928">sk3</a></i>  <br>
 </blockquote>
          </td></tr></table></blockquote>
 <b>ELSEIF </b><em>gamma</em> : <blockquote><table style="border-color: #bb9977; border-style: solid; border-width: 3; margin-bottom: 10; table-layout: auto; background-color: #FFddbb; width: 100%; padding: 5 5 0 30"><tr><td>
@@ -3579,7 +3678,7 @@ atoms.
 
 crystal_c: as tpiba_c, but k-points are in crystal coordinates.
          </pre>
-<a name="idp428384"><a name="nks"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<a name="idm6054304"><a name="nks"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nks</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -3590,7 +3689,7 @@ crystal_c: as tpiba_c, but k-points are in crystal coordinates.
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" align="left" valign="top" style="background: #ffff99; padding: 2 2 2 10; ">
-<a name="xk_x"><a name="idp431568">xk_x</a></a>, <a name="xk_y"><a name="idp432192">xk_y</a></a>, <a name="xk_z"><a name="idp432816">xk_z</a></a>, <a name="wk"><a name="idp433440">wk</a></a>
+<a name="xk_x"><a name="idm6051120">xk_x</a></a>, <a name="xk_y"><a name="idm6050496">xk_y</a></a>, <a name="xk_z"><a name="idm6049872">xk_z</a></a>, <a name="wk"><a name="idm6049248">wk</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
@@ -3615,7 +3714,7 @@ for a band-structure plot), weights can be set to any value
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp437504"><a name="nk1">nk1, </a></a><a name="idp438128"><a name="nk2">nk2, </a></a><a name="idp438752"><a name="nk3">nk3</a></a>
+<a name="idm6045184"><a name="nk1">nk1, </a></a><a name="idm6044560"><a name="nk2">nk2, </a></a><a name="idm6043936"><a name="nk3">nk3</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -3628,7 +3727,7 @@ These parameters specify the k-point grid
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="white-space: nowrap; background: #ffff99; padding: 2 2 2 10; ">
-<a name="idp440512"><a name="sk1">sk1, </a></a><a name="idp441136"><a name="sk2">sk2, </a></a><a name="idp441760"><a name="sk3">sk3</a></a>
+<a name="idm6042176"><a name="sk1">sk1, </a></a><a name="idm6041552"><a name="sk2">sk2, </a></a><a name="idm6040928"><a name="sk3">sk3</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
 </tr>
@@ -3643,7 +3742,7 @@ half a grid step in the corresponding direction ).
 </td></tr>
 </tbody></table></td></tr>
 </table></a>
-   <a name="idp444992"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6037728"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: CELL_PARAMETERS {  alat | bohr | angstrom
           } </h2></th></tr>
@@ -3655,26 +3754,26 @@ Optional card, needed only if ibrav = 0 is specified, ignored otherwise !
 <h3>Syntax:</h3>
 <blockquote>
 <b>CELL_PARAMETERS {  alat | bohr | angstrom
-          } </b><br><a name="idp448960"><table>
+          } </b><br><a name="idm6033792"><table>
 <tr>
 <td align="right" style="white-space:nowrap"></td>
-<td> <i><a href="#idp451360">v1(1)</a></i> </td>
-<td> <i><a href="#idp451360">v1(2)</a></i> </td>
-<td> <i><a href="#idp451360">v1(3)</a></i> </td>
+<td> <i><a href="#idm6031344">v1(1)</a></i> </td>
+<td> <i><a href="#idm6031344">v1(2)</a></i> </td>
+<td> <i><a href="#idm6031344">v1(3)</a></i> </td>
 <td align="left" style="white-space:nowrap"></td>
 </tr>
 <tr>
 <td align="right" style="white-space:nowrap"></td>
-<td> <i><a href="#idp451984">v2(1)</a></i> </td>
-<td> <i><a href="#idp451984">v2(2)</a></i> </td>
-<td> <i><a href="#idp451984">v2(3)</a></i> </td>
+<td> <i><a href="#idm6030720">v2(1)</a></i> </td>
+<td> <i><a href="#idm6030720">v2(2)</a></i> </td>
+<td> <i><a href="#idm6030720">v2(3)</a></i> </td>
 <td align="left" style="white-space:nowrap"></td>
 </tr>
 <tr>
 <td align="right" style="white-space:nowrap"></td>
-<td> <i><a href="#idp452608">v3(1)</a></i> </td>
-<td> <i><a href="#idp452608">v3(2)</a></i> </td>
-<td> <i><a href="#idp452608">v3(3)</a></i> </td>
+<td> <i><a href="#idm6030096">v3(1)</a></i> </td>
+<td> <i><a href="#idm6030096">v3(2)</a></i> </td>
+<td> <i><a href="#idm6030096">v3(3)</a></i> </td>
 <td align="left" style="white-space:nowrap"></td>
 </tr>
 </table></a>
@@ -3695,7 +3794,7 @@ If nothing specified and no lattice parameter specified,
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" align="left" valign="top" style="background: #ffff99; padding: 2 2 2 10; ">
-<a name="v1"><a name="idp451360">v1</a></a>, <a name="v2"><a name="idp451984">v2</a></a>, <a name="v3"><a name="idp452608">v3</a></a>
+<a name="v1"><a name="idm6031344">v1</a></a>, <a name="v2"><a name="idm6030720">v2</a></a>, <a name="v3"><a name="idm6030096">v3</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
@@ -3711,7 +3810,7 @@ Crystal lattice vectors (in cartesian axis):
 </td></tr>
 </tbody></table></td></tr>
 </table></a>
-   <a name="idp453872"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6028784"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: CONSTRAINTS </h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody>
@@ -3725,11 +3824,11 @@ When this card is present the SHAKE algorithm is automatically used.
       </pre>
 <h3>Syntax:</h3>
 <blockquote>
-<b>CONSTRAINTS </b><br><i><a href="#idp455984">nconstr</a></i>   { <i><a href="#idp457600">constr_tol</a></i>   } <br><a name="idp459248"><table>
+<b>CONSTRAINTS </b><br><i><a href="#idm6026672">nconstr</a></i>   { <i><a href="#idm6025056">constr_tol</a></i>   } <br><a name="idm6023408"><table>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp460544">constr_type(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp463696">constr(1)(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp464352">constr(2)(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6022112">constr_type(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6018960">constr(1)(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6018304">constr(2)(1)</a></i> </td>
 <td> [ </td>
 <td style="white-space:nowrap"> <i>constr(3)(1)
 	</i> </td>
@@ -3737,13 +3836,13 @@ When this card is present the SHAKE algorithm is automatically used.
 	</i> </td>
 <td> ] </td>
 <td> { </td>
-<td style="white-space:nowrap"> <i><a href="#idp470592">constr_target(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6012016">constr_target(1)</a></i> </td>
 <td> } </td>
 </tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp460544">constr_type(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp463696">constr(1)(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp464352">constr(2)(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6022112">constr_type(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6018960">constr(1)(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6018304">constr(2)(2)</a></i> </td>
 <td> [ </td>
 <td style="white-space:nowrap"> <i>constr(3)(2)
 	</i> </td>
@@ -3751,14 +3850,14 @@ When this card is present the SHAKE algorithm is automatically used.
 	</i> </td>
 <td> ] </td>
 <td> { </td>
-<td style="white-space:nowrap"> <i><a href="#idp470592">constr_target(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6012016">constr_target(2)</a></i> </td>
 <td> } </td>
 </tr>
 <tr><td colspan="2"> . . .</td></tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp460544">constr_type(nconstr)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp463696">constr(1)(nconstr)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp464352">constr(2)(nconstr)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6022112">constr_type(nconstr)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6018960">constr(1)(nconstr)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6018304">constr(2)(nconstr)</a></i> </td>
 <td> [ </td>
 <td style="white-space:nowrap"> <i>constr(3)(nconstr)
 	</i> </td>
@@ -3766,7 +3865,7 @@ When this card is present the SHAKE algorithm is automatically used.
 	</i> </td>
 <td> ] </td>
 <td> { </td>
-<td style="white-space:nowrap"> <i><a href="#idp470592">constr_target(nconstr)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6012016">constr_target(nconstr)</a></i> </td>
 <td> } </td>
 </tr>
 </table></a>
@@ -3776,7 +3875,7 @@ When this card is present the SHAKE algorithm is automatically used.
 <h3>Description of items:</h3>
 <blockquote>
 <pre></pre>
-<a name="idp455984"><a name="nconstr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<a name="idm6026672"><a name="nconstr"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">nconstr</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">INTEGER</td>
@@ -3784,7 +3883,7 @@ When this card is present the SHAKE algorithm is automatically used.
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre> Number of constraints.
                </pre></blockquote></td></tr>
 </table>
-<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a><a name="idp457600"><a name="constr_tol"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
+<div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a><a name="idm6025056"><a name="constr_tol"><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; ">constr_tol</th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
@@ -3794,7 +3893,7 @@ When this card is present the SHAKE algorithm is automatically used.
 </table>
 <div align="right">[<a href="#__top__">Back to Top</a>]</div></a></a><table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="constr_type"><a name="idp460544">constr_type</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="constr_type"><a name="idm6022112">constr_type</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3831,7 +3930,7 @@ Type of constrain :
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" align="left" valign="top" style="background: #ffff99; padding: 2 2 2 10; ">
-<a name="constr(1)"><a name="idp463696">constr(1)</a></a>, <a name="constr(2)"><a name="idp464352">constr(2)</a></a>, <a name="constr(3)"><a name="idp465264">constr(3)</a></a>, <a name="constr(4)"><a name="idp465920">constr(4)</a></a>
+<a name="constr(1)"><a name="idm6018960">constr(1)</a></a>, <a name="constr(2)"><a name="idm6018304">constr(2)</a></a>, <a name="constr(3)"><a name="idm6017344">constr(3)</a></a>, <a name="constr(4)"><a name="idm6016688">constr(4)</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; "></td>
 </tr>
@@ -3874,7 +3973,7 @@ Type of constrain :
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="constr_target"><a name="idp470592">constr_target</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="constr_target"><a name="idm6012016">constr_target</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3887,7 +3986,7 @@ This variable is optional.
 </td></tr>
 </tbody></table></td></tr>
 </table></a>
-   <a name="idp472672"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6009936"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: OCCUPATIONS </h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody>
@@ -3896,21 +3995,21 @@ This variable is optional.
       </b><p></p>
 <h3>Syntax:</h3>
 <blockquote>
-<b>OCCUPATIONS </b><br><a name="idp473952"><table>
+<b>OCCUPATIONS </b><br><a name="idm6008656"><table>
 <tr>
 <td align="right" style="white-space:nowrap"></td>
-<td> <i><a href="#idp475248">f_inp1(1)</a></i> </td>
-<td> <i><a href="#idp475248">f_inp1(2)</a></i> </td>
+<td> <i><a href="#idm6007360">f_inp1(1)</a></i> </td>
+<td> <i><a href="#idm6007360">f_inp1(2)</a></i> </td>
 <td> . . .</td>
-<td> <i><a href="#idp475248">f_inp1(nbnd)</a></i> </td>
+<td> <i><a href="#idm6007360">f_inp1(nbnd)</a></i> </td>
 <td align="left" style="white-space:nowrap"></td>
 </tr>
 <tr>
 <td align="right" style="white-space:nowrap">[  </td>
-<td> <i><a href="#idp476960">f_inp2(1)</a></i> </td>
-<td> <i><a href="#idp476960">f_inp2(2)</a></i> </td>
+<td> <i><a href="#idm6005648">f_inp2(1)</a></i> </td>
+<td> <i><a href="#idm6005648">f_inp2(2)</a></i> </td>
 <td> . . .</td>
-<td> <i><a href="#idp476960">f_inp2(nbnd)</a></i> </td>
+<td> <i><a href="#idm6005648">f_inp2(nbnd)</a></i> </td>
 <td align="left" style="white-space:nowrap">  ]</td>
 </tr>
 </table></a>
@@ -3922,7 +4021,7 @@ This variable is optional.
 <pre></pre>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="f_inp1"><a name="idp475248">f_inp1</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="f_inp1"><a name="idm6007360">f_inp1</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3933,7 +4032,7 @@ For spin-polarized calculations, these are majority spin states.
 <div align="right">[<a href="#__top__">Back to Top</a>]</div>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="f_inp2"><a name="idp476960">f_inp2</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="f_inp2"><a name="idm6005648">f_inp2</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre>
@@ -3946,7 +4045,7 @@ To be specified only for spin-polarized calculations.
 </td></tr>
 </tbody></table></td></tr>
 </table></a>
-   <a name="idp479056"><table border="0" width="100%" style="margin-bottom: 20; ">
+   <a name="idm6003552"><table border="0" width="100%" style="margin-bottom: 20; ">
 <tr><th bgcolor="#ddcba6"><h2 style="margin: 10 10 10 15; text-align: left;"> 
 	    Card: ATOMIC_FORCES </h2></th></tr>
 <tr><td style="text-align: left; background: #ffebc6; padding: 5 5 5 30; "><table style="border-color: #505087; border-style: solid; border-width: 0; margin-bottom: 10; table-layout: auto; width: 700; "><tbody>
@@ -3958,25 +4057,25 @@ Optional card used to specify external forces acting on atoms.
       </b><p></p>
 <h3>Syntax:</h3>
 <blockquote>
-<b>ATOMIC_FORCES </b><br><a name="idp480432"><table>
+<b>ATOMIC_FORCES </b><br><a name="idm6002176"><table>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp481696">X(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp484064">fx(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp484688">fy(1)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp485312">fz(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6000912">X(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5998544">fx(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5997920">fy(1)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5997296">fz(1)</a></i> </td>
 </tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp481696">X(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp484064">fx(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp484688">fy(2)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp485312">fz(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6000912">X(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5998544">fx(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5997920">fy(2)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5997296">fz(2)</a></i> </td>
 </tr>
 <tr><td colspan="2"> . . .</td></tr>
 <tr>
-<td style="white-space:nowrap"> <i><a href="#idp481696">X(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp484064">fx(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp484688">fy(nat)</a></i> </td>
-<td style="white-space:nowrap"> <i><a href="#idp485312">fz(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm6000912">X(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5998544">fx(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5997920">fy(nat)</a></i> </td>
+<td style="white-space:nowrap"> <i><a href="#idm5997296">fz(nat)</a></i> </td>
 </tr>
 </table></a>
 </blockquote>
@@ -3987,7 +4086,7 @@ Optional card used to specify external forces acting on atoms.
 <pre></pre>
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
-<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="X"><a name="idp481696">X</a></a></th>
+<th align="left" valign="top" width="20%" style="background: #ffff99; padding: 2 2 2 10; "><a name="X"><a name="idm6000912">X</a></a></th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">CHARACTER</td>
 </tr>
 <tr><td align="left" valign="top" colspan="2"><blockquote><pre> label of the atom as specified in ATOMIC_SPECIES
@@ -3997,7 +4096,7 @@ Optional card used to specify external forces acting on atoms.
 <table width="100%" style="border-color:   #b5b500; border-style: solid; border-width: 2; margin-bottom: 10; table-layout: auto; background-color: #FFFFFF;">
 <tr>
 <th width="20%" align="left" valign="top" style="background: #ffff99; padding: 2 2 2 10; ">
-<a name="fx"><a name="idp484064">fx</a></a>, <a name="fy"><a name="idp484688">fy</a></a>, <a name="fz"><a name="idp485312">fz</a></a>
+<a name="fx"><a name="idm5998544">fx</a></a>, <a name="fy"><a name="idm5997920">fy</a></a>, <a name="fz"><a name="idm5997296">fz</a></a>
 </th>
 <td style="text-align: left; vertical-align: top; background: #ffffc3; padding: 2 2 2 5; ">REAL</td>
 </tr>

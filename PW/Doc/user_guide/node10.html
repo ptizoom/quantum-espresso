@@ -87,7 +87,11 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 3.3.0.1 Single-point (fixed-ion) SCF calculation</A>
 </H4> 
 Set <TT>calculation='scf'</TT> (this is actually the default).
-Namelists &amp;IONS and &amp;CELL will be ignored. See Example 01.
+Namelists &amp;IONS and &amp;CELL will be ignored. For LSDA spin-polarized 
+calculations (that is: with a fixed quantization axis for magnetization),
+set <TT>nspin=2</TT>. Note that the number of k-points will be internally
+doubled (one set of k-points for spin-up, one set for spin-down).
+See Example 01.
 
 <P>
 
@@ -267,8 +271,8 @@ is present (<TT>lelfield=.true.</TT>) only Kubo terms are computed
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

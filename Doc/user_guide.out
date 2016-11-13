@@ -13,15 +13,16 @@
 \BOOKMARK [2][-]{subsection.2.6}{Running tests and examples}{section.2}% 13
 \BOOKMARK [2][-]{subsection.2.7}{Installation tricks and problems}{section.2}% 14
 \BOOKMARK [3][-]{subsubsection.2.7.1}{All architectures}{subsection.2.7}% 15
-\BOOKMARK [3][-]{subsubsection.2.7.2}{Cray machines}{subsection.2.7}% 16
-\BOOKMARK [3][-]{subsubsection.2.7.3}{IBM AIX}{subsection.2.7}% 17
-\BOOKMARK [3][-]{subsubsection.2.7.4}{IBM BlueGene}{subsection.2.7}% 18
-\BOOKMARK [3][-]{subsubsection.2.7.5}{Linux PC}{subsection.2.7}% 19
-\BOOKMARK [3][-]{subsubsection.2.7.6}{Linux PC clusters with MPI}{subsection.2.7}% 20
-\BOOKMARK [3][-]{subsubsection.2.7.7}{Mac OS}{subsection.2.7}% 21
-\BOOKMARK [1][-]{section.3}{Parallelism}{}% 22
-\BOOKMARK [2][-]{subsection.3.1}{Understanding Parallelism}{section.3}% 23
-\BOOKMARK [2][-]{subsection.3.2}{Running on parallel machines}{section.3}% 24
-\BOOKMARK [2][-]{subsection.3.3}{Parallelization levels}{section.3}% 25
-\BOOKMARK [3][-]{subsubsection.3.3.1}{Understanding parallel I/O}{subsection.3.3}% 26
-\BOOKMARK [2][-]{subsection.3.4}{Tricks and problems}{section.3}% 27
+\BOOKMARK [3][-]{subsubsection.2.7.2}{Intel Xeon Phi}{subsection.2.7}% 16
+\BOOKMARK [3][-]{subsubsection.2.7.3}{Cray machines}{subsection.2.7}% 17
+\BOOKMARK [3][-]{subsubsection.2.7.4}{IBM AIX}{subsection.2.7}% 18
+\BOOKMARK [3][-]{subsubsection.2.7.5}{IBM BlueGene}{subsection.2.7}% 19
+\BOOKMARK [3][-]{subsubsection.2.7.6}{Linux PC}{subsection.2.7}% 20
+\BOOKMARK [3][-]{subsubsection.2.7.7}{Linux PC clusters with MPI}{subsection.2.7}% 21
+\BOOKMARK [3][-]{subsubsection.2.7.8}{Mac OS}{subsection.2.7}% 22
+\BOOKMARK [1][-]{section.3}{Parallelism}{}% 23
+\BOOKMARK [2][-]{subsection.3.1}{Understanding Parallelism}{section.3}% 24
+\BOOKMARK [2][-]{subsection.3.2}{Running on parallel machines}{section.3}% 25
+\BOOKMARK [2][-]{subsection.3.3}{Parallelization levels}{section.3}% 26
+\BOOKMARK [3][-]{subsubsection.3.3.1}{Understanding parallel I/O}{subsection.3.3}% 27
+\BOOKMARK [2][-]{subsection.3.4}{Tricks and problems}{section.3}% 28

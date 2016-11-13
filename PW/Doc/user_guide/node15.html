@@ -70,9 +70,21 @@ O = m M N + P N + p N_1 N_2 N_3 + q N_{r1} N_{r2} N_{r3}
 with <I>m</I>, <I>p</I>, <I>q</I> = small factors; all other variables have the same meaning as
 above. Note that if the <IMG
  WIDTH="16" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
- SRC="img7.png"
+ SRC="img8.png"
  ALT="$ \Gamma$"> -point only (<I>k</I> = 0) is used to sample the 
 Brillouin Zone, the value of N will be cut into half.
+
+<P>
+For hybrid DFTs, additional storage of <I>O</I><SUB>x</SUB> double precision complex 
+numbers is needed (for Fourier-transformed Kohn-Sham states), with
+<!-- MATH
+ $O_x = x N_q M N_1N_2N_3$
+ -->
+<I>O</I><SUB>x</SUB> = <I>xN</I><SUB>q</SUB><I>MN</I><SUB>1</SUB><I>N</I><SUB>2</SUB><I>N</I><SUB>3</SUB> and <I>x</I> = 0.5 for <IMG
+ WIDTH="16" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img8.png"
+ ALT="$ \Gamma$"> -only 
+calculations, <I>x</I> = 1 otherwise.
 
 <P>
 The memory required by the phonon code follows the same patterns, with
@@ -81,8 +93,8 @@ somewhat larger factors <I>m</I>, <I>p</I>, <I>q</I>.
 <P>
 <BR><HR>
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

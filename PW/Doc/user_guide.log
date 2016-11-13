@@ -1,12 +1,11 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.10.8)  8 MAR 2015 15:17
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.6.20)  24 APR 2016 23:21
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
 **user_guide.tex
 (./user_guide.tex
 LaTeX2e <2011/06/27>
-Babel <v3.8m> and hyphenation patterns for english, dumylang, nohyphenation, it
-alian, loaded.
+Babel <3.9h> and hyphenation patterns for 2 languages loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
 (/usr/share/texlive/texmf-dist/tex/latex/base/size12.clo
@@ -26,7 +25,7 @@ File: size12.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
 )
 (/usr/share/texmf/tex/latex/html/html.sty
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
-Package: hyperref 2012/05/13 v6.82q Hypertext links for LaTeX
+Package: hyperref 2012/11/06 v6.83m Hypertext links for LaTeX
 
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
 Package: hobsub-hyperref 2012/05/28 v1.13 Bundle oberdiek, subset hyperref (HO)
@@ -80,6 +79,9 @@ Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
 (/usr/share/texlive/texmf-dist/tex/generic/ifxetex/ifxetex.sty
 Package: ifxetex 2010/09/12 v0.6 Provides ifxetex conditional
 )
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/auxhook.sty
+Package: auxhook 2011/03/04 v1.3 Hooks for auxiliary files (HO)
+)
 (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/kvoptions.sty
 Package: kvoptions 2011/06/30 v3.11 Key value format for package options (HO)
 )
@@ -88,39 +90,40 @@ Package: kvoptions 2011/06/30 v3.11 Key value format for package options (HO)
 \Hy@pagecounter=\count88
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/pd1enc.def
-File: pd1enc.def 2012/05/13 v6.82q Hyperref: PDFDocEncoding definition (HO)
+File: pd1enc.def 2012/11/06 v6.83m Hyperref: PDFDocEncoding definition (HO)
 )
 \Hy@SavedSpaceFactor=\count89
 
 (/usr/share/texlive/texmf-dist/tex/latex/latexconfig/hyperref.cfg
 File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
 )
-Package hyperref Info: Hyper figures OFF on input line 4062.
-Package hyperref Info: Link nesting OFF on input line 4067.
-Package hyperref Info: Hyper index ON on input line 4070.
-Package hyperref Info: Plain pages OFF on input line 4077.
-Package hyperref Info: Backreferencing OFF on input line 4082.
+Package hyperref Info: Hyper figures OFF on input line 4443.
+Package hyperref Info: Link nesting OFF on input line 4448.
+Package hyperref Info: Hyper index ON on input line 4451.
+Package hyperref Info: Plain pages OFF on input line 4458.
+Package hyperref Info: Backreferencing OFF on input line 4463.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
-Package hyperref Info: Bookmarks ON on input line 4300.
+Package hyperref Info: Bookmarks ON on input line 4688.
 \c@Hy@tempcnt=\count90
 
 (/usr/share/texlive/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip10
-Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
-LaTeX Info: Redefining \url on input line 4653.
+LaTeX Info: Redefining \url on input line 5041.
+\XeTeXLinkMargin=\dimen104
 \Fld@menulength=\count91
-\Field@Width=\dimen104
-\Fld@charsize=\dimen105
-Package hyperref Info: Hyper figures OFF on input line 5773.
-Package hyperref Info: Link nesting OFF on input line 5778.
-Package hyperref Info: Hyper index ON on input line 5781.
-Package hyperref Info: backreferencing OFF on input line 5788.
-Package hyperref Info: Link coloring OFF on input line 5793.
-Package hyperref Info: Link coloring with OCG OFF on input line 5798.
-Package hyperref Info: PDF/A mode OFF on input line 5803.
-LaTeX Info: Redefining \ref on input line 5843.
-LaTeX Info: Redefining \pageref on input line 5847.
+\Field@Width=\dimen105
+\Fld@charsize=\dimen106
+Package hyperref Info: Hyper figures OFF on input line 6295.
+Package hyperref Info: Link nesting OFF on input line 6300.
+Package hyperref Info: Hyper index ON on input line 6303.
+Package hyperref Info: backreferencing OFF on input line 6310.
+Package hyperref Info: Link coloring OFF on input line 6315.
+Package hyperref Info: Link coloring with OCG OFF on input line 6320.
+Package hyperref Info: PDF/A mode OFF on input line 6325.
+LaTeX Info: Redefining \ref on input line 6365.
+LaTeX Info: Redefining \pageref on input line 6369.
 \Hy@abspage=\count92
 \c@Item=\count93
 \c@Hfootnote=\count94
@@ -129,7 +132,7 @@ LaTeX Info: Redefining \pageref on input line 5847.
 Package hyperref Message: Driver: hpdftex.
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/hpdftex.def
-File: hpdftex.def 2012/05/13 v6.82q Hyperref driver for pdfTeX
+File: hpdftex.def 2012/11/06 v6.83m Hyperref driver for pdfTeX
 \Fld@listcount=\count95
 \c@bookmark@seq@number=\count96
 
@@ -171,40 +174,40 @@ Package graphics Info: Driver file: pdftex.def on input line 91.
 File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
 \Gread@gobject=\count106
 ))
-\Gin@req@height=\dimen106
-\Gin@req@width=\dimen107
+\Gin@req@height=\dimen107
+\Gin@req@width=\dimen108
 )
 (./user_guide.aux)
 \openout1 = `user_guide.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
 \AtBeginShipoutBox=\box26
-Package hyperref Info: Link coloring OFF on input line 28.
+Package hyperref Info: Link coloring OFF on input line 27.
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
-Package: nameref 2010/04/30 v2.40 Cross-referencing by name of section
+Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
 
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
 \c@section@level=\count107
 )
-LaTeX Info: Redefining \ref on input line 28.
-LaTeX Info: Redefining \pageref on input line 28.
-LaTeX Info: Redefining \nameref on input line 28.
+LaTeX Info: Redefining \ref on input line 27.
+LaTeX Info: Redefining \pageref on input line 27.
+LaTeX Info: Redefining \nameref on input line 27.
 
 (./user_guide.out) (./user_guide.out)
 \@outlinefile=\write4
@@ -214,13 +217,13 @@ LaTeX Info: Redefining \nameref on input line 28.
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count108
-\scratchdimen=\dimen108
+\scratchdimen=\dimen109
 \scratchbox=\box27
 \nofMPsegments=\count109
 \nofMParguments=\count110
 \everyMPshowfont=\toks15
 \MPscratchCnt=\count111
-\MPscratchDim=\dimen109
+\MPscratchDim=\dimen110
 \MPnumerator=\count112
 \makeMPintoPDFobject=\count113
 \everyMPtoPDFconversion=\toks16
@@ -243,19 +246,12 @@ e
 File: ../../Doc/quantum_espresso.pdf Graphic file (type pdf)
 
 <use ../../Doc/quantum_espresso.pdf>
-Package pdftex.def Info: ../../Doc/quantum_espresso.pdf used on input line 61.
+Package pdftex.def Info: ../../Doc/quantum_espresso.pdf used on input line 40.
 (pdftex.def)             Requested size: 142.26378pt x 48.49115pt.
-
-<../../Doc/democritos.pdf, id=97, 262.9825pt x 76.285pt>
-File: ../../Doc/democritos.pdf Graphic file (type pdf)
-
-<use ../../Doc/democritos.pdf>
-Package pdftex.def Info: ../../Doc/democritos.pdf used on input line 61.
-(pdftex.def)             Requested size: 170.71652pt x 49.52296pt.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <14.4> on input line 61.
+(Font)              <14.4> on input line 40.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 61.
+(Font)              <7> on input line 40.
  (./user_guide.toc
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <12> on input line 2.
@@ -272,154 +268,150 @@ LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <12> not available
  [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <../../Doc/quantum_espresso
-.pdf> <../../Doc/democritos.pdf>]
+.pdf>]
 LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <14.4> not available
-(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 86.
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 94.
- (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 65.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 73.
+
+(/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 94.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 73.
  [2]
-Overfull \hbox (0.12177pt too wide) in paragraph at lines 158--162
+Overfull \hbox (0.12177pt too wide) in paragraph at lines 139--143
 []\OT1/cmr/m/n/12 Minoru Otani (AIST), Yoshio Miura (To-hoku U.), Nicephore Bon
 et (MIT), Nicola Marzari
  []
 
-[3] [4] [5]
-LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <17.28> not available
-(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 250.
+[3]
+Overfull \hbox (6.66776pt too wide) in paragraph at lines 205--213
+\OT1/cmr/m/n/12 er-ful crys-talline and molec-u-lar struc-ture vi-su-al-iza-tio
+n pro-gram. BE-WARE: the \OT1/cmtt/m/n/12 pwi2xsf.sh
+ []
 
-Overfull \hbox (17.24237pt too wide) in paragraph at lines 252--257
+[4] [5]
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <17.28> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 229.
+
+Overfull \hbox (17.24237pt too wide) in paragraph at lines 231--236
 \OT1/cmr/m/n/12 by An-ton Kokalj, in-cluded in the \OT1/cmr/m/sc/12 Quan-tum ES
 PRESSO \OT1/cmr/m/n/12 dis-tri-bu-tion. See \OT1/cmtt/m/n/12 PWgui-x.y.z/INSTAL
 L
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 314--319
+Underfull \hbox (badness 10000) in paragraph at lines 293--298
 
  []
 
 [6]
-Overfull \hbox (11.05257pt too wide) in paragraph at lines 338--347
+Overfull \hbox (11.05257pt too wide) in paragraph at lines 317--327
 \OT1/cmtt/m/n/12 prefix='pwscf'\OT1/cmr/m/n/12 ). \OT1/cmtt/m/n/12 outdir \OT1/
 cmr/m/n/12 can be spec-i-fied as well in en-vi-ron-ment vari-able ESPRESSO[]TMP
 DIR.
  []
 
 [7]
-Overfull \hbox (12.58179pt too wide) in paragraph at lines 442--445
+Overfull \hbox (12.58179pt too wide) in paragraph at lines 435--438
  []\OT1/cmr/bx/n/12 Dispersion in-ter-ac-tion with non-local func-tional (vdW-D
 F)[] \OT1/cmr/m/n/12 See ex-am-ple \OT1/cmtt/m/n/12 vdwDF[]example
  []
 
 [8]
-Overfull \hbox (12.57196pt too wide) in paragraph at lines 464--469
+Overfull \hbox (12.57196pt too wide) in paragraph at lines 457--462
 \OT1/cmr/m/n/12 137205 (2005)] for in-su-la-tors. The cal-cu-la-tion is per-for
 med by set-ting in-put vari-able \OT1/cmtt/m/n/12 lorbm=.true.
  []
 
 
-Overfull \hbox (4.4081pt too wide) in paragraph at lines 500--515
+Overfull \hbox (4.4081pt too wide) in paragraph at lines 493--508
  []\OT1/cmr/bx/n/12 Variable-cell op-ti-miza-tion[] \OT1/cmr/m/n/12 Since v.4.2
  the newer BFGS al-go-rithm cov-ers the case of variable-
  []
 
-[9] [10] [11] [12]
-
-LaTeX Warning: Reference `SubSec:para' on page 13 undefined on input line 755.
-
-[13]
-Overfull \hbox (21.37143pt too wide) in paragraph at lines 808--816
+[9] [10] [11] [12] [13] [14]
+Overfull \hbox (21.37143pt too wide) in paragraph at lines 813--821
 \OT1/cmr/m/n/12 on the avail-able com-mu-ni-ca-tion hard-ware. For PC clus-ters
 , Open-MPI (\OT1/cmtt/m/n/12 http://www.openmpi.org/\OT1/cmr/m/n/12 )
  []
 
-[14] [15] [16]
-Overfull \hbox (28.98045pt too wide) in paragraph at lines 993--994
+[15] [16] [17]
+Overfull \hbox (28.98045pt too wide) in paragraph at lines 1000--1001
 \OT1/cmr/m/n/12 In or-der to com-pile signal-trapping add [] to []
  []
 
-[17]
-Underfull \hbox (badness 10000) in paragraph at lines 1011--1015
+
+Underfull \hbox (badness 10000) in paragraph at lines 1018--1022
 
  []
 
-
-LaTeX Warning: Reference `SubSec:para' on page 18 undefined on input line 1050.
-
-
-[18] [19]
-Overfull \hbox (55.83171pt too wide) in paragraph at lines 1148--1152
+[18] [19] [20]
+Overfull \hbox (55.83171pt too wide) in paragraph at lines 1155--1159
 []\OT1/cmr/m/n/12 Reduce the work space for David-son di-ag-o-nal-iza-tion to t
 he min-i-mum by set-ting \OT1/cmtt/m/n/12 diago[]david[]ndim=2\OT1/cmr/m/n/12 ;
 
  []
 
-[20] [21] [22] [23] [24]
-Overfull \hbox (29.32014pt too wide) in paragraph at lines 1461--1463
+[21] [22] [23] [24] [25]
+Overfull \hbox (29.32014pt too wide) in paragraph at lines 1468--1470
 []\OT1/cmr/m/n/12 use a symmetry-conserving al-go-rithm: the Wentz-cov-itch al-
 go-rithm (\OT1/cmtt/m/n/12 cell dynamics='damp-w'\OT1/cmr/m/n/12 )
  []
 
 
-Overfull \hbox (96.75345pt too wide) in paragraph at lines 1476--1476
+Overfull \hbox (96.75345pt too wide) in paragraph at lines 1483--1483
 []\OT1/cmtt/m/n/12 #define snew(ptr,nelem) (ptr)= (nelem==0 ? NULL : (typeof(pt
 r)) calloc(nelem, sizeof(*(ptr))))[] 
  []
 
 
-Overfull \hbox (22.65341pt too wide) in paragraph at lines 1476--1476
+Overfull \hbox (22.65341pt too wide) in paragraph at lines 1483--1483
 []\OT1/cmtt/m/n/12 #define srenew(ptr,nelem) (ptr)= (typeof(ptr)) realloc(ptr,(
 nelem)*sizeof(*(ptr)))[] 
  []
 
 
-Overfull \hbox (59.70343pt too wide) in paragraph at lines 1481--1481
+Overfull \hbox (59.70343pt too wide) in paragraph at lines 1488--1488
 []\OT1/cmtt/m/n/12 #define snew(ptr,nelem) (ptr)= (nelem==0 ? NULL : (void*) ca
 lloc(nelem, sizeof(*(ptr))))[] 
  []
 
-[25]
-Overfull \hbox (41.17842pt too wide) in paragraph at lines 1494--1494
+
+Overfull \hbox (41.17842pt too wide) in paragraph at lines 1501--1501
 []\OT1/cmtt/m/n/12 void meta_force_calculation_(real *cell, int *istep, real *x
 xx, real *yyy, real *zzz,[] 
  []
 
 
-Overfull \hbox (35.00342pt too wide) in paragraph at lines 1498--1498
+Overfull \hbox (35.00342pt too wide) in paragraph at lines 1505--1505
 []\OT1/cmtt/m/n/12 void meta_force_calculation(real *cell, int *istep, real *xx
 x, real *yyy, real *zzz,[] 
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1505.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1512.
 [26]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1505.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1512.
  (./user_guide.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1505.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1505.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1512.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1512.
 
 Package rerunfilecheck Info: File `user_guide.out' has not changed.
 (rerunfilecheck)             Checksum: 180DBABAB30DB351DDC4A00AE19085F0;1519.
 
 
-LaTeX Warning: There were undefined references.
-
-
 LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1505.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1512.
  ) 
 Here is how much of TeX's memory you used:
- 5405 strings out of 495048
- 78933 string characters out of 3181554
- 161045 words of memory out of 3000000
- 8466 multiletter control sequences out of 15000+200000
- 10790 words of font info for 39 fonts, out of 3000000 for 9000
+ 5503 strings out of 495028
+ 80555 string characters out of 6181497
+ 159917 words of memory out of 5000000
+ 8586 multiletter control sequences out of 15000+600000
+ 10790 words of font info for 39 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 36i,6n,28p,362b,441s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 36i,6n,28p,362b,396s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbxti10.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/share/t
@@ -433,10 +425,10 @@ onts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
 m/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti1
 2.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
 
-Output written on user_guide.pdf (26 pages, 298394 bytes).
+Output written on user_guide.pdf (26 pages, 290517 bytes).
 PDF statistics:
- 380 PDF objects out of 1000 (max. 8388607)
- 329 compressed objects within 4 object streams
+ 374 PDF objects out of 1000 (max. 8388607)
+ 326 compressed objects within 4 object streams
  105 named destinations out of 1000 (max. 500000)
- 195 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 190 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -92,8 +92,7 @@ Possible reasons:
 If you get error messages in the example scripts - i.e. not errors in
 the codes - on a parallel machine, such as e.g.: 
 <EM>run example: -n: command not found</EM>
-you may have forgotten 
-the " " in the definitions of PARA_PREFIX and PARA_POSTFIX.
+you may have forgotten to properly define PARA_PREFIX and PARA_POSTFIX.
 
 <P>
 
@@ -103,7 +102,8 @@ the " " in the definitions of PARA_PREFIX and PARA_POSTFIX.
 </H4> 
 If the code looks like it is not reading from input, maybe
 it isn't: the MPI libraries need to be properly configured to accept input
-redirection. Use <TT>pw.x -i</TT> and the input file name (see Sec.<A HREF="#SubSec:para"><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]" SRC="crossref.png"></A>), or inquire with
+redirection. Use <TT>pw.x -i</TT> and the input file name (see
+Sec.<A HREF="node17.html#SubSec:badpara">4.4</A>), or inquire with
 your local computer wizard (if any). Since v.4.2, this is for sure the
 reason if the code stops at <EM>Waiting for input...</EM>.
 
@@ -175,7 +175,7 @@ typically fall into one of the following cases:
   diagonalization. The LAPACK algorithms used by <TT>cdiaghg</TT>
   (for generic k-points) or <TT>rdiaghg</TT> (for <IMG
  WIDTH="16" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
- SRC="img7.png"
+ SRC="img8.png"
  ALT="$ \Gamma$"> -only case)
   are
   very robust and extensively tested. Still, it may seldom happen that
@@ -544,7 +544,7 @@ Assuming that your input data is sensible :
  -->
 <IMG
  WIDTH="19" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
- SRC="img6.png"
+ SRC="img7.png"
  ALT="$ \sim$"> 0.3 &#247; 0.1 or smaller. Try the <TT>mixing_mode</TT> value that is more
   appropriate for your problem. For slab geometries used in surface
   problems or for elongated cells,  <TT>mixing_mode='local-TF'</TT>
@@ -792,8 +792,8 @@ with a mysterious bfgs error</A>
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

@@ -75,8 +75,18 @@ SUBROUTINE read_file()
   !
 END SUBROUTINE read_file
 !
-!----------------------------------------------------------------------------
 SUBROUTINE read_xml_file()
+  ! wrapper routine to call the default behavior
+  call read_xml_file_internal(.true.)
+END SUBROUTINE read_xml_file
+
+SUBROUTINE read_xml_file_nobs()
+  ! wrapper routine to load everything except for the band structure
+  call read_xml_file_internal(.false.)
+END SUBROUTINE read_xml_file_nobs
+
+!----------------------------------------------------------------------------
+SUBROUTINE read_xml_file_internal(withbs)
   !----------------------------------------------------------------------------
   !
   ! ... This routine allocates space for all quantities already computed
@@ -90,14 +100,14 @@ SUBROUTINE read_xml_file()
   USE force_mod,            ONLY : force
   USE klist,                ONLY : nkstot, nks, xk, wk
   USE lsda_mod,             ONLY : lsda, nspin, current_spin, isk
-  USE wvfct,                ONLY : nbnd, nbndx, et, wg, ecutwfc
+  USE wvfct,                ONLY : nbnd, nbndx, et, wg
   USE symm_base,            ONLY : irt, d1, d2, d3, checkallsym
   USE ktetra,               ONLY : tetra, ntetra 
   USE extfield,             ONLY : forcefield, tefield
   USE cellmd,               ONLY : cell_factor, lmovecell
   USE fft_base,             ONLY : dfftp
   USE fft_interfaces,       ONLY : fwfft
-  USE grid_subroutines,     ONLY : realspace_grids_init
+  USE grid_subroutines,     ONLY : realspace_grid_init
   USE recvec_subs,          ONLY : ggen
   USE gvect,                ONLY : gg, ngm, g, gcutm, &
                                    eigts1, eigts2, eigts3, nl, gstart
@@ -110,6 +120,7 @@ SUBROUTINE read_xml_file()
   USE io_files,             ONLY : tmp_dir, prefix, iunpun, nwordwfc, iunwfc
   USE noncollin_module,     ONLY : noncolin, npol, nspin_lsda, nspin_mag, nspin_gga
   USE pw_restart,           ONLY : pw_readfile
+  USE io_rho_xml,           ONLY : read_rho
   USE read_pseudo_mod,      ONLY : readpp
   USE xml_io_base,          ONLY : pp_check_file
   USE uspp,                 ONLY : becsum
@@ -120,9 +131,16 @@ SUBROUTINE read_xml_file()
   USE control_flags,        ONLY : gamma_only
   USE funct,                ONLY : get_inlc, get_dft_name
   USE kernel_table,         ONLY : initialize_kernel_table
-  USE esm,                  ONLY : do_comp_esm, esm_ggen_2d
+  USE esm,                  ONLY : do_comp_esm, esm_init
   !
   IMPLICIT NONE
+
+  ! Used to specify whether to read the band structure (files 
+  ! K??????/eigenval.xml), so one can skip it if not needed by
+  ! the post-processing tool. 
+  ! Set to True for the 'default' behavior of reading these files.
+  LOGICAL :: withbs
+
   INTEGER  :: i, is, ik, ibnd, nb, nt, ios, isym, ierr, inlc
   REAL(DP) :: rdum(1,1), ehart, etxc, vtxc, etotefield, charge
   REAL(DP) :: sr(3,3,48)
@@ -171,8 +189,8 @@ SUBROUTINE read_xml_file()
   ALLOCATE( tetra( 4, MAX( ntetra, 1 ) ) )
   !
   CALL set_dimensions()
-  CALL realspace_grids_init ( dfftp, dffts, at, bg, gcutm, gcutms )
-
+  CALL realspace_grid_init ( dfftp, at, bg, gcutm )
+  CALL realspace_grid_init ( dffts, at, bg, gcutms)
   !
   ! ... check whether LSDA
   !
@@ -204,7 +222,11 @@ SUBROUTINE read_xml_file()
   !
   ! ... here we read all the variables defining the system
   !
-  CALL pw_readfile( 'nowave', ierr )
+  if (withbs .eqv. .true.) then
+     CALL pw_readfile( 'nowave', ierr )
+  else 
+     CALL pw_readfile( 'nowavenobs', ierr )
+  end if
   !
   ! ... distribute across pools k-points and related variables.
   ! ... nks is defined by the following routine as the number 
@@ -256,7 +278,10 @@ SUBROUTINE read_xml_file()
   CALL pre_init()
   CALL allocate_fft()
   CALL ggen ( gamma_only, at, bg ) 
-  IF (do_comp_esm) CALL esm_ggen_2d ()
+  IF (do_comp_esm) THEN
+    CALL pw_readfile( 'esm', ierr )
+    CALL esm_init()
+  END IF
   CALL gshells ( lmovecell ) 
   !
   ! ... allocate the potential and wavefunctions
@@ -277,7 +302,7 @@ SUBROUTINE read_xml_file()
   !
   ! ... read the charge density
   !
-  CALL pw_readfile( 'rho', ierr )
+  CALL read_rho( rho, nspin )
   !
   ! ... re-calculate the local part of the pseudopotential vltot
   ! ... and the core correction charge (if any) - This is done here
@@ -319,8 +344,8 @@ SUBROUTINE read_xml_file()
       USE constants, ONLY : pi
       USE cell_base, ONLY : alat, tpiba, tpiba2
       USE gvect,     ONLY : ecutrho, gcutm
-      USE wvfct,     ONLY : ecutwfc
       USE gvecs,     ONLY : gcutms, dual, doublegrid
+      USE gvecw,     ONLY : gcutw, ecutwfc
       !
       !
       ! ... Set the units in real and reciprocal space
@@ -330,6 +355,7 @@ SUBROUTINE read_xml_file()
       !
       ! ... Compute the cut-off of the G vectors
       !
+      gcutw =        ecutwfc / tpiba2
       gcutm = dual * ecutwfc / tpiba2
       ecutrho=dual * ecutwfc
       !
@@ -342,4 +368,4 @@ SUBROUTINE read_xml_file()
       !
     END SUBROUTINE set_dimensions
     !
-END SUBROUTINE read_xml_file
+  END SUBROUTINE read_xml_file_internal

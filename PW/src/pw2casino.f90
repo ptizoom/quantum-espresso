@@ -9,7 +9,7 @@
 ! Norbert Nemec
 ! (C) 2010 by Norbert Nemec <Norbert@Nemec-online.de> 
 !----------------------------------------------------------------------------
-SUBROUTINE pw2casino()
+SUBROUTINE pw2casino( istep )
   !----------------------------------------------------------------------------
   !
   USE kinds,         ONLY : DP
@@ -18,22 +18,20 @@ SUBROUTINE pw2casino()
   USE mp_bands,      ONLY : nbgrp
   USE mp_pools,      ONLY : npool
   !
-  USE control_flags, ONLY : istep, nstep
-  !
+  USE noncollin_module, ONLY : noncolin
+  USE spin_orb,         ONLY : lspinorb
   USE io_files, ONLY : tmp_dir
   !
   USE plugin_flags, ONLY : use_pw2casino
   !
   IMPLICIT NONE
   !
+  INTEGER, INTENT (IN) :: istep
+  !
   CHARACTER(len=4) :: postfix
-  !
   CHARACTER(len=6), EXTERNAL :: int_to_char
-  !
   INTEGER, EXTERNAL :: find_free_unit
-  !
   INTEGER :: tmp_unit
-  !
   INTEGER  :: ios
   LOGICAL  :: casino_gather = .true.
   LOGICAL  :: blip_convert = .true.
@@ -52,9 +50,10 @@ SUBROUTINE pw2casino()
   !
   IF ( use_pw2casino ) THEN
     !
-    IF ( npool > 1 .or. nimage > 1 .or. nbgrp > 1 ) THEN
+    IF ( npool > 1 .or. nimage > 1 .or. nbgrp > 1 ) &
       CALL errore('pw2casino', 'pool/band/image parallelization not (yet) implemented',1)
-    ENDIF
+    IF ( noncolin .OR. lspinorb ) &
+      CALL errore('pw2casino', 'noncollinear/spinorbit magnetism not (yet) implemented',2)
     !
     tmp_unit = find_free_unit()
     OPEN(unit=tmp_unit,file = trim(tmp_dir)//'/'//'pw2casino.dat',status='old',err=20)
@@ -65,8 +64,8 @@ SUBROUTINE pw2casino()
  
    IF ( .not. blip_convert ) blip_binary = .false.
  
-    IF ( nstep == 1 ) THEN
-      write(postfix,*) ''
+    IF ( istep == 0 ) THEN
+      postfix = ' '
       CALL write_casino_wfn( &
                casino_gather, & ! gather
                blip_convert,  & ! blip
@@ -77,9 +76,7 @@ SUBROUTINE pw2casino()
                postfix)   ! postfix
 
     ELSE
-!      write(postfix,'(i4.4)') istep
       postfix=trim(int_to_char(istep))
-      !
       CALL write_casino_wfn( &
                casino_gather, & ! gather
                blip_convert,  & ! blip

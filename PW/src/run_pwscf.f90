@@ -29,16 +29,22 @@ SUBROUTINE run_pwscf ( exit_status )
   USE io_global,        ONLY : stdout, ionode, ionode_id
   USE parameters,       ONLY : ntypx, npk, lmaxx
   USE cell_base,        ONLY : fix_volume, fix_area
-  USE control_flags,    ONLY : conv_elec, gamma_only, lscf, twfcollect
+  USE control_flags,    ONLY : conv_elec, gamma_only, ethr, lscf, twfcollect
   USE control_flags,    ONLY : conv_ions, istep, nstep, restart, lmd, lbfgs
   USE force_mod,        ONLY : lforce, lstres, sigma, force
   USE check_stop,       ONLY : check_stop_init, check_stop_now
   USE mp_images,        ONLY : intra_image_comm
+  USE extrapolation,    ONLY : update_file, update_pot
+  USE scf,              ONLY : rho
+  USE lsda_mod,         ONLY : nspin
+  USE fft_base,         ONLY : dfftp
   USE qmmm,             ONLY : qmmm_initialization, qmmm_shutdown, &
                                qmmm_update_positions, qmmm_update_forces
   !
   IMPLICIT NONE
   INTEGER, INTENT(OUT) :: exit_status
+  INTEGER :: idone 
+  ! counter of electronic + ionic steps done in this run
   !
   !
   exit_status = 0
@@ -80,7 +86,7 @@ SUBROUTINE run_pwscf ( exit_status )
      RETURN
   ENDIF
   !
-  main_loop: DO
+  main_loop: DO idone = 1, nstep
      !
      ! ... electronic self-consistency or band structure calculation
      !
@@ -112,7 +118,11 @@ SUBROUTINE run_pwscf ( exit_status )
      !
      ! ... file in CASINO format written here if required
      !
-     IF ( lmd ) CALL pw2casino()
+     IF ( lmd ) THEN
+        CALL pw2casino( istep )
+     ELSE
+        CALL pw2casino( 0 )
+     END IF
      !
      ! ... force calculation
      !
@@ -124,22 +134,24 @@ SUBROUTINE run_pwscf ( exit_status )
      !
      ! ... send out forces to MM code in QM/MM run
      !
-     CALL qmmm_update_forces(force)
+     CALL qmmm_update_forces( force, rho%of_r, nspin, dfftp)
      !
      IF ( lmd .OR. lbfgs ) THEN
         !
         if (fix_volume) CALL impose_deviatoric_stress(sigma)
-        !
         if (fix_area)  CALL  impose_deviatoric_stress_2d(sigma)
+        !
+        ! ... save data needed for potential and wavefunction extrapolation
+        !
+        CALL update_file ( )
         !
         ! ... ionic step (for molecular dynamics or optimization)
         !
-        CALL move_ions()
+        CALL move_ions ( idone )
         !
         ! ... then we save restart information for the new configuration
         !
-        IF ( istep < nstep .AND. .NOT. conv_ions ) &
-           CALL punch( 'config' )
+        IF ( idone <= nstep .AND. .NOT. conv_ions ) CALL punch( 'config' )
         !
      END IF
      !
@@ -156,13 +168,27 @@ SUBROUTINE run_pwscf ( exit_status )
      ! ... terms of the hamiltonian depending upon nuclear positions
      ! ... are reinitialized here
      !
-     IF ( lmd .OR. lbfgs ) CALL hinit1()
+     IF ( lmd .OR. lbfgs ) THEN
+        !
+        ! ... update the wavefunctions, charge density, potential
+        ! ... update_pot initializes structure factor array as well
+        !
+        CALL update_pot()
+        !
+        ! ... re-initialize atomic position-dependent quantities
+        !
+        CALL hinit1()
+        !
+     END IF
+     ! ... Reset convergence threshold of iterative diagonalization for
+     ! ... the first scf iteration of each ionic step (after the first)
+     !
+     ethr = 1.0D-6
      !
   END DO main_loop
   !
   ! ... save final data file
   !
-  IF ( .not. lmd) CALL pw2casino()
   CALL punch('all')
   !
   CALL qmmm_shutdown()

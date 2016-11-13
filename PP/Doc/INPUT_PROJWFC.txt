@@ -86,6 +86,20 @@ NAMELIST: &PROJWFC
    Type:           LOGICAL
    Default:        .true.
    Description:    if true the projections are symmetrized
+                   if false partial density of state cannot be computed
+   +--------------------------------------------------------------------
+   
+   +--------------------------------------------------------------------
+   Variable:       pawproj
+   
+   Type:           LOGICAL
+   Default:        .false.
+   Description:    if true, use PAW projectors and all-electron PAW basis
+                   functions to calculate weight factors for the partial
+                   densities of states. Following Bloechl, PRB 50, 17953 (1994),
+                   Eq. (4 & 6), the weight factors thus approximate the real
+                   charge within the augmentation sphere of each atom.
+                   Only for PAW, not implemented in the noncolinear case
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -157,16 +171,21 @@ NAMELIST: &PROJWFC
    Variable:       irmin
    
    Type:           INTEGER
-   Default:        1
-   Description:    first point to be included in the box
+   Default:        1 for each box
+   Description:    first point of the given box
+                   
+                   BEWARE: irmin is a 2D array of the form: irmin(3,n_proj_boxes)
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
    Variable:       irmax
    
    Type:           INTEGER
-   Default:        0
-   Description:    last point to be included in the box
+   Default:        0 for each box
+   Description:    last point of the given box;
+                   ( 0 stands for the last point in the FFT grid )
+                   
+                   BEWARE: irmax is a 2D array of the form: irmax(3,n_proj_boxes)
    +--------------------------------------------------------------------
    
    +--------------------------------------------------------------------
@@ -268,13 +287,17 @@ NAMELIST: &PROJWFC
    ::: Defining boxes for the Local DOS(E)
    
       Boxes are specified using the variables irmin and irmax:
+      
       FFT grid points are included from irmin(j,n) to irmax(j,n)
       for j=1,2,3 and n=1,...,n_proj_boxes
+      
       irmin and irmax range from 1 to nr1 or nr2 or nr3
+      
       Values larger than nr1/2/3 or smaller than 1 are folded
       to the unit cell.
+      
       If irmax<irmin FFT grid points are included from 1 to irmax
-      and from irmin to nr1/2/3
+      and from irmin to nr1/2/3.
       
 
    

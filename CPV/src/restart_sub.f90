@@ -37,6 +37,7 @@ SUBROUTINE from_restart( )
                                      sfac, taub, irb, eigrb, edft, bec_bgrp, dbec, descla
    USE time_step,             ONLY : delt
    USE fft_base,              ONLY : dfftp
+   USE matrix_inversion
    !
    IMPLICIT NONE
 
@@ -154,6 +155,8 @@ SUBROUTINE from_restart( )
    !
    IF ( tefield  ) CALL efield_berry_setup( eigr, tau0 )
    IF ( tefield2 ) CALL efield_berry_setup2( eigr, tau0 )
+   !
+   CALL plugin_init_ions( tau0 )
    !
    edft%eself = eself
    !

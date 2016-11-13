@@ -67,7 +67,7 @@ The effectiveness of parallelization is ultimately judged by the
 <LI>the size and type of the system under study;
 </LI>
 <LI>the judicious choice of the various levels of parallelization 
-(detailed in Sec.<A HREF="#SubSec:para"><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]" SRC="crossref.png"></A>);
+(detailed in Sec.<A HREF="#SubSec:badpara">4.4</A>);
 </LI>
 <LI>the availability of fast interprocess communications (or lack of it).
 </LI>
@@ -77,7 +77,7 @@ Ideally one would like to have linear scaling, i.e. <!-- MATH
  -->
 <I>T</I> <IMG
  WIDTH="19" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
- SRC="img6.png"
+ SRC="img7.png"
  ALT="$ \sim$"> <I>T</I><SUB>0</SUB>/<I>N</I><SUB>p</SUB> for 
 <I>N</I><SUB>p</SUB> processors, where <I>T</I><SUB>0</SUB> is the estimated time for serial execution.
  In addition, one would like to have linear scaling of
@@ -86,7 +86,7 @@ the RAM per processor: <!-- MATH
  -->
 <I>O</I><SUB>N</SUB> <IMG
  WIDTH="19" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
- SRC="img6.png"
+ SRC="img7.png"
  ALT="$ \sim$"> <I>O</I><SUB>0</SUB>/<I>N</I><SUB>p</SUB>, so that large-memory systems
 fit into the RAM of each processor.
 
@@ -99,8 +99,9 @@ is a multiple of the number of pools;
 </LI>
 <LI>requires little communications (suitable for ethernet communications);
 </LI>
-<LI>does not reduce the required memory per processor (unsuitable for 
-large-memory jobs).
+<LI>reduces the required memory per processor by distributing wavefunctions
+(but not other quantities like the charge density), unless you set 
+<TT>disk_io='high'</TT>.
 </LI>
 </UL>
 Parallelization on PWs:
@@ -192,8 +193,8 @@ motherboard.
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

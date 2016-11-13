@@ -1,5 +1,5 @@
 
-! Copyright (C) 2002-2009 Quantum ESPRESSO group
+! Copyright (C) 2002-2016 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -7,6 +7,65 @@
 !
 !----------------------------------------------------------------------------
 SUBROUTINE h_psi( lda, n, m, psi, hpsi )
+  !----------------------------------------------------------------------------
+  !
+  ! ... This routine computes the product of the Hamiltonian
+  ! ... matrix with m wavefunctions contained in psi
+  !
+  ! ... input:
+  ! ...    lda   leading dimension of arrays psi, spsi, hpsi
+  ! ...    n     true dimension of psi, spsi, hpsi
+  ! ...    m     number of states psi
+  ! ...    psi
+  !
+  ! ... output:
+  ! ...    hpsi  H*psi
+  !
+  ! --- Wrapper routine: performs bgrp parallelization on non-distributed bands
+  ! --- if suitable and required, calls old H\psi routine h_psi_
+  !
+  USE kinds,            ONLY : DP
+  USE noncollin_module, ONLY : npol
+  USE funct,            ONLY : exx_is_active
+  USE mp_bands,         ONLY : use_bgrp_in_hpsi, set_bgrp_indices, inter_bgrp_comm
+  USE mp,               ONLY : mp_sum
+  !
+  IMPLICIT NONE
+  !
+  INTEGER, INTENT(IN)      :: lda, n, m
+  COMPLEX(DP), INTENT(IN)  :: psi(lda*npol,m) 
+  COMPLEX(DP), INTENT(OUT) :: hpsi(lda*npol,m)   
+  !
+  INTEGER     :: m_start, m_end
+  !
+  CALL start_clock( 'h_psi_bgrp' )
+
+  ! band parallelization with non-distributed bands is performed if
+  ! 1. enabled (variable use_bgrp_in_hpsi must be set to .T.)
+  ! 2. exact exchange is not active (if it is, band parallelization is already
+  !    used in exx routines called by Hpsi)
+  ! 3. there is more than one band, otherwise there is nothing to parallelize
+  !
+  IF (use_bgrp_in_hpsi .AND. .NOT. exx_is_active() .AND. m > 1) THEN
+     ! use band parallelization here
+     hpsi(:,:) = (0.d0,0.d0)
+     CALL set_bgrp_indices(m,m_start,m_end)
+     ! Check if there at least one band in this band group
+     IF (m_end >= m_start) &
+        CALL h_psi_( lda, n, m_end-m_start+1, psi(1,m_start), hpsi(1,m_start) )
+     CALL mp_sum(hpsi,inter_bgrp_comm)
+  ELSE
+     ! don't use band parallelization here
+     CALL h_psi_( lda, n, m, psi, hpsi )
+  END IF
+
+  CALL stop_clock( 'h_psi_bgrp' )
+  RETURN
+  !
+END SUBROUTINE h_psi
+!
+!----------------------------------------------------------------------------
+SUBROUTINE h_psi_( lda, n, m, psi, hpsi )
   !----------------------------------------------------------------------------
   !
   ! ... This routine computes the product of the Hamiltonian
@@ -33,8 +92,8 @@ SUBROUTINE h_psi( lda, n, m, psi, hpsi )
   USE funct,    ONLY : dft_is_meta
   USE control_flags,    ONLY : gamma_only
   USE noncollin_module, ONLY: npol, noncolin
-  USE realus,   ONLY : real_space, fft_orbital_gamma, initialisation_level, &
-                       bfft_orbital_gamma, calbec_rs_gamma, &
+  USE realus,   ONLY : real_space, invfft_orbital_gamma, initialisation_level, &
+                       fwfft_orbital_gamma, calbec_rs_gamma, &
                        add_vuspsir_gamma, v_loc_psir
   USE fft_base, ONLY : dffts
   USE exx,      ONLY : vexx
@@ -94,17 +153,17 @@ SUBROUTINE h_psi( lda, n, m, psi, hpsi )
         ENDIF
         DO ibnd = 1, m, incr
            ! ... transform psi to real space, saved in temporary memory
-           CALL fft_orbital_gamma(psi,ibnd,m,.true.) 
+           CALL invfft_orbital_gamma(psi,ibnd,m,.true.) 
            ! ... becp%r = < beta|psi> on psi in real space
            CALL calbec_rs_gamma(ibnd,m,becp%r) 
            ! ... psi is now replaced by hpsi ??? WHAT FOR ???
-           CALL fft_orbital_gamma(hpsi,ibnd,m)
+           CALL invfft_orbital_gamma(hpsi,ibnd,m)
            ! ... hpsi -> hpsi + psi*vrs  (psi read from temporary memory)
            CALL v_loc_psir(ibnd,m) 
            ! ... hpsi -> hpsi + vusp
            CALL  add_vuspsir_gamma(ibnd,m)
            ! ... transform back hpsi, clear psi in temporary memory
-           CALL bfft_orbital_gamma(hpsi,ibnd,m,.true.) 
+           CALL fwfft_orbital_gamma(hpsi,ibnd,m,.true.) 
         END DO
         !
      ELSE
@@ -159,4 +218,4 @@ SUBROUTINE h_psi( lda, n, m, psi, hpsi )
   !
   RETURN
   !
-END SUBROUTINE h_psi
+END SUBROUTINE h_psi_

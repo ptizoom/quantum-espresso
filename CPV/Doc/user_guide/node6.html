@@ -85,14 +85,14 @@ holds. This should clarify the relation between 1D and 3D indexing. In real
 space, the <TT>(i,j,k)</TT> point of the FFT grid with dimensions 
 <TT>nr1</TT> (<IMG
  WIDTH="19" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img1.png"
+ SRC="img2.png"
  ALT="$ \le$"><TT>nr1x</TT>), 
 <TT>nr2</TT>  (<IMG
  WIDTH="19" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img1.png"
+ SRC="img2.png"
  ALT="$ \le$"><TT>nr2x</TT>), , <TT>nr3</TT> (<IMG
  WIDTH="19" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img1.png"
+ SRC="img2.png"
  ALT="$ \le$"><TT>nr3x</TT>), is
 <P><!-- MATH
  \begin{displaymath}
@@ -104,40 +104,40 @@ r_{ijk}=\frac{i-1}{nr1} \tau_1  +  \frac{j-1}{nr2} \tau_2 +
 <DIV ALIGN="CENTER">
 <I>r</I><SUB>ijk</SUB> = <IMG
  WIDTH="48" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
- SRC="img2.png"
+ SRC="img3.png"
  ALT="$\displaystyle {\frac{{i-1}}{{nr1}}}$"><IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img3.png"
+ SRC="img4.png"
  ALT="$\displaystyle \tau_{1}^{}$"> + <IMG
  WIDTH="50" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
- SRC="img4.png"
+ SRC="img5.png"
  ALT="$\displaystyle {\frac{{j-1}}{{nr2}}}$"><IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img5.png"
+ SRC="img6.png"
  ALT="$\displaystyle \tau_{2}^{}$"> + <IMG
  WIDTH="52" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
- SRC="img6.png"
+ SRC="img7.png"
  ALT="$\displaystyle {\frac{{k-1}}{{nr3}}}$"><IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img7.png"
+ SRC="img8.png"
  ALT="$\displaystyle \tau_{3}^{}$">
 </DIV><P></P>
 where the <IMG
  WIDTH="18" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img8.png"
+ SRC="img9.png"
  ALT="$ \tau_{i}^{}$"> are the basis vectors of the Bravais lattice. 
 The latter are stored row-wise in the <TT>at</TT> array:
 <IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img9.png"
+ SRC="img10.png"
  ALT="$ \tau_{1}^{}$"> = <TT>at(:, 1)</TT>, 
 <IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img10.png"
+ SRC="img11.png"
  ALT="$ \tau_{2}^{}$"> = <TT>at(:, 2)</TT>, 
 <IMG
  WIDTH="20" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img11.png"
+ SRC="img12.png"
  ALT="$ \tau_{3}^{}$"> = <TT>at(:, 3)</TT>.
 
 <P>
@@ -174,8 +174,8 @@ to reduce memory conflicts.
   HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-paolo giannozzi
-2015-03-08
+Filippo Spiga
+2016-04-24
 </ADDRESS>
 </BODY>
 </HTML>

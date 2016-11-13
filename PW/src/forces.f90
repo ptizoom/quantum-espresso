@@ -47,6 +47,8 @@ SUBROUTINE forces()
   USE london_module, ONLY : force_london
   USE xdm_module,    ONLY : force_xdm
   USE tsvdw_module,  ONLY : FtsvdW
+  USE esm,           ONLY : do_comp_esm, esm_bc, esm_force_ew
+  USE qmmm,          ONLY : qmmm_mode
   !
   IMPLICIT NONE
   !
@@ -83,8 +85,6 @@ SUBROUTINE forces()
   forceh(:,:)   = 0.D0
   force (:,:)   = 0.D0
   !
-  WRITE( stdout, '(/,5x,"Forces acting on atoms (Ry/au):", / )')
-  !
   ! ... The nonlocal contribution is computed here
   !
   CALL force_us( forcenl )
@@ -106,8 +106,12 @@ SUBROUTINE forces()
   !
   ! ... The ionic contribution is computed here
   !
-  CALL force_ew( alat, nat, ntyp, ityp, zv, at, bg, tau, omega, g, &
-                 gg, ngm, gstart, gamma_only, gcutm, strf, forceion )
+  IF( do_comp_esm ) THEN
+     CALL esm_force_ew( forceion )
+  ELSE
+     CALL force_ew( alat, nat, ntyp, ityp, zv, at, bg, tau, omega, g, &
+                    gg, ngm, gstart, gamma_only, gcutm, strf, forceion )
+  END IF
   !
   ! ... the semi-empirical dispersion correction
   !
@@ -189,25 +193,24 @@ SUBROUTINE forces()
         !
      END DO
      !
-     ! ... impose total force = 0
-     !
-     DO na = 1, nat
+     IF ( do_comp_esm .and. ( esm_bc .ne. 'pbc' ) ) THEN
         !
-        force(ipol,na) = force(ipol,na) - sumfor / DBLE( nat )  
+        ! ... impose total force along xy = 0
         !
-     END DO
-     !
-#ifdef __MS2
-     !
-     ! ... impose total force of the quantum subsystem /= 0
-     !
-     DO na = 1, nat
+        DO na = 1, nat
+           IF ( ipol .ne. 3) force(ipol,na) = force(ipol,na)  &
+                                            - sumfor / DBLE ( nat )
+        END DO
         !
-        force(ipol,na) = force(ipol,na) + sumfor / DBLE( nat )
+     ELSE IF ( qmmm_mode < 0 ) THEN
         !
-     END DO
-     !
-#endif
+        ! ... impose total force = 0 except in a QM-MM calculation
+        !
+        DO na = 1, nat
+           force(ipol,na) = force(ipol,na) - sumfor / DBLE( nat ) 
+        END DO
+        !
+     ENDIF
      !
   END DO
   !
@@ -226,10 +229,9 @@ SUBROUTINE forces()
   !
   ! ... write on output the forces
   !
+  WRITE( stdout, '(/,5x,"Forces acting on atoms (Ry/au):", / )')
   DO na = 1, nat
-     !
      WRITE( stdout, 9035) na, ityp(na), force(:,na)
-     !
   END DO
   !
   ! ... forces on fixed coordinates are set to zero ( C.S. 15/10/2003 )

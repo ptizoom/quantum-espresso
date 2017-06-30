@@ -24,6 +24,7 @@ constants.o \
 constraints_module.o \
 control_flags.o \
 coulomb_vcut.o \
+dist.o \
 electrons_base.o \
 environment.o \
 error_handler.o \
@@ -31,6 +32,7 @@ fcp_variables.o \
 fd_gradient.o \
 fft_base.o \
 fft_custom.o \
+fft_rho.o \
 fsockets.o \
 funct.o \
 generate_function.o \
@@ -114,7 +116,9 @@ qexsd.o   \
 qexsd_input.o \
 qexsd_reader_module.o \
 hdf5_qe.o\
+qeh5_module.o\
 xsf.o \
+wyckoff.o \
 wypos.o \
 zdotc_wrapper.o  \
 zvscal.o 

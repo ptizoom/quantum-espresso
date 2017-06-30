@@ -116,14 +116,17 @@ input_description -distribution {Quantum Espresso} -package PWscf -program ph.x 
 
         var fildrho -type CHARACTER { 
             default { ' ' }
-            info { File where the charge density responses are written. }
+            info { File where the charge density responses are written. Note that the file
+                   will actually be saved as ${outdir}/_ph0/${prefix}.${fildrho}1  
+                   where  ${outdir}, ${prefix} and ${fildrho} are the values of the 
+                   corresponding input variables }
         }
 
         var fildvscf  -type CHARACTER { 
             default { ' ' }
             info {
                 File where the the potential variation is written 
-                (for later use in electron-phonon calculation).
+                (for later use in electron-phonon calculation, see also fildrho).
             }
         }
 
@@ -339,6 +342,14 @@ input_description -distribution {Quantum Espresso} -package PWscf -program ph.x 
                 minimum, as it is done in code phcg.x. This option MUST 
                 BE USED if a run with ph.x is to be followed by a run
                 with d3.x for third-order terms calculation.
+	    }
+	}
+
+	var asr  -type LOGICAL { 
+	    default { .false. }
+	    info {
+		Apply Acoustic Sum Rule to dynamical matrix, effective charges
+                Works only in conjunction with "gamma_gamma" tricks (see above)
 	    }
 	}
 

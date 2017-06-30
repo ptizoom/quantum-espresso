@@ -128,6 +128,8 @@
   !! Counter for WS loop
   INTEGER :: nrws
   !! Number of real-space Wigner-Seitz
+  INTEGER :: valueRSS(2)
+  !! Return virtual and resisdent memory from system
   INTEGER, PARAMETER :: nrwsx=200
   !! Maximum number of real-space Wigner-Seitz
   !  
@@ -261,6 +263,8 @@
     CALL mp_bcast (ityp, root_pool, intra_pool_comm)  
     CALL mp_bcast (isk, ionode_id, inter_pool_comm)
     CALL mp_bcast (isk, root_pool, intra_pool_comm)    
+    CALL mp_bcast (noncolin, ionode_id, inter_pool_comm)
+    CALL mp_bcast (noncolin, root_pool, intra_pool_comm)    
     IF (mpime.eq.ionode_id) THEN
       CLOSE(crystal)
     ENDIF
@@ -413,6 +417,16 @@
   IF ( ALLOCATED (cuq) )     DEALLOCATE (cuq)
   IF ( ALLOCATED (lwin) )    DEALLOCATE (lwin)
   IF ( ALLOCATED (lwinq) )   DEALLOCATE (lwinq)
+  ! 
+  ! Check Memory usage
+  CALL system_mem_usage(valueRSS)
+  ! 
+  WRITE(stdout, '(a)' )             '     ==================================================================='
+  WRITE(stdout, '(a,i10,a)' ) '     Memory usage:  VmHWM =',valueRSS(2)/1024,'Mb'
+  WRITE(stdout, '(a,i10,a)' ) '                   VmPeak =',valueRSS(1)/1024,'Mb'
+  WRITE(stdout, '(a)' )             '     ==================================================================='
+  WRITE(stdout, '(a)' )             '     '
+  ! 
   !
   ! at this point, we will interpolate the Wannier rep to the Bloch rep 
   ! for electrons, phonons and the ep-matrix
@@ -562,16 +576,30 @@
   IF( efermi_read ) THEN
      !
      ef = fermi_energy
-     WRITE(6,'(/5x,a)') repeat('=',67)
-     WRITE(6, '(/5x,a,f10.6,a)') &
+     WRITE(stdout,'(/5x,a)') repeat('=',67)
+     WRITE(stdout, '(/5x,a,f10.6,a)') &
          'Fermi energy is read from the input file: Ef = ', ef * ryd2ev, ' eV'
-     WRITE(6,'(/5x,a)') repeat('=',67)
+     WRITE(stdout,'(/5x,a)') repeat('=',67)
+     ! SP: even when reading from input the number of electron needs to be correct
+     already_skipped = .false.
+     IF ( nbndskip .gt. 0 ) THEN
+        IF ( .not. already_skipped ) THEN
+           IF ( noncolin ) THEN
+              nelec = nelec - one * nbndskip
+           ELSE
+              nelec = nelec - two * nbndskip
+           ENDIF
+           already_skipped = .true.
+           WRITE(6,'(/5x,"Skipping the first ",i4," bands:")') nbndskip
+           WRITE(6,'(/5x,"The Fermi level will be determined with ",f9.5," electrons")') nelec
+        ENDIF
+     ENDIF     
      !
   ELSEIF( band_plot ) THEN 
      !
-     WRITE(6,'(/5x,a)') repeat('=',67)
+     WRITE(stdout,'(/5x,a)') repeat('=',67)
      WRITE(stdout, '(/5x,"Fermi energy corresponds to the coarse k-mesh")')
-     WRITE(6,'(/5x,a)') repeat('=',67) 
+     WRITE(stdout,'(/5x,a)') repeat('=',67) 
      !
   ELSE 
      ! here we take into account that we may skip bands when we wannierize
@@ -586,8 +614,8 @@
               nelec = nelec - two * nbndskip
            ENDIF
            already_skipped = .true.
-           WRITE(6,'(/5x,"Skipping the first ",i4," bands:")') nbndskip
-           WRITE(6,'(/5x,"The Fermi level will be determined with ",f9.5," electrons")') nelec
+           WRITE(stdout,'(/5x,"Skipping the first ",i4," bands:")') nbndskip
+           WRITE(stdout,'(/5x,"The Fermi level will be determined with ",f9.5," electrons")') nelec
         ENDIF
      ENDIF
      !
@@ -606,14 +634,14 @@
      CALL mp_bcast (etf_k, ionode_id, inter_pool_comm)
      ENDIF
      !
-     WRITE(6, '(/5x,a,f10.6,a)') &
+     WRITE(stdout, '(/5x,a,f10.6,a)') &
          'Fermi energy is calculated from the fine k-mesh: Ef = ', efnew * ryd2ev, ' eV'
      !
      ! if 'fine' Fermi level differs by more than 250 meV, there is probably something wrong
      ! with the wannier functions, or 'coarse' Fermi level is inaccurate
      IF (abs(efnew - ef) * ryd2eV .gt. 0.250d0 .and. (.not.eig_read) ) &
-        WRITE(6,'(/5x,a)') 'Warning: check if difference with Fermi level fine grid makes sense'
-     WRITE(6,'(/5x,a)') repeat('=',67)
+        WRITE(stdout,'(/5x,a)') 'Warning: check if difference with Fermi level fine grid makes sense'
+     WRITE(stdout,'(/5x,a)') repeat('=',67)
      !
      ef=efnew
      !
@@ -1372,7 +1400,6 @@
   CALL mp_bcast (epsi, ionode_id, inter_pool_comm)
   CALL mp_bcast (epsi, root_pool, intra_pool_comm)
   !
-  IF (.not. ALLOCATED(epmatwp)) ALLOCATE ( epmatwp ( nbndsub, nbndsub, nrr_k, nmodes, nrr_q) )
   IF (.not. ALLOCATED(chw)    ) ALLOCATE ( chw ( nbndsub, nbndsub, nrr_k )            )
   IF (.not. ALLOCATED(chw_ks) ) ALLOCATE ( chw_ks ( nbndsub, nbndsub, nrr_k )         )
   IF (.not. ALLOCATED(rdw)    ) ALLOCATE ( rdw ( nmodes,  nmodes,  nrr_q )            )
@@ -1424,6 +1451,7 @@
   IF (lifc) CALL read_ifc
   !
   IF (etf_mem) then
+    IF (.not. ALLOCATED(epmatwp)) ALLOCATE ( epmatwp ( nbndsub, nbndsub, nrr_k, nmodes, nrr_q) )
     epmatwp = czero
     IF (mpime.eq.ionode_id) THEN
       ! SP: The call to aux is now inside the loop

@@ -1,3 +1,4 @@
+#!/bin/bash
 # environment_variables -- settings for running Quantum ESPRESSO examples
 
 LC_ALL=C
@@ -16,16 +17,32 @@ export LC_ALL
 #     any valuable data (EVERYTHING THERE WILL BE DESTROYED)
 
 # The following should be good for most cases 
-
 PREFIX=`cd ../../.. ; pwd`
-BIN_DIR=$PREFIX/bin
-PSEUDO_DIR=$PREFIX/pseudo
+QE_SRC_DIR=$(dirname $(readlink -f $0))
+[ -f ${QE_SRC_DIR}/environment_variables ] || QE_SRC_DIR=${PREFIX}
+#[ -f ${QE_SRC_DIR}/environment_variables ] || QE_SRC_DIR=$(dirname $(readlink -f $0))
+    
+_pw_p=$(which pw.x)
+BIN_DIR=$(dirname ${_pw_p})
+[ -x ${BIN_DIR}/pw.x ] || BIN_DIR=/usr/bin
+[ -x ${BIN_DIR}/pw.x ] || BIN_DIR=$PREFIX/bin
+# else need QE build directory.
+
+PSEUDO_DIR=/usr/share/espresso/pseudo
+[ -d ${PSEUDO_DIR} ] || PSEUDO_DIR=$PREFIX/share/espresso/pseudo
+[ -d ${PSEUDO_DIR} ] || PSEUDO_DIR=${QE_SRC_DIR}/pseudo
+
+
 # Beware: everything in $TMP_DIR will be destroyed !
-TMP_DIR=$PREFIX/tempdir
+TMP_DIR=${PREFIX}/tempdir
+[ -d ${TMP_DIR} ] || TMP_DIR=${TEMP}
+[ -d ${TMP_DIR} ] || exit 1 # wrong...lots of r m -r f going on...
 
+#
+#
+#
 # There should be no need to change anything below this line
-
-NETWORK_PSEUDO=http://www.quantum-espresso.org/wp-content/uploads/upf_files/
+NETWORK_PSEUDO=http://www.quantum-espresso.org/wp-content/uploads/upf_files
 
 
 # wget or curl needed if some PP has to be downloaded from web site

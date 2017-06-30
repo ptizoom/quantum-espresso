@@ -29,7 +29,7 @@ proc ::pwscf::init {} {
     # check if settings(EDITOR) is OK 
     checkCmd settings(EDITOR)   
     # check for vi & vim, i.e, "xterm -e vi"
-    foreach editor {vi vim} {
+    foreach editor {emacs vi vim} {
 	if { [string match "* $editor" $settings(EDITOR)] } {
 	    # check if "less" cmd exists
 	    if { [auto_execok $editor] == "" } {

@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 
 # run from directory where this script is
 cd `echo $0 | sed 's/\(.*\)\/.*/\1/'` # extract pathname

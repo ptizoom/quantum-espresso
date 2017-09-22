@@ -13,3 +13,17 @@ include/c_defs.h
 install/config.log
 install/config.status
 install/configure.msg
+
+install/m4
+install/aclocal.m4
+install/autom4te.cache
+
+results*/
+
+DEBUG
+*.UPF
+*_kernel_table
+*.err
+*.out
+
+bld/

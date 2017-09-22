@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # Copyright (C) 2001 Quantum ESPRESSO
 #
@@ -8,7 +8,13 @@
 # of the License. See the file `License' in the root directory
 # of the present distribution.
 
-include ${ESPRESSO_ROOT}/test-suite/ENVIRONMENT
+#include ${ESPRESSO_ROOT:-.}/test-suite/ENVIRONMENT
+#source ${ESPRESSO_ROOT}/test-suite/ENVIRONMENT
+if [ ! -n ${ESPRESSO_ROOT} ]
+then
+    source ENVIRONMENT
+fi
+
 
 if [ $QE_USE_MPI == 1 ]; then
   export PARA_PREFIX="mpirun -np ${TESTCODE_NPROCS}"
@@ -28,7 +34,7 @@ else
   unset PARA_POSTFIX
 fi
 
-echo ' RUNNING ',${PARA_PREFIX} ${ESPRESSO_ROOT}/bin/cp.x ${PARA_POSTFIX} "$@"
-${PARA_PREFIX} ${ESPRESSO_ROOT}/bin/cp.x ${PARA_POSTFIX} "$@"
+echo ' RUNNING ',${PARA_PREFIX} ${ESPRESSO_ROOT:-.}/bin/cp.x ${PARA_POSTFIX} "$@"
+${PARA_PREFIX} ${ESPRESSO_ROOT:-.}/bin/cp.x ${PARA_POSTFIX} "$@"
 
 rm -f input_tmp.in

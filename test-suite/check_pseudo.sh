@@ -8,7 +8,11 @@
 # of the License. See the file `License' in the root directory
 # of the present distribution.
 
-source ${ESPRESSO_ROOT}/test-suite/ENVIRONMENT
+#source ${ESPRESSO_ROOT}/test-suite/ENVIRONMENT
+if [ ! -n ${ESPRESSO_ROOT} ]
+then
+    source ENVIRONMENT
+fi
 
 if test "`which curl`" = "" ; then
    if test "`which wget`" = "" ; then

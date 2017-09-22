@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # Copyright (C) 2001 Quantum ESPRESSO
 # 
@@ -9,6 +9,10 @@
 # of the present distribution.
 
 #include ${ESPRESSO_ROOT}/test-suite/ENVIRONMENT
+if [ ! -n ${ESPRESSO_ROOT} ]
+then
+    source ENVIRONMENT
+fi
 
 if [ $QE_USE_MPI == 1 ]; then
   export PARA_PREFIX="mpirun -np ${TESTCODE_NPROCS}"

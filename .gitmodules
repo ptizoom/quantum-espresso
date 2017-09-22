@@ -1,0 +1,3 @@
+[submodule "thermo_pw"]
+	path = thermo_pw
+	url = https://github.com/dalcorso/thermo_pw.git

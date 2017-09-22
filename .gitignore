@@ -5,14 +5,19 @@
 *.a
 bin/*
 *.inc
+*.pyc
+
+*.tmp
+
 iotk
 S3DE
 include/fft_defs.h
 include/configure.h
 include/c_defs.h
-install/config.log
-install/config.status
-install/configure.msg
+
+config.log
+config.status
+configure.msg
 
 install/m4
 install/aclocal.m4
@@ -24,6 +29,22 @@ DEBUG
 *.UPF
 *_kernel_table
 *.err
+*.err.*
 *.out
+*.out.*
 
 bld/
+
+
+FoX/
+Modules/version.f90
+test-suite/pw_vc-relax/ave
+test-suite/pw_vc-relax/avec
+test-suite/pw_vc-relax/e
+test-suite/pw_vc-relax/eal
+test-suite/pw_vc-relax/p
+test-suite/pw_vc-relax/tv
+test-suite/userconfig
+
+#modules
+thermo_pw/

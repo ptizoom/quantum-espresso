@@ -16,6 +16,7 @@ default :
 	@echo 'where target identifies one or multiple CORE PACKAGES:'
 	@echo '  pw           basic code for scf, structure optimization, MD'
 	@echo '  ph           phonon code, Gamma-only and third-order derivatives'
+	@echo '  thermo_pw    vibrational thermodynamic properties'
 	@echo '  pwcond       ballistic conductance'
 	@echo '  neb          code for Nudged Elastic Band method'
 	@echo '  pp           postprocessing programs'
@@ -81,9 +82,14 @@ ph : bindir libfft libla libutil mods libs pw lrmods
 	if test -d PHonon; then \
 	(cd PHonon; $(MAKE) all || exit 1) ; fi
 
+thermo_pw : bindir libfft libla libutil mods libs pw ph pp
+	if test -d thermo_pw; then \
+	(cd thermo_pw; $(MAKE) all || exit 1) ; fi
+
 neb : bindir libfft libla libutil mods libs pw
 	if test -d NEB; then \
   (cd NEB; $(MAKE) all || exit 1) ; fi
+
 
 tddfpt : bindir libfft libla libutil mods libs pw
 	if test -d TDDFPT; then \
@@ -140,7 +146,6 @@ epw: pw ph ld1
 	if test -d EPW ; then \
 	( cd EPW ; $(MAKE) all || exit 1; \
 		cd ../bin; ln -fs ../EPW/bin/epw.x . ); fi
-
 travis : pwall epw
 	if test -d test-suite ; then \
 	( cd test-suite ; make run-travis || exit 1 ) ; fi
@@ -149,12 +154,13 @@ gui :
 	@echo 'Check "GUI/README" how to access the Graphical User Interface'
 #@echo 'Check "PWgui-X.Y/README" how to access the Graphical User Interface'
 
+
 examples : touch-dummy
 	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
-pwall : pw neb ph pp pwcond acfdt
+pwall : pw neb ph pp pwcond acfdt thermo_pw
 
-all   : pwall cp ld1 upf tddfpt xspectra gwl 
+all   : pwall cp ld1 upf tddfpt xspectra gwl
 
 ###########################################################
 # Auxiliary targets used by main targets:
@@ -166,7 +172,7 @@ libdavid_rci : touch-dummy libla clib libutil
 
 libdavid : touch-dummy libla clib libutil
 	( cd KS_Solvers/Davidson ; $(MAKE) TLDEPS= all || exit 1 )
-
+ 
 libcg : touch-dummy libla clib libutil
 	( cd KS_Solvers/CG ; $(MAKE) TLDEPS= all || exit 1 )
 
@@ -176,7 +182,7 @@ libla : touch-dummy liblapack libutil
 libfft : touch-dummy
 	( cd FFTXlib ; $(MAKE) TLDEPS= all || exit 1 )
 
-libutil : touch-dummy 
+libutil : touch-dummy
 	( cd UtilXlib ; $(MAKE) TLDEPS= all || exit 1 )
 
 mods : libiotk libfox libla libfft libutil
@@ -203,11 +209,14 @@ liblapack: touch-dummy
 
 libiotk: touch-dummy
 	cd install ; $(MAKE) -f extlibs_makefile $@
+
 libfox: touch-dummy
 	cd install ; $(MAKE) -f extlibs_makefile $@
 
+
 # In case of trouble with iotk and compilers, add
 # FFLAGS="$(FFLAGS_NOOPT)" after $(MFLAGS)
+
 
 #########################################################
 # plugins
@@ -269,6 +278,7 @@ links : bindir
 install : touch-dummy
 	@if test -d bin ; then mkdir -p $(PREFIX)/bin ; \
 	for x in `find * ! -path "test-suite/*" -name *.x -type f` ; do \
+
 		cp $$x $(PREFIX)/bin/ ; done ; \
 	fi
 	@echo 'Quantum ESPRESSO binaries installed in $(PREFIX)/bin'
@@ -320,7 +330,8 @@ veryclean : clean
 	- rm -f espresso.tar.gz -
 	- rm -rf make.inc -
 	- rm -rf FoX
-# remove everything not in the original distribution
+
+# remove everything not in the original distribution 
 distclean : veryclean
 	( cd install ; $(MAKE) -f plugins_makefile $@ || exit 1 )
 
@@ -380,6 +391,6 @@ depend: libiotk version
 	@echo 'Checking dependencies...'
 	- ( if test -x install/makedeps.sh ; then install/makedeps.sh ; fi)
 # update file containing version number before looking for dependencies
-
 version:
 	- ( cd Modules; make version )
+

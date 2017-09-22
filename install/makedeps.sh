@@ -16,7 +16,8 @@ then
            PW/src CPV/src PW/tools upftools PP/src PWCOND/src \
            PHonon/Gamma PHonon/PH PHonon/FD atomic/src \
            XSpectra/src ACFDT/src NEB/src TDDFPT/src \
-           GWW/pw4gww GWW/gww GWW/head GWW/bse" 
+           GWW/pw4gww GWW/gww GWW/head GWW/bse thermo_pw/src \
+           thermo_pw/lib thermo_pw/tools thermo_pw/qe" 
           
 elif
     test $1 = "-addson" 
@@ -78,9 +79,23 @@ for dir in $dirs; do
 	PHonon/FD | PHonon/PH | PHonon/Gamma | XSpectra/src  | GIPAW/src )
 	     DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/LR_Modules" ;;
 	GWW/head | TDDFPT/src )
-	     DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH $LEVEL2/LR_Modules" ;;	
+	     DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH $LEVEL2/LR_Modules" ;; 
 	GWW/bse )
 	 DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH $LEVEL2/LR_Modules $LEVEL2/GWW/pw4gww $LEVEL2/GWW/gww" ;;	
+        thermo_pw/lib )
+             DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH $LEVEL2/LR_Modules" ;;
+        thermo_pw/qe )
+             DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH \
+                      $LEVEL2/LR_Modules $LEVEL2/thermo_pw/lib " ;;
+        thermo_pw/src )
+             DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH 
+                      $LEVEL2/LR_Modules $LEVEL2/PP/src \
+                      $LEVEL2/thermo_pw/lib $LEVEL2/thermo_pw/qe " ;;
+        thermo_pw/tools )
+             DEPENDS="$DEPEND2 $LEVEL2/PW/src $LEVEL2/PHonon/PH \
+                      $LEVEL2/LR_Modules $LEVEL2/PP/src \
+                      $LEVEL2/thermo_pw/qe \
+                      $LEVEL2/thermo_pw/lib" ;;
     *)
 # if addson needs a make.depend file
 	DEPENDS="$DEPENDS $add_deps"

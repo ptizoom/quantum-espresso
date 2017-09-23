@@ -2,5 +2,5 @@
 	path = thermo_pw
 	url = https://github.com/dalcorso/thermo_pw.git
 [submodule "d3q"]
-	path = d3q-code
+	path = D3Q
 	url = git://koala.local/science/d3q.git

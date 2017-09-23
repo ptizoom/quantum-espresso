@@ -1,3 +1,6 @@
 [submodule "thermo_pw"]
 	path = thermo_pw
 	url = https://github.com/dalcorso/thermo_pw.git
+[submodule "d3q"]
+	path = d3q-code
+	url = git://koala.local/science/d3q.git

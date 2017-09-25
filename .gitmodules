@@ -4,3 +4,6 @@
 [submodule "d3q"]
 	path = D3Q
 	url = git://koala.local/science/d3q.git
+[submodule "w90"]
+	path = wannier90
+	url = https://github.com/wannier-developers/wannier90.git

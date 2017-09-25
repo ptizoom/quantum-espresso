@@ -28,6 +28,10 @@ YAMBO_URL=http://www.yambo-code.org/files/yambo-stable-latest.tar.gz
 # Package maintainer: 
 W90=wannier90-2.1.0
 W90_URL=http://www.wannier.org/code/$(W90).tar.gz
+
+W90=wannier90
+W90_URL=https://github.com/wannier-developers/wannier90.git
+
 #
 # Package maintainer: Layla Martin-Samos
 SAX=sax-2.0.3

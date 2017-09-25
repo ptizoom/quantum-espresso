@@ -23,6 +23,11 @@ install/m4
 install/aclocal.m4
 install/autom4te.cache
 
+install/configure-w90
+install/make-d3q
+install/make-w90
+install/uncompress-w90
+
 results*/
 
 DEBUG
@@ -48,3 +53,9 @@ test-suite/userconfig
 
 #modules
 thermo_pw/
+
+Doc/*.aux
+Doc/*.log
+Doc/*.pdf
+Doc/*.toc
+

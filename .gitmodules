@@ -7,3 +7,6 @@
 [submodule "w90"]
 	path = wannier90
 	url = https://github.com/wannier-developers/wannier90.git
+[submodule "pslibrary"]
+	path = pslibrary
+	url = https://github.com/dalcorso/pslibrary.git
